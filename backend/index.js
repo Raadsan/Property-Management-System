@@ -1,14 +1,23 @@
 import 'dotenv/config';
 import express from 'express';
 import { prisma } from "./lib/prisma.js";
+import roleRoute from "./Routes/roleRoute.js";
+import cors from 'cors';
+
 
 const app = express();
-app.use(express.json());
+app.use(cors());
+app.use(express.json({ type: ['application/json', 'text/plain'] }));
+app.use(express.urlencoded({ extended: true }));    
 
 // Basic health check route
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', database: 'connected' });
 });
+
+// Routes
+app.use('/api/roles', roleRoute);
+
 
 async function main() {
   try {

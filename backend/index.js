@@ -5,6 +5,8 @@ import roleRoute from "./Routes/roleRoute.js";
 import userRoute from "./Routes/userRoute.js";
 import propertyTypeRoute from "./Routes/propertyTypeRoute.js";
 import PropertyRoute from "./Routes/PropertyRoute.js";
+import favoriteRoute from "./Routes/favoriteRoute.js";
+
 import path from 'path';
 import cors from 'cors';
 
@@ -27,6 +29,8 @@ app.use('/api/roles', roleRoute);
 app.use('/api/users', userRoute);
 app.use('/api/property-types', propertyTypeRoute);
 app.use('/api/properties', PropertyRoute);
+app.use('/api/favorites', favoriteRoute);
+
 
 
 

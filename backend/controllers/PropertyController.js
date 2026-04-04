@@ -6,7 +6,7 @@ export const createProperty = async (req, res) => {
   console.log("📥 CREATE PROPERTY REQUEST:", { body: req.body, headers: req.headers['content-type'] });
   const { 
     title, description, location, price, listingType, 
-    ownerId, propertyTypeId, images: bodyImages, features 
+    ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures 
   } = req.body || {};
 
   // Combine images from body (URLs) and files (uploads)
@@ -15,6 +15,21 @@ export const createProperty = async (req, res) => {
     images = req.files.map(file => `/uploads/${file.filename}`);
   } else if (bodyImages) {
     images = Array.isArray(bodyImages) ? bodyImages : [bodyImages];
+  }
+
+  // Parse features if they come as a JSON string (common in form-data)
+  let features = [];
+  if (bodyFeatures) {
+    if (Array.isArray(bodyFeatures)) {
+      features = bodyFeatures;
+    } else {
+      try {
+        const parsed = JSON.parse(bodyFeatures);
+        features = Array.isArray(parsed) ? parsed : [parsed];
+      } catch (e) {
+        features = [bodyFeatures];
+      }
+    }
   }
 
   if (!title || !location || !price || !listingType || !ownerId || !propertyTypeId) {
@@ -32,11 +47,11 @@ export const createProperty = async (req, res) => {
         ownerId: parseInt(ownerId),
         propertyTypeId: parseInt(propertyTypeId),
         // Create nested images if provided (array of strings)
-        images: images && Array.isArray(images) ? {
+        images: images && images.length > 0 ? {
           create: images.map(url => ({ url }))
         } : undefined,
         // Create nested features if provided (array of strings)
-        features: features && Array.isArray(features) ? {
+        features: features && features.length > 0 ? {
           create: features.map(name => ({ name }))
         } : undefined
       },
@@ -59,6 +74,7 @@ export const getProperties = async (req, res) => {
     const properties = await prisma.property.findMany({
       include: {
         images: { orderBy: { id: 'desc' } },
+        features: true,
         propertyType: { select: { name: true } },
         owner: { select: { name: true, phone: true } }
       }
@@ -122,11 +138,32 @@ export const updateProperty = async (req, res) => {
       };
     }
 
+    // Handle FEATURE REPLACEMENT if provided during patch (array of strings)
+    if (updateFields.features) {
+      let finalFeatures = [];
+      if (Array.isArray(updateFields.features)) {
+        finalFeatures = updateFields.features;
+      } else {
+        try {
+          const parsed = JSON.parse(updateFields.features);
+          finalFeatures = Array.isArray(parsed) ? parsed : [parsed];
+        } catch (e) {
+          finalFeatures = [updateFields.features];
+        }
+      }
+
+      updateData.features = {
+        deleteMany: {}, 
+        create: finalFeatures.map(name => ({ name }))
+      };
+    }
+
     const updatedProperty = await prisma.property.update({
       where: { id: parseInt(id) },
       data: updateData,
       include: { 
-        images: { orderBy: { id: 'desc' } } 
+        images: { orderBy: { id: 'desc' } },
+        features: true
       }
     });
 

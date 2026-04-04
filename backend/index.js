@@ -7,6 +7,8 @@ import propertyTypeRoute from "./Routes/propertyTypeRoute.js";
 import PropertyRoute from "./Routes/PropertyRoute.js";
 import LeaseRoute from "./Routes/LeaseRoute.js";
 import saleRoute from "./Routes/saleRoute.js";
+import paymentRoute from "./Routes/paymentRoute.js";
+
 
 
 import favoriteRoute from "./Routes/favoriteRoute.js";
@@ -35,6 +37,8 @@ app.use('/api/property-types', propertyTypeRoute);
 app.use('/api/properties', PropertyRoute);
 app.use('/api/leases', LeaseRoute);
 app.use('/api/sales', saleRoute);
+app.use('/api/payments', paymentRoute);
+
 
 
 app.use('/api/favorites', favoriteRoute);

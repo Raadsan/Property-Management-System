@@ -48,12 +48,14 @@ model Role {
 ///////////////////////
 
 model User {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   name      String
   email     String?  @unique
   phone     String
   roleId    Int
   status    String   @default("ACTIVE")
+  password  String
+  photo     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   propertiesOwned Property[] @relation("OwnerProperties")
@@ -69,7 +71,7 @@ model User {
 ///////////////////////
 
 model PropertyType {
-  id        String   @id @default(uuid())
+  id        Int      @id @default(autoincrement())
   name      String   @unique
   createdAt DateTime @default(now())
 
@@ -81,7 +83,7 @@ model PropertyType {
 ///////////////////////
 
 model Property {
-  id          String         @id @default(uuid())
+  id          Int            @id @default(autoincrement())
   title       String
   description String?
   location    String
@@ -90,9 +92,9 @@ model Property {
   status      PropertyStatus @default(AVAILABLE)
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
-  ownerId String
+  ownerId Int
   owner   User @relation("OwnerProperties", fields: [ownerId], references: [id])
-  propertyTypeId String
+  propertyTypeId Int
   propertyType   PropertyType @relation(fields: [propertyTypeId], references: [id])
   images    PropertyImage[]
   features  Feature[]
@@ -108,9 +110,9 @@ model Property {
 ///////////////////////
 
 model PropertyImage {
-  id         String   @id @default(uuid())
+  id         Int      @id @default(autoincrement())
   url        String
-  propertyId String
+  propertyId Int
   property   Property @relation(fields: [propertyId], references: [id])
 }
 
@@ -119,9 +121,9 @@ model PropertyImage {
 ///////////////////////
 
 model Feature {
-  id         String   @id @default(uuid())
+  id         Int      @id @default(autoincrement())
   name       String
-  propertyId String
+  propertyId Int
   property   Property @relation(fields: [propertyId], references: [id])
 }
 
@@ -130,9 +132,9 @@ model Feature {
 ///////////////////////
 
 model Favorite {
-  id         String   @id @default(uuid())
-  userId     String
-  propertyId String
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  propertyId Int
 
   user     User     @relation(fields: [userId], references: [id])
   property Property @relation(fields: [propertyId], references: [id])
@@ -145,9 +147,9 @@ model Favorite {
 ///////////////////////
 
 model Lease {
-  id          String   @id @default(uuid())
-  propertyId  String
-  tenantId    String
+  id          Int      @id @default(autoincrement())
+  propertyId  Int
+  tenantId    Int
   startDate   DateTime
   endDate     DateTime
   rentAmount  Float
@@ -163,9 +165,9 @@ model Lease {
 ///////////////////////
 
 model Sale {
-  id          String   @id @default(uuid())
-  propertyId  String
-  buyerId     String
+  id          Int      @id @default(autoincrement())
+  propertyId  Int
+  buyerId     Int
   price       Float
   documentUrl String?
   createdAt   DateTime @default(now())
@@ -180,13 +182,13 @@ model Sale {
 ///////////////////////
 
 model Payment {
-  id         String        @id @default(uuid())
+  id         Int           @id @default(autoincrement())
   amount     Float
   method     PaymentMethod
   status     PaymentStatus @default(PENDING)
-  leaseId    String?
-  saleId     String?
-  userId     String
+  leaseId    Int?
+  saleId     Int?
+  userId     Int
   dueDate    DateTime?
   paidAt     DateTime?
   createdAt  DateTime      @default(now())

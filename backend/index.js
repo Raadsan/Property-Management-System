@@ -2,6 +2,10 @@ import 'dotenv/config';
 import express from 'express';
 import { prisma } from "./lib/prisma.js";
 import roleRoute from "./Routes/roleRoute.js";
+import userRoute from "./Routes/userRoute.js";
+import propertyTypeRoute from "./Routes/propertyTypeRoute.js";
+
+
 import cors from 'cors';
 
 
@@ -17,6 +21,10 @@ app.get('/health', (req, res) => {
 
 // Routes
 app.use('/api/roles', roleRoute);
+app.use('/api/users', userRoute);
+app.use('/api/property-types', propertyTypeRoute);
+
+
 
 
 async function main() {

@@ -5,6 +5,10 @@ import roleRoute from "./Routes/roleRoute.js";
 import userRoute from "./Routes/userRoute.js";
 import propertyTypeRoute from "./Routes/propertyTypeRoute.js";
 import PropertyRoute from "./Routes/PropertyRoute.js";
+import LeaseRoute from "./Routes/LeaseRoute.js";
+import saleRoute from "./Routes/saleRoute.js";
+
+
 import favoriteRoute from "./Routes/favoriteRoute.js";
 
 import path from 'path';
@@ -29,6 +33,10 @@ app.use('/api/roles', roleRoute);
 app.use('/api/users', userRoute);
 app.use('/api/property-types', propertyTypeRoute);
 app.use('/api/properties', PropertyRoute);
+app.use('/api/leases', LeaseRoute);
+app.use('/api/sales', saleRoute);
+
+
 app.use('/api/favorites', favoriteRoute);
 
 

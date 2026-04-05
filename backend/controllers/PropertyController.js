@@ -180,8 +180,14 @@ export const updateProperty = async (req, res) => {
 // @route   DELETE /api/properties/:id
 export const deleteProperty = async (req, res) => {
   const { id } = req.params;
+  const propertyId = parseInt(id);
   try {
-    await prisma.property.delete({ where: { id: parseInt(id) } });
+    // Prevent foreign key constraint errors by gracefully deleting related records first
+    await prisma.propertyImage.deleteMany({ where: { propertyId } });
+    await prisma.feature.deleteMany({ where: { propertyId } });
+    await prisma.favorite.deleteMany({ where: { propertyId } });
+
+    await prisma.property.delete({ where: { id: propertyId } });
     res.status(200).json({ message: "Property deleted successfully" });
   } catch (error) {
     if (error.code === 'P2025') {

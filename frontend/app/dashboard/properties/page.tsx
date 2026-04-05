@@ -1,0 +1,591 @@
+"use client"
+
+import * as React from "react"
+import { AppSidebar } from "@/components/app-sidebar"
+import { SiteHeader } from "@/components/site-header"
+import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon, ImageIcon, HomeIcon, EyeIcon } from "lucide-react"
+
+import { getPropertyTypes, Category } from "@/api/propertyTypeApi"
+import { getUsers, User } from "@/api/userApi"
+import { 
+  getProperties, 
+  createProperty, 
+  updateProperty, 
+  deleteProperty,
+  Property 
+} from "@/api/propertyApi"
+
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogFooter
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { toast } from "sonner"
+
+export default function PropertiesPage() {
+  const [properties, setProperties] = React.useState<Property[]>([])
+  const [categories, setCategories] = React.useState<Category[]>([])
+  const [owners, setOwners] = React.useState<User[]>([])
+  
+  const [isLoading, setIsLoading] = React.useState(true)
+  const [isModalOpen, setIsModalOpen] = React.useState(false)
+  const [currentProperty, setCurrentProperty] = React.useState<Property | null>(null)
+  
+  // View Details Modal State
+  const [isViewModalOpen, setIsViewModalOpen] = React.useState(false)
+  const [viewProperty, setViewProperty] = React.useState<Property | null>(null)
+  
+  // Form State
+  const [title, setTitle] = React.useState("")
+  const [description, setDescription] = React.useState("")
+  const [location, setLocation] = React.useState("")
+  const [price, setPrice] = React.useState("")
+  const [listingType, setListingType] = React.useState<string>("RENT")
+  const [status, setStatus] = React.useState<string>("AVAILABLE")
+  const [propertyTypeId, setPropertyTypeId] = React.useState<string>("")
+  const [ownerId, setOwnerId] = React.useState<string>("")
+  const [featuresInput, setFeaturesInput] = React.useState("")
+  
+  // File State
+  const fileInputRef = React.useRef<HTMLInputElement>(null)
+  const [selectedFiles, setSelectedFiles] = React.useState<File[]>([])
+
+  const loadData = async () => {
+    setIsLoading(true)
+    try {
+      const [propsData, catsData, usersData] = await Promise.all([
+        getProperties(),
+        getPropertyTypes(),
+        getUsers()
+      ])
+      setProperties(propsData)
+      setCategories(catsData)
+      
+      // Filter out only active users or specific roles if needed, currently grabbing all users
+      setOwners(usersData)
+    } catch (error) {
+      toast.error("Failed to load property data")
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  React.useEffect(() => {
+    loadData()
+  }, [])
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      setSelectedFiles(Array.from(e.target.files))
+    }
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!title || !location || !price || !listingType || !ownerId || !propertyTypeId) {
+      return toast.error("Please fill in all strictly required fields.")
+    }
+
+    try {
+      const formData = new FormData()
+      formData.append("title", title)
+      formData.append("description", description)
+      formData.append("location", location)
+      formData.append("price", price)
+      formData.append("listingType", listingType)
+      formData.append("status", status)
+      formData.append("ownerId", ownerId)
+      formData.append("propertyTypeId", propertyTypeId)
+      
+      // Convert comma separated features into an array string
+      if (featuresInput.trim()) {
+        const featureArray = featuresInput.split(",").map(f => f.trim()).filter(f => f !== "")
+        formData.append("features", JSON.stringify(featureArray))
+      }
+      
+      // Append images
+      if (selectedFiles.length > 0) {
+        selectedFiles.forEach((file) => {
+          formData.append("images", file)
+        })
+      }
+
+      if (currentProperty) {
+        await updateProperty(currentProperty.id, formData)
+        toast.success("Property updated successfully")
+      } else {
+        await createProperty(formData)
+        toast.success("Property created successfully")
+      }
+      
+      setIsModalOpen(false)
+      resetForm()
+      loadData()
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || "An error occurred while saving"
+      toast.error(errMsg)
+    }
+  }
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this property? This action is permanent!")) return
+
+    try {
+      await deleteProperty(id)
+      toast.success("Property deleted successfully")
+      loadData()
+    } catch (error) {
+      toast.error("Failed to delete property")
+    }
+  }
+
+  const openEditModal = (property: Property) => {
+    setCurrentProperty(property)
+    setTitle(property.title)
+    setDescription(property.description || "")
+    setLocation(property.location)
+    setPrice(property.price.toString())
+    setListingType(property.listingType)
+    setStatus(property.status || "AVAILABLE")
+    setPropertyTypeId(property.propertyTypeId.toString())
+    setOwnerId(property.ownerId.toString())
+    
+    // Map features array back to comma separated string
+    if (property.features && property.features.length > 0) {
+      setFeaturesInput(property.features.map(f => f.name).join(", "))
+    } else {
+      setFeaturesInput("")
+    }
+    
+    setSelectedFiles([])
+    setIsModalOpen(true)
+  }
+
+  const openCreateModal = () => {
+    resetForm()
+    setIsModalOpen(true)
+  }
+
+  const resetForm = () => {
+    setCurrentProperty(null)
+    setTitle("")
+    setDescription("")
+    setLocation("")
+    setPrice("")
+    setListingType("RENT")
+    setStatus("AVAILABLE")
+    setPropertyTypeId("")
+    setOwnerId("")
+    setFeaturesInput("")
+    setSelectedFiles([])
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
+  const openViewModal = (property: Property) => {
+    setViewProperty(property)
+    setIsViewModalOpen(true)
+  }
+
+  // Determine badge styling based on Status
+  const getStatusBadge = (status: string) => {
+    if (status === "AVAILABLE") return "bg-[#dcfce7] text-[#166534] ring-[#bbf7d0] dark:bg-[#064e3b] dark:text-[#6ee7b7] dark:ring-[#047857]";
+    if (status === "SOLD") return "bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:ring-blue-800";
+    if (status === "RENTED") return "bg-purple-100 text-purple-800 ring-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:ring-purple-800";
+    return "bg-gray-100 text-gray-800 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700";
+  }
+
+  return (
+    <SidebarProvider
+      style={{
+        "--sidebar-width": "calc(var(--spacing) * 72)",
+        "--header-height": "calc(var(--spacing) * 12)",
+      } as React.CSSProperties}
+    >
+      <AppSidebar variant="inset" />
+      <SidebarInset className="mt-0! mr-0!">
+        <SiteHeader />
+        <div className="flex flex-1 flex-col p-4 md:p-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Properties Inventory</h1>
+              <p className="text-muted-foreground">Manage your real estate listings, pricing, and media.</p>
+            </div>
+            <Dialog open={isModalOpen} onOpenChange={(open) => {
+              if (!open) resetForm();
+              setIsModalOpen(open);
+            }}>
+              <DialogTrigger asChild>
+                <Button onClick={openCreateModal} className="btn-category shrink-0">
+                  <PlusIcon className="mr-2 h-4 w-4" />
+                  Add Property
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>{currentProperty ? "Edit Property Parameters" : "Add New Property"}</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                  
+                  {/* Title */}
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="title">Headline / Title <span className="text-red-500">*</span></Label>
+                    <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Luxurious Downtown Apartment" required />
+                  </div>
+
+                  {/* Location */}
+                  <div className="space-y-2">
+                    <Label htmlFor="location">Location <span className="text-red-500">*</span></Label>
+                    <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. 123 Main St, NY" required />
+                  </div>
+
+                  {/* Price */}
+                  <div className="space-y-2">
+                    <Label htmlFor="price">Price ($) <span className="text-red-500">*</span></Label>
+                    <Input id="price" type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" required />
+                  </div>
+
+                  {/* Category / Type */}
+                  <div className="space-y-2">
+                    <Label htmlFor="propertyTypeId">Property Type <span className="text-red-500">*</span></Label>
+                    <Select value={propertyTypeId} onValueChange={setPropertyTypeId} required>
+                      <SelectTrigger id="propertyTypeId">
+                        <SelectValue placeholder="Select Category" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Owner */}
+                  <div className="space-y-2">
+                    <Label htmlFor="ownerId">Owner <span className="text-red-500">*</span></Label>
+                    <Select value={ownerId} onValueChange={setOwnerId} required>
+                      <SelectTrigger id="ownerId">
+                        <SelectValue placeholder="Assign an Owner" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {owners.map((user) => (
+                          <SelectItem key={user.id} value={user.id.toString()}>{user.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Listing Type & Status */}
+                  <div className="space-y-2">
+                    <Label htmlFor="listingType">Listing Model <span className="text-red-500">*</span></Label>
+                    <Select value={listingType} onValueChange={setListingType} required>
+                      <SelectTrigger id="listingType">
+                        <SelectValue placeholder="Listing Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RENT">For Rent</SelectItem>
+                        <SelectItem value="SALE">For Sale</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="status">Current Status <span className="text-red-500">*</span></Label>
+                    <Select value={status} onValueChange={setStatus} required>
+                      <SelectTrigger id="status">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="AVAILABLE">AVAILABLE</SelectItem>
+                        <SelectItem value="RENTED">RENTED</SelectItem>
+                        <SelectItem value="SOLD">SOLD</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Features */}
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="features">Property Features</Label>
+                    <Input 
+                      id="features" 
+                      value={featuresInput} 
+                      onChange={(e) => setFeaturesInput(e.target.value)} 
+                      placeholder="e.g. Swimming Pool, Garage, Free Wi-Fi (comma separated)" 
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="description">Detailed Description</Label>
+                    <textarea 
+                      id="description" 
+                      rows={3}
+                      value={description} 
+                      onChange={(e) => setDescription(e.target.value)} 
+                      className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      placeholder="Describe the property highlights, rules, and benefits."
+                    />
+                  </div>
+
+                  {/* Image Upload array */}
+                  <div className="space-y-2 md:col-span-2 p-4 border rounded-md bg-muted/20">
+                    <Label htmlFor="images" className="flex items-center gap-2 text-sm font-semibold mb-2">
+                      <ImageIcon className="h-4 w-4" /> Media Upload (max 10)
+                    </Label>
+                    <Input 
+                      id="images" 
+                      type="file" 
+                      ref={fileInputRef}
+                      multiple 
+                      accept="image/*" 
+                      onChange={handleFileChange} 
+                      className="cursor-pointer file:cursor-pointer"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1">
+                      {currentProperty?.images && currentProperty.images.length > 0 
+                        ? `This property currently has ${currentProperty.images.length} image(s). Uploading new ones will replace them.`
+                        : "Select one or multiple images to attach to this listing."}
+                    </p>
+                  </div>
+                  
+                  <DialogFooter className="md:col-span-2 mt-4">
+                    <Button type="submit" className="btn-category w-full md:w-auto">
+                      {currentProperty ? "Update Listing" : "Publish Property"}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+              <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Property Highlights</DialogTitle>
+                </DialogHeader>
+                {viewProperty && (
+                  <div className="space-y-6 py-4">
+                    {/* Horizontal Image Gallery */}
+                    {viewProperty.images && viewProperty.images.length > 0 ? (
+                      <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
+                        {viewProperty.images.map((img) => (
+                          <img 
+                            key={img.id}
+                            src={`http://127.0.0.1:5000${img.url}`} 
+                            alt={viewProperty.title} 
+                            className="h-48 w-auto min-w-[200px] object-cover rounded-md border shadow-sm snap-center"
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="h-40 w-full flex items-center justify-center bg-muted rounded-md text-muted-foreground border border-dashed">
+                        <ImageIcon className="h-8 w-8 opacity-50 mr-2" /> No media attached
+                      </div>
+                    )}
+                    
+                    {/* Information Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                      <div className="col-span-1 md:col-span-2">
+                        <span className="font-semibold text-muted-foreground block mb-1">Name</span>
+                        <p className="font-medium text-lg leading-tight">{viewProperty.title}</p>
+                      </div>
+                      
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">Price</span>
+                        <p className="font-bold text-[#166534] dark:text-[#6ee7b7] text-lg">${viewProperty.price.toLocaleString()}</p>
+                      </div>
+                      
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">Location</span>
+                        <p className="font-medium bg-muted/40 p-2 rounded-md">{viewProperty.location}</p>
+                      </div>
+                      
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">Category & Type</span>
+                        <div className="flex items-center gap-2">
+                          <span className="border px-2 py-0.5 rounded text-xs font-semibold uppercase">{viewProperty.propertyType?.name || 'Uncategorized'}</span>
+                          <span className="font-bold text-xs uppercase opacity-80">{viewProperty.listingType}</span>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">Listing Status</span>
+                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${getStatusBadge(viewProperty.status)}`}>{viewProperty.status}</span>
+                      </div>
+                      
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">Owner Contact</span>
+                        <div className="bg-muted/30 p-2 rounded-md">
+                          <p className="font-medium">{viewProperty.owner?.name}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5 font-mono">{viewProperty.owner?.phone}</p>
+                        </div>
+                      </div>
+
+                      <div className="col-span-1 md:col-span-2 mt-2">
+                        <span className="font-semibold text-muted-foreground block mb-2">Features</span>
+                        <div className="flex flex-wrap gap-2">
+                          {viewProperty.features && viewProperty.features.length > 0 ? (
+                            viewProperty.features.map(f => (
+                              <span key={f.id} className="bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-md text-xs font-medium">{f.name}</span>
+                            ))
+                          ) : <span className="text-muted-foreground italic">No features listed</span>}
+                        </div>
+                      </div>
+                      
+                      <div className="col-span-1 md:col-span-2 mt-2">
+                        <span className="font-semibold text-muted-foreground block mb-2">Description</span>
+                        <div className="bg-muted/20 border p-3 rounded-md text-muted-foreground leading-relaxed">
+                          {viewProperty.description || <span className="italic">No description provided for this listing.</span>}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </DialogContent>
+            </Dialog>
+            
+          </div>
+
+          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead>Name</TableHead>
+                  <TableHead>PropertyType</TableHead>
+                  <TableHead>Feature</TableHead>
+                  <TableHead>Price</TableHead>
+                  <TableHead>ListingType</TableHead>
+                  <TableHead>Location</TableHead>
+                  <TableHead>Owner</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-24 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
+                        <span>Loading property assets...</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : properties.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="h-32 text-center">
+                      <div className="flex flex-col items-center justify-center text-muted-foreground">
+                        <HomeIcon className="h-10 w-10 mb-2 opacity-20" />
+                        <p>No properties listed on the market yet.</p>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  properties.map((property) => (
+                    <TableRow key={property.id} className="hover:bg-muted/30 transition-colors">
+                      
+                      <TableCell className="font-bold text-sm">
+                        <div className="line-clamp-1">{property.title}</div>
+                      </TableCell>
+                      
+                      <TableCell>
+                        <span className="bg-muted border px-2 py-0.5 rounded text-xs font-medium">
+                          {property.propertyType?.name || 'None'}
+                        </span>
+                      </TableCell>
+
+                      <TableCell className="max-w-[150px] truncate text-xs text-muted-foreground" title={property.features?.map(f => f.name).join(", ")}>
+                        {property.features && property.features.length > 0 
+                           ? property.features.map(f => f.name).join(", ") 
+                           : "—"
+                        }
+                      </TableCell>
+                      
+                      <TableCell className="font-bold text-[#166534] dark:text-[#6ee7b7]">
+                        ${property.price.toLocaleString()}
+                      </TableCell>
+
+                      <TableCell className="text-xs uppercase font-bold tracking-wider opacity-80">
+                        {property.listingType}
+                      </TableCell>
+
+                      <TableCell className="text-sm font-medium line-clamp-2 max-w-[150px]">
+                        {property.location}
+                      </TableCell>
+                      
+                      <TableCell>
+                        <div className="font-semibold text-sm">{property.owner?.name || "Unknown"}</div>
+                        <div className="text-[10px] text-muted-foreground">{property.owner?.phone}</div>
+                      </TableCell>
+
+                      <TableCell>
+                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${getStatusBadge(property.status)}`}>
+                          {property.status}
+                        </span>
+                      </TableCell>
+                      
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => openViewModal(property)}
+                            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 h-8 w-8"
+                            title="View Property Details"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                            <span className="sr-only">View</span>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => openEditModal(property)}
+                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
+                          >
+                            <PencilIcon className="h-4 w-4" />
+                            <span className="sr-only">Edit</span>
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleDelete(property.id)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </div>
+      </SidebarInset>
+    </SidebarProvider>
+  )
+}

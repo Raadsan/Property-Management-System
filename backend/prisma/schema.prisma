@@ -7,41 +7,14 @@ datasource db {
   provider = "mysql"
 }
 
-///////////////////////
-// ENUMS
-///////////////////////
-
-enum PropertyStatus {
-  AVAILABLE
-  RENTED
-  SOLD
-}
-
-enum ListingType {
-  RENT
-  SALE
-}
-
-enum PaymentMethod {
-  CASH
-  MOBILE_MONEY
-  BANK
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  LATE
-}
-
 model Role {
   id              Int              @id @default(autoincrement())
   name            String           @unique
   description     String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  users           User[]
   rolePermissions RolePermissions?
+  users           User[]
 }
 
 model Menu {
@@ -86,14 +59,10 @@ model RoleMenuAccess {
   canAdd            Boolean             @default(false)
   canEdit           Boolean             @default(false)
   canDelete         Boolean             @default(false)
-  canAssign         Boolean             @default(false)
-  canApprove        Boolean             @default(false)
-  canGenerate       Boolean             @default(false)
-  canLost           Boolean             @default(false)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
-  menu              Menu            @relation(fields: [menuId], references: [id], onDelete: Cascade)
-  rolePermissions   RolePermissions @relation(fields: [rolePermissionsId], references: [id], onDelete: Cascade)
+  menu              Menu                @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  rolePermissions   RolePermissions     @relation(fields: [rolePermissionsId], references: [id], onDelete: Cascade)
   subMenus          RoleSubMenuAccess[]
 
   @@unique([rolePermissionsId, menuId])
@@ -108,10 +77,6 @@ model RoleSubMenuAccess {
   canAdd           Boolean        @default(false)
   canEdit          Boolean        @default(false)
   canDelete        Boolean        @default(false)
-  canAssign        Boolean        @default(false)
-  canApprove       Boolean        @default(false)
-  canGenerate      Boolean        @default(false)
-  canLost          Boolean        @default(false)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   roleMenuAccess   RoleMenuAccess @relation(fields: [roleMenuAccessId], references: [id], onDelete: Cascade)
@@ -121,157 +86,160 @@ model RoleSubMenuAccess {
   @@index([subMenuId], map: "RoleSubMenuAccess_subMenuId_fkey")
 }
 
-///////////////////////
-// USER
-///////////////////////
-
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String?  @unique
-  phone     String
-  roleId    Int
-  status    String   @default("ACTIVE")
-  password  String
-  photo     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  propertiesOwned Property[] @relation("OwnerProperties")
-  leases          Lease[]
-  purchases       Sale[]
-  payments        Payment[]
+  id              Int        @id @default(autoincrement())
+  email           String?    @unique
+  name            String
+  createdAt       DateTime   @default(now())
+  phone           String
+  roleId          Int
+  status          String     @default("ACTIVE")
+  updatedAt       DateTime   @updatedAt
+  password        String
+  photo           String?
   favorites       Favorite[]
-  role            Role @relation(fields: [roleId], references: [id])
+  leases          Lease[]
+  payments        Payment[]
+  propertiesOwned Property[] @relation("OwnerProperties")
+  purchases       Sale[]
+  role            Role       @relation(fields: [roleId], references: [id])
+
+  @@index([roleId], map: "User_roleId_fkey")
 }
 
-///////////////////////
-// PROPERTY TYPE
-///////////////////////
-
 model PropertyType {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  createdAt DateTime @default(now())
-
+  id         Int        @id @default(autoincrement())
+  name       String     @unique
+  createdAt  DateTime   @default(now())
   properties Property[]
 }
 
-///////////////////////
-// PROPERTY
-///////////////////////
-
 model Property {
-  id          Int            @id @default(autoincrement())
-  title       String
-  description String?
-  location    String
-  price       Float
-  listingType ListingType
-  status      PropertyStatus @default(AVAILABLE)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
-  ownerId Int
-  owner   User @relation("OwnerProperties", fields: [ownerId], references: [id])
+  id             Int             @id @default(autoincrement())
+  title          String
+  description    String?
+  location       String
+  price          Float
+  listingType    ListingType
+  status         PropertyStatus  @default(AVAILABLE)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  ownerId        Int
   propertyTypeId Int
-  propertyType   PropertyType @relation(fields: [propertyTypeId], references: [id])
-  images    PropertyImage[]
-  features  Feature[]
-  leases    Lease[]
-  sales     Sale[]
-  favorites Favorite[]
+  favorites      Favorite[]
+  features       Feature[]
+  leases         Lease[]
+  owner          User            @relation("OwnerProperties", fields: [ownerId], references: [id])
+  propertyType   PropertyType    @relation(fields: [propertyTypeId], references: [id])
+  images         PropertyImage[]
+  sales          Sale[]
+
   @@index([propertyTypeId])
   @@index([ownerId])
 }
-
-///////////////////////
-// PROPERTY IMAGES
-///////////////////////
 
 model PropertyImage {
   id         Int      @id @default(autoincrement())
   url        String
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id])
-}
 
-///////////////////////
-// FEATURES
-///////////////////////
+  @@index([propertyId], map: "PropertyImage_propertyId_fkey")
+}
 
 model Feature {
   id         Int      @id @default(autoincrement())
   name       String
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id])
-}
 
-///////////////////////
-// FAVORITES
-///////////////////////
+  @@index([propertyId], map: "Feature_propertyId_fkey")
+}
 
 model Favorite {
   id         Int      @id @default(autoincrement())
   userId     Int
   propertyId Int
-
-  user     User     @relation(fields: [userId], references: [id])
-  property Property @relation(fields: [propertyId], references: [id])
+  property   Property @relation(fields: [propertyId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
 
   @@unique([userId, propertyId])
+  @@index([propertyId], map: "Favorite_propertyId_fkey")
 }
-
-///////////////////////
-// LEASE (RENT)                                                                                                                                                                                            
-///////////////////////
 
 model Lease {
-  id          Int      @id @default(autoincrement())
-  propertyId  Int
-  tenantId    Int
-  startDate   DateTime
-  endDate     DateTime
-  rentAmount  Float
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  property Property @relation(fields: [propertyId], references: [id])
-  tenant   User     @relation(fields: [tenantId], references: [id])
-  payments Payment[]
+  id         Int       @id @default(autoincrement())
+  propertyId Int
+  tenantId   Int
+  startDate  DateTime
+  endDate    DateTime
+  rentAmount Float
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  property   Property  @relation(fields: [propertyId], references: [id])
+  tenant     User      @relation(fields: [tenantId], references: [id])
+  payments   Payment[]
+
+  @@index([propertyId], map: "Lease_propertyId_fkey")
+  @@index([tenantId], map: "Lease_tenantId_fkey")
 }
 
-///////////////////////
-// SALE (BUYING)
-///////////////////////
-
 model Sale {
-  id          Int      @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   propertyId  Int
   buyerId     Int
   price       Float
   documentUrl String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  property Property @relation(fields: [propertyId], references: [id])
-  buyer    User     @relation(fields: [buyerId], references: [id])
-  payments Payment[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  payments    Payment[]
+  buyer       User      @relation(fields: [buyerId], references: [id])
+  property    Property  @relation(fields: [propertyId], references: [id])
+
+  @@index([buyerId], map: "Sale_buyerId_fkey")
+  @@index([propertyId], map: "Sale_propertyId_fkey")
 }
 
-///////////////////////
-// PAYMENTS
-///////////////////////
-
 model Payment {
-  id         Int           @id @default(autoincrement())
-  amount     Float
-  method     PaymentMethod
-  status     PaymentStatus @default(PENDING)
-  leaseId    Int?
-  saleId     Int?
-  userId     Int
-  dueDate    DateTime?
-  paidAt     DateTime?
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-  user  User   @relation(fields: [userId], references: [id])
-  lease Lease? @relation(fields: [leaseId], references: [id])
-  sale  Sale?  @relation(fields: [saleId], references: [id])
+  id        Int           @id @default(autoincrement())
+  amount    Float
+  method    PaymentMethod
+  status    PaymentStatus @default(PENDING)
+  leaseId   Int?
+  saleId    Int?
+  userId    Int
+  dueDate   DateTime?
+  paidAt    DateTime?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  lease     Lease?        @relation(fields: [leaseId], references: [id])
+  sale      Sale?         @relation(fields: [saleId], references: [id])
+  user      User          @relation(fields: [userId], references: [id])
+
+  @@index([leaseId], map: "Payment_leaseId_fkey")
+  @@index([saleId], map: "Payment_saleId_fkey")
+  @@index([userId], map: "Payment_userId_fkey")
+}
+
+enum PropertyStatus {
+  AVAILABLE
+  RENTED
+  SOLD
+}
+
+enum ListingType {
+  RENT
+  SALE
+}
+
+enum PaymentMethod {
+  CASH
+  MOBILE_MONEY
+  BANK
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  LATE
 }

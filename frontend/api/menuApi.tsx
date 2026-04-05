@@ -39,3 +39,8 @@ export const updateMenu = async (id: number, data: Partial<Menu>): Promise<Menu>
 export const deleteMenu = async (id: number): Promise<void> => {
   await api.delete(`/menus/${id}`);
 };
+
+export const getPermissionMenusByRole = async (roleId: number): Promise<Menu[]> => {
+  const response = await api.get(`/menus/permissions/${roleId}`);
+  return response.data;
+};

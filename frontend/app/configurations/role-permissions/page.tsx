@@ -34,10 +34,6 @@ const PERMISSION_COLUMNS = [
   { key: 'canAdd', label: 'Add' },
   { key: 'canEdit', label: 'Edit' },
   { key: 'canDelete', label: 'Delete' },
-  { key: 'canAssign', label: 'Assign' },
-  { key: 'canApprove', label: 'Approve' },
-  { key: 'canGenerate', label: 'Generate' },
-  { key: 'canLost', label: 'Lost' },
 ] as const;
 
 export default function RolePermissionsPage() {
@@ -100,10 +96,6 @@ export default function RolePermissionsPage() {
             canAdd: existingMenuPerm?.canAdd || false,
             canEdit: existingMenuPerm?.canEdit || false,
             canDelete: existingMenuPerm?.canDelete || false,
-            canAssign: existingMenuPerm?.canAssign || false,
-            canApprove: existingMenuPerm?.canApprove || false,
-            canGenerate: existingMenuPerm?.canGenerate || false,
-            canLost: existingMenuPerm?.canLost || false,
             subMenus: m.subMenus?.map(sm => {
               const existingSubPerm = existingMenuPerm?.subMenus?.find(psm => psm.subMenuId === sm.id)
               return {
@@ -112,10 +104,6 @@ export default function RolePermissionsPage() {
                 canAdd: existingSubPerm?.canAdd || false,
                 canEdit: existingSubPerm?.canEdit || false,
                 canDelete: existingSubPerm?.canDelete || false,
-                canAssign: existingSubPerm?.canAssign || false,
-                canApprove: existingSubPerm?.canApprove || false,
-                canGenerate: existingSubPerm?.canGenerate || false,
-                canLost: existingSubPerm?.canLost || false,
               }
             }) || []
           }
@@ -229,11 +217,11 @@ export default function RolePermissionsPage() {
                 <TableBody>
                   {isLoadingDB && !selectedRoleId ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="h-32 text-center text-muted-foreground">Select a Role to view and modify permission architectures.</TableCell>
+                      <TableCell colSpan={5} className="h-32 text-center text-muted-foreground">Select a Role to view and modify permission architectures.</TableCell>
                     </TableRow>
                   ) : isLoadingDB ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="h-32 text-center">
+                      <TableCell colSpan={5} className="h-32 text-center">
                         <div className="flex justify-center items-center gap-2 text-muted-foreground">
                           <Loader2Icon className="h-5 w-5 animate-spin" /> Loading role architecture mapping...
                         </div>
@@ -241,7 +229,7 @@ export default function RolePermissionsPage() {
                     </TableRow>
                   ) : matrix.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9} className="h-64 text-center">
+                      <TableCell colSpan={5} className="h-64 text-center">
                         <div className="flex flex-col items-center justify-center text-muted-foreground">
                           <ShieldAlertIcon className="h-10 w-10 mb-2 opacity-20" />
                           <p>No navigation menus are established yet to map permissions against.</p>
@@ -270,8 +258,8 @@ export default function RolePermissionsPage() {
                             ))}
                           </TableRow>
 
-                          {/* Sub Menu Rows */}
-                          {globalMenu.subMenus?.map((subGlobal) => {
+                          {/* Sub Menu Rows - Only displayed if parent "View" is enabled */}
+                          {mState.canView && globalMenu.subMenus?.map((subGlobal) => {
                             const subState = mState.subMenus?.find(x => x.subMenuId === subGlobal.id)
                             if (!subState) return null;
 

@@ -58,3 +58,13 @@ export const updateUser = async (id: number, data: UpdateUserData): Promise<User
 export const deleteUser = async (id: number): Promise<void> => {
   await api.delete(`/users/${id}`);
 };
+
+export interface LoginResponse {
+  message: string;
+  user: User;
+}
+
+export const loginUser = async (email: string, password: string): Promise<LoginResponse> => {
+  const response = await api.post("/users/login", { email, password });
+  return response.data;
+};

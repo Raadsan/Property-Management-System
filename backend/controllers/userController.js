@@ -139,3 +139,50 @@ export const deleteUser = async (req, res) => {
     res.status(500).json({ message: "Error deleting user", error: error.message });
   }
 };
+
+// @desc    Login a user
+// @route   POST /api/users/login
+export const loginUser = async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ message: "Please provide email and password" });
+  }
+
+  try {
+    // 1. Find user by email
+    const user = await prisma.user.findUnique({
+      where: { email },
+      include: {
+        role: {
+          select: { name: true }
+        }
+      }
+    });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // 2. Check if user is active
+    if (user.status !== "ACTIVE") {
+      return res.status(403).json({ message: "Your account is currently disabled. Contact administrator." });
+    }
+
+    // 3. Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid email or password" });
+    }
+
+    // 4. Return success (and user data without password)
+    const { password: _, ...userWithoutPassword } = user;
+    res.status(200).json({
+      message: "Login successful",
+      user: userWithoutPassword
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: "Error during login process", error: error.message });
+  }
+};

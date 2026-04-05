@@ -4,11 +4,13 @@ import {
   getMenus, 
   getMenuById, 
   updateMenu, 
-  deleteMenu 
+  deleteMenu,
+  getPermissionMenusByRole
 } from '../controllers/menuController.js';
 
 const router = express.Router();
 
+router.get('/permissions/:roleId', getPermissionMenusByRole);
 router.post('/', createMenu);
 router.get('/', getMenus);
 router.get('/:id', getMenuById);

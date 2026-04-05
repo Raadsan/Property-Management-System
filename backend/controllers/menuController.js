@@ -92,3 +92,55 @@ export const deleteMenu = async (req, res) => {
         res.status(500).json({ message: "Error deleting menu", error: error.message });
     }
 };
+
+// @desc    Get menus based on role permissions
+// @route   GET /api/menus/permissions/:roleId
+export const getPermissionMenusByRole = async (req, res) => {
+    const { roleId } = req.params;
+    try {
+        const id = parseInt(roleId);
+        
+        if (isNaN(id)) {
+            console.error("Invalid Role ID received:", roleId);
+            return res.status(400).json({ message: "Invalid Role ID" });
+        }
+
+        // 1. Find the RolePermissions object for this role first
+        const rolePerms = await prisma.rolePermissions.findUnique({
+            where: { roleId: id }
+        });
+
+        if (!rolePerms) {
+            return res.status(200).json([]); // No permissions defined yet
+        }
+
+        // 2. Get all menus and include their specific role permissions
+        const menus = await prisma.menu.findMany({
+            include: {
+                roleMenus: {
+                    where: { rolePermissionsId: rolePerms.id }
+                },
+                subMenus: {
+                    include: {
+                        roleSubMenus: {
+                            where: { roleMenuAccess: { rolePermissionsId: rolePerms.id } }
+                        }
+                    }
+                }
+            }
+        });
+
+        // 3. Filter out menus and submenus based on canView
+        const allowedMenus = menus
+            .filter(m => m.roleMenus && m.roleMenus.length > 0 && m.roleMenus[0].canView)
+            .map(m => ({
+                ...m,
+                subMenus: m.subMenus.filter(sm => sm.roleSubMenus && sm.roleSubMenus.length > 0 && sm.roleSubMenus[0].canView)
+            }));
+
+        res.status(200).json(allowedMenus);
+
+    } catch (error) {
+        res.status(500).json({ message: "Error fetching permission menus", error: error.message });
+    }
+};

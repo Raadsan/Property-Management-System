@@ -15,8 +15,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
 import * as Icons from "lucide-react"
-import { getMenus } from "@/api/menuApi"
+import { getPermissionMenusByRole } from "@/api/menuApi"
 
 const DynamicIcon = ({ name }: { name?: string }) => {
   if (!name) return null;
@@ -26,16 +27,37 @@ const DynamicIcon = ({ name }: { name?: string }) => {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [navMain, setNavMain] = React.useState<any[]>([])
-  
+  const router = useRouter()
+
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    router.push("/login");
+  };
+
   React.useEffect(() => {
     const fetchNav = async () => {
       try {
-        const menus = await getMenus();
+        const userStr = localStorage.getItem("user");
+        if (!userStr) {
+          router.push("/login");
+          return;
+        }
+
+        const user = JSON.parse(userStr);
+        if (!user || !user.roleId) {
+          console.warn("User roleId not found, redirecting to login");
+          localStorage.removeItem("user");
+          router.push("/login");
+          return;
+        }
+
+        const menus = await getPermissionMenusByRole(user.roleId);
+        
         const mapped = menus.map(m => ({
           title: m.title,
           url: m.url || "#",
           icon: m.icon ? <DynamicIcon name={m.icon} /> : undefined,
-          items: m.isCollapsible && m.subMenus && m.subMenus.length > 0 
+          items: m.isCollapsible && m.subMenus && m.subMenus.length > 0
             ? m.subMenus.map(sm => ({ title: sm.title, url: sm.url }))
             : undefined
         }));
@@ -45,7 +67,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       }
     }
     fetchNav()
-  }, [])
+  }, [router])
 
   return (
     <Sidebar collapsible="offcanvas" {...props}>
@@ -76,7 +98,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter className="border-t p-2">
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
+            <SidebarMenuButton 
+              onClick={handleLogout}
+              className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            >
               <Icons.LogOutIcon className="size-4" />
               <span>Log out</span>
             </SidebarMenuButton>

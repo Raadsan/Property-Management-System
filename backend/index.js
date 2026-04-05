@@ -9,9 +9,9 @@ import LeaseRoute from "./Routes/LeaseRoute.js";
 import saleRoute from "./Routes/saleRoute.js";
 import paymentRoute from "./Routes/paymentRoute.js";
 
-
-
 import favoriteRoute from "./Routes/favoriteRoute.js";
+import menuRoute from "./Routes/menuRoute.js";
+import rolePermissionsRoute from "./Routes/rolePermissionsRoute.js";
 
 import path from 'path';
 import cors from 'cors';
@@ -39,9 +39,9 @@ app.use('/api/leases', LeaseRoute);
 app.use('/api/sales', saleRoute);
 app.use('/api/payments', paymentRoute);
 
-
-
 app.use('/api/favorites', favoriteRoute);
+app.use('/api/menus', menuRoute);
+app.use('/api/role-permissions', rolePermissionsRoute);
 
 
 

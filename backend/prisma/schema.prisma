@@ -41,6 +41,84 @@ model Role {
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
   users           User[]
+  rolePermissions RolePermissions?
+}
+
+model Menu {
+  id            Int              @id @default(autoincrement())
+  title         String           @unique
+  icon          String?
+  url           String?
+  isCollapsible Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  roleMenus     RoleMenuAccess[]
+  subMenus      SubMenu[]
+}
+
+model SubMenu {
+  id           Int                 @id @default(autoincrement())
+  title        String
+  url          String
+  menuId       Int
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  roleSubMenus RoleSubMenuAccess[]
+  menu         Menu                @relation(fields: [menuId], references: [id], onDelete: Cascade)
+
+  @@index([menuId], map: "SubMenu_menuId_fkey")
+}
+
+model RolePermissions {
+  id        Int              @id @default(autoincrement())
+  roleId    Int              @unique
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  menus     RoleMenuAccess[]
+  role      Role             @relation(fields: [roleId], references: [id])
+}
+
+model RoleMenuAccess {
+  id                Int                 @id @default(autoincrement())
+  rolePermissionsId Int
+  menuId            Int
+  canView           Boolean             @default(true)
+  canAdd            Boolean             @default(false)
+  canEdit           Boolean             @default(false)
+  canDelete         Boolean             @default(false)
+  canAssign         Boolean             @default(false)
+  canApprove        Boolean             @default(false)
+  canGenerate       Boolean             @default(false)
+  canLost           Boolean             @default(false)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  menu              Menu            @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  rolePermissions   RolePermissions @relation(fields: [rolePermissionsId], references: [id], onDelete: Cascade)
+  subMenus          RoleSubMenuAccess[]
+
+  @@unique([rolePermissionsId, menuId])
+  @@index([menuId], map: "RoleMenuAccess_menuId_fkey")
+}
+
+model RoleSubMenuAccess {
+  id               Int            @id @default(autoincrement())
+  roleMenuAccessId Int
+  subMenuId        Int
+  canView          Boolean        @default(true)
+  canAdd           Boolean        @default(false)
+  canEdit          Boolean        @default(false)
+  canDelete        Boolean        @default(false)
+  canAssign        Boolean        @default(false)
+  canApprove       Boolean        @default(false)
+  canGenerate      Boolean        @default(false)
+  canLost          Boolean        @default(false)
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  roleMenuAccess   RoleMenuAccess @relation(fields: [roleMenuAccessId], references: [id], onDelete: Cascade)
+  subMenu          SubMenu        @relation(fields: [subMenuId], references: [id], onDelete: Cascade)
+
+  @@unique([roleMenuAccessId, subMenuId])
+  @@index([subMenuId], map: "RoleSubMenuAccess_subMenuId_fkey")
 }
 
 ///////////////////////

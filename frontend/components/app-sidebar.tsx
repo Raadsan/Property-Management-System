@@ -15,78 +15,38 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import {
-  LayoutDashboardIcon,
-  Building2Icon,
-  UsersIcon,
-  FileSignatureIcon,
-  WrenchIcon,
-  Settings2Icon,
-  CircleHelpIcon,
-  SearchIcon,
-  WalletIcon,
-  FileBarChartIcon,
-  ShieldCheckIcon,
-  HomeIcon,
-  PlusCircleIcon,
-  CommandIcon,
-  LogOutIcon
-} from "lucide-react"
+import * as Icons from "lucide-react"
+import { getMenus } from "@/api/menuApi"
 
-const data = {
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: <LayoutDashboardIcon />,
-    },
-    {
-      title: "Registrations",
-      url: "#",
-      icon: <Building2Icon />,
-      items: [
-        {
-          title: "Categories",
-          url: "/dashboard/categories",
-        },
-        {
-          title: "Properties",
-          url: "/dashboard/properties",
-        },
-      ],
-    },
-    {
-      title: "Configurations",
-      url: "#",
-      icon: <Settings2Icon />,
-      items: [
-        {
-          title: "Roles",
-          url: "/dashboard/roles",
-        },
-        {
-          title: "Users",
-          url: "/dashboard/users",
-        },
-        {
-          title: "Menu",
-          url: "/dashboard/menu",
-        },
-        {
-          title: "Role-Permission",
-          url: "/dashboard/role-permissions",
-        },
-      ],
-    },
-    {
-      title: "Reports",
-      url: "/dashboard/reports",
-      icon: <FileBarChartIcon />,
-    },
-  ],
+const DynamicIcon = ({ name }: { name?: string }) => {
+  if (!name) return null;
+  const LucideIcon = (Icons as any)[name];
+  return LucideIcon ? <LucideIcon /> : null;
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const [navMain, setNavMain] = React.useState<any[]>([])
+  
+  React.useEffect(() => {
+    const fetchNav = async () => {
+      try {
+        const menus = await getMenus();
+        const mapped = menus.map(m => ({
+          title: m.title,
+          url: m.url || "#",
+          icon: m.icon ? <DynamicIcon name={m.icon} /> : undefined,
+          items: m.isCollapsible && m.subMenus && m.subMenus.length > 0 
+            ? m.subMenus.map(sm => ({ title: sm.title, url: sm.url }))
+            : undefined
+        }));
+        setNavMain(mapped);
+      } catch (error) {
+        console.error("Failed to fetch dynamic menus:", error)
+      }
+    }
+    fetchNav()
+  }, [])
+
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
@@ -97,7 +57,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
               className="data-[slot=sidebar-menu-button]:p-1.5!"
             >
               <a href="#">
-                <CommandIcon className="size-5!" />
+                <Icons.CommandIcon className="size-5!" />
                 <span className="text-base font-semibold">PropManage PMS</span>
               </a>
             </SidebarMenuButton>
@@ -105,13 +65,19 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        {navMain.length > 0 ? (
+          <NavMain items={navMain} />
+        ) : (
+          <div className="p-4 text-xs text-muted-foreground flex items-center gap-2">
+            <Icons.Loader2Icon className="h-3 w-3 animate-spin" /> Loading Navigation...
+          </div>
+        )}
       </SidebarContent>
       <SidebarFooter className="border-t p-2">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground">
-              <LogOutIcon className="size-4" />
+              <Icons.LogOutIcon className="size-4" />
               <span>Log out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

@@ -47,11 +47,11 @@ const data = {
       items: [
         {
           title: "Categories",
-          url: "/categories",
+          url: "/dashboard/categories",
         },
         {
           title: "Properties",
-          url: "/properties",
+          url: "/dashboard/properties",
         },
       ],
     },
@@ -62,25 +62,25 @@ const data = {
       items: [
         {
           title: "Roles",
-          url: "/roles",
+          url: "/dashboard/roles",
         },
         {
           title: "Users",
-          url: "/users",
+          url: "/dashboard/users",
         },
         {
           title: "Menu",
-          url: "/menu",
+          url: "/dashboard/menu",
         },
         {
           title: "Role-Permission",
-          url: "/role-permissions",
+          url: "/dashboard/role-permissions",
         },
       ],
     },
     {
       title: "Reports",
-      url: "/reports",
+      url: "/dashboard/reports",
       icon: <FileBarChartIcon />,
     },
   ],

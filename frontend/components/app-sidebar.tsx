@@ -41,24 +41,47 @@ const data = {
       icon: <LayoutDashboardIcon />,
     },
     {
-      title: "Properties",
-      url: "/properties",
+      title: "Registrations",
+      url: "#",
       icon: <Building2Icon />,
+      items: [
+        {
+          title: "Categories",
+          url: "/categories",
+        },
+        {
+          title: "Properties",
+          url: "/properties",
+        },
+      ],
     },
     {
-      title: "Tenants",
-      url: "/tenants",
-      icon: <UsersIcon />,
+      title: "Configurations",
+      url: "#",
+      icon: <Settings2Icon />,
+      items: [
+        {
+          title: "Roles",
+          url: "/roles",
+        },
+        {
+          title: "Users",
+          url: "/users",
+        },
+        {
+          title: "Menu",
+          url: "/menu",
+        },
+        {
+          title: "Role-Permission",
+          url: "/role-permissions",
+        },
+      ],
     },
     {
-      title: "Leases",
-      url: "/leases",
-      icon: <FileSignatureIcon />,
-    },
-    {
-      title: "Maintenance",
-      url: "/maintenance",
-      icon: <WrenchIcon />,
+      title: "Reports",
+      url: "/reports",
+      icon: <FileBarChartIcon />,
     },
   ],
 }

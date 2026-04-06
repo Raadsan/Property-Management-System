@@ -84,7 +84,7 @@ export default function PropertiesPage() {
       setCategories(catsData)
       
       // Filter out only active users or specific roles if needed, currently grabbing all users
-      setOwners(usersData)
+      setOwners(usersData.filter(u => u.role?.name === "Owner" || u.status === "Owner"))
     } catch (error) {
       toast.error("Failed to load property data")
     } finally {

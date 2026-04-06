@@ -11,20 +11,28 @@ export const createLease = async (req, res) => {
   }
 
   try {
-    const lease = await prisma.lease.create({
-      data: {
-        propertyId: parseInt(propertyId),
-        tenantId: parseInt(tenantId),
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        rentAmount: parseFloat(rentAmount)
-      },
-      include: {
-        property: { include: { images: true, propertyType: true } },
+    const lease = await prisma.$transaction(async (tx) => {
+      const newLease = await tx.lease.create({
+        data: {
+          propertyId: parseInt(propertyId),
+          tenantId: parseInt(tenantId),
+          startDate: new Date(startDate),
+          endDate: new Date(endDate),
+          rentAmount: parseFloat(rentAmount)
+        },
+        include: {
+          property: { include: { images: true, propertyType: true } },
+          tenant: true
+        }
+      });
 
-        tenant: true
+      // Automatically update property status to RENTED
+      await tx.property.update({
+        where: { id: parseInt(propertyId) },
+        data: { status: 'RENTED' }
+      });
 
-      }
+      return newLease;
     });
 
     res.status(201).json({ message: "Lease created successfully", lease });

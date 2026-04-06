@@ -17,17 +17,27 @@ export const createSale = async (req, res) => {
   }
 
   try {
-    const sale = await prisma.sale.create({
-      data: {
-        propertyId: parseInt(propertyId),
-        buyerId: parseInt(buyerId),
-        price: parseFloat(price),
-        documentUrl: documentUrl
-      },
-      include: {
-        property: { include: { images: true, propertyType: true, features: true } },
-        buyer: true
-      }
+    const sale = await prisma.$transaction(async (tx) => {
+      const newSale = await tx.sale.create({
+        data: {
+          propertyId: parseInt(propertyId),
+          buyerId: parseInt(buyerId),
+          price: parseFloat(price),
+          documentUrl: documentUrl
+        },
+        include: {
+          property: { include: { images: true, propertyType: true, features: true } },
+          buyer: true
+        }
+      });
+
+      // Automatically update property status to SOLD
+      await tx.property.update({
+        where: { id: parseInt(propertyId) },
+        data: { status: 'SOLD' }
+      });
+
+      return newSale;
     });
 
     res.status(201).json({ message: "Property sale recorded successfully", sale });

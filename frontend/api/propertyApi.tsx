@@ -24,7 +24,7 @@ export interface Property {
   propertyTypeId: number;
   createdAt: string;
   updatedAt: string;
-  
+
   images?: PropertyImage[];
   features?: PropertyFeature[];
   propertyType?: { name: string };
@@ -38,6 +38,11 @@ export const getProperties = async (): Promise<Property[]> => {
 
 export const getPropertyById = async (id: number): Promise<Property> => {
   const response = await api.get(`/properties/${id}`);
+  return response.data;
+};
+
+export const bookProperty = async (id: number, data: { userId: number, phone: string }): Promise<any> => {
+  const response = await api.post(`/properties/${id}/book`, data);
   return response.data;
 };
 

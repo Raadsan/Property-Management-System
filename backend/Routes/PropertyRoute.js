@@ -4,7 +4,8 @@ import {
   getProperties, 
   getPropertyById, 
   updateProperty, 
-  deleteProperty 
+  deleteProperty,
+  bookNow
 } from '../controllers/PropertyController.js';
 import { upload } from '../lib/upload.js';
 
@@ -15,5 +16,6 @@ router.get('/', getProperties);
 router.get('/:id', getPropertyById);
 router.patch('/:id', upload.array('images', 10), updateProperty);
 router.delete('/:id', deleteProperty);
+router.post('/:id/book', bookNow);
 
 export default router;

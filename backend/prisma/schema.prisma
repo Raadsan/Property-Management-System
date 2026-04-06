@@ -98,10 +98,9 @@ model User {
   password        String
   photo           String?
   favorites       Favorite[]
-  leases          Lease[]
+  bookings        Booking[]
   payments        Payment[]
   propertiesOwned Property[] @relation("OwnerProperties")
-  purchases       Sale[]
   role            Role       @relation(fields: [roleId], references: [id])
 
   @@index([roleId], map: "User_roleId_fkey")
@@ -120,7 +119,7 @@ model Property {
   description    String?
   location       String
   price          Float
-  listingType    ListingType
+  listingType    ListingType     @default(BOOKING)
   status         PropertyStatus  @default(AVAILABLE)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
@@ -128,11 +127,10 @@ model Property {
   propertyTypeId Int
   favorites      Favorite[]
   features       Feature[]
-  leases         Lease[]
+  bookings       Booking[]
   owner          User            @relation("OwnerProperties", fields: [ownerId], references: [id])
   propertyType   PropertyType    @relation(fields: [propertyTypeId], references: [id])
   images         PropertyImage[]
-  sales          Sale[]
 
   @@index([propertyTypeId])
   @@index([ownerId])
@@ -167,37 +165,28 @@ model Favorite {
   @@index([propertyId], map: "Favorite_propertyId_fkey")
 }
 
-model Lease {
-  id         Int       @id @default(autoincrement())
+model Booking {
+  id         Int           @id @default(autoincrement())
   propertyId Int
-  tenantId   Int
+  userId     Int
   startDate  DateTime
   endDate    DateTime
-  rentAmount Float
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  property   Property  @relation(fields: [propertyId], references: [id])
-  tenant     User      @relation(fields: [tenantId], references: [id])
+  price      Float         @default(100)
+  status     BookingStatus @default(PENDING)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  property   Property      @relation(fields: [propertyId], references: [id])
+  user       User          @relation(fields: [userId], references: [id])
   payments   Payment[]
 
-  @@index([propertyId], map: "Lease_propertyId_fkey")
-  @@index([tenantId], map: "Lease_tenantId_fkey")
+  @@index([propertyId], map: "Booking_propertyId_fkey")
+  @@index([userId], map: "Booking_userId_fkey")
 }
 
-model Sale {
-  id          Int       @id @default(autoincrement())
-  propertyId  Int
-  buyerId     Int
-  price       Float
-  documentUrl String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  payments    Payment[]
-  buyer       User      @relation(fields: [buyerId], references: [id])
-  property    Property  @relation(fields: [propertyId], references: [id])
-
-  @@index([buyerId], map: "Sale_buyerId_fkey")
-  @@index([propertyId], map: "Sale_propertyId_fkey")
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
 }
 
 model Payment {
@@ -205,31 +194,26 @@ model Payment {
   amount    Float
   method    PaymentMethod
   status    PaymentStatus @default(PENDING)
-  leaseId   Int?
-  saleId    Int?
+  bookingId Int?
   userId    Int
   dueDate   DateTime?
   paidAt    DateTime?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
-  lease     Lease?        @relation(fields: [leaseId], references: [id])
-  sale      Sale?         @relation(fields: [saleId], references: [id])
+  booking   Booking?      @relation(fields: [bookingId], references: [id])
   user      User          @relation(fields: [userId], references: [id])
 
-  @@index([leaseId], map: "Payment_leaseId_fkey")
-  @@index([saleId], map: "Payment_saleId_fkey")
+  @@index([bookingId], map: "Payment_bookingId_fkey")
   @@index([userId], map: "Payment_userId_fkey")
 }
 
 enum PropertyStatus {
   AVAILABLE
-  RENTED
-  SOLD
+  BOOKED
 }
 
 enum ListingType {
-  RENT
-  SALE
+  BOOKING
 }
 
 enum PaymentMethod {

@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma.js";
 // @route   POST /api/payments
 export const createPayment = async (req, res) => {
   console.log("📥 CREATE PAYMENT REQUEST:", req.body);
-  const { amount, method, status, leaseId, saleId, userId, dueDate, paidAt } = req.body || {};
+  const { amount, method, status, bookingId, userId, dueDate, paidAt } = req.body || {};
 
   if (!amount || !method || !userId) {
     return res.status(400).json({ message: "amount, method, and userId are required." });
@@ -16,23 +16,17 @@ export const createPayment = async (req, res) => {
         amount: parseFloat(amount),
         method,
         status,
-        leaseId: leaseId ? parseInt(leaseId) : null,
-        saleId: saleId ? parseInt(saleId) : null,
+        bookingId: bookingId ? parseInt(bookingId) : null,
         userId: parseInt(userId),
         dueDate: dueDate ? new Date(dueDate) : null,
         paidAt: paidAt ? new Date(paidAt) : null
       },
       include: {
         user: { select: { name: true, phone: true } },
-        lease: { 
-          include: { 
-            property: { select: { title: true } } 
-          } 
-        },
-        sale: { 
-          include: { 
-            property: { select: { title: true } } 
-          } 
+        booking: {
+          include: {
+            property: { select: { title: true } }
+          }
         }
       }
     });
@@ -50,8 +44,7 @@ export const getPayments = async (req, res) => {
     const payments = await prisma.payment.findMany({
       include: {
         user: { select: { name: true, email: true } },
-        lease: { select: { id: true, property: { select: { title: true } } } },
-        sale: { select: { id: true, property: { select: { title: true } } } }
+        booking: { select: { id: true, property: { select: { title: true } } } }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -68,10 +61,9 @@ export const getPaymentById = async (req, res) => {
   try {
     const payment = await prisma.payment.findUnique({
       where: { id: parseInt(id) },
-      include: { 
-        user: true, 
-        lease: { include: { property: true } }, 
-        sale: { include: { property: true } } 
+      include: {
+        user: true,
+        booking: { include: { property: true } }
       }
     });
 
@@ -94,8 +86,7 @@ export const updatePayment = async (req, res) => {
   try {
     const data = { ...updateFields };
     if (data.amount) data.amount = parseFloat(data.amount);
-    if (data.leaseId) data.leaseId = parseInt(data.leaseId);
-    if (data.saleId) data.saleId = parseInt(data.saleId);
+    if (data.bookingId) data.bookingId = parseInt(data.bookingId);
     if (data.userId) data.userId = parseInt(data.userId);
     if (data.dueDate) data.dueDate = new Date(data.dueDate);
     if (data.paidAt) data.paidAt = new Date(data.paidAt);

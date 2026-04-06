@@ -1,13 +1,15 @@
 import { prisma } from "../lib/prisma.js";
+import axios from "axios";
 
 // @desc    Create a new property
 // @route   POST /api/properties
 export const createProperty = async (req, res) => {
   console.log("📥 CREATE PROPERTY REQUEST:", { body: req.body, headers: req.headers['content-type'] });
-  const { 
-    title, description, location, price, listingType, 
-    ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures 
+  const {
+    title, description, location, price,
+    ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures
   } = req.body || {};
+  const listingType = "BOOKING"; // Force all new properties to be BOOKING type
 
   // Combine images from body (URLs) and files (uploads)
   let images = [];
@@ -32,8 +34,8 @@ export const createProperty = async (req, res) => {
     }
   }
 
-  if (!title || !location || !price || !listingType || !ownerId || !propertyTypeId) {
-    return res.status(400).json({ message: "Missing required fields (title, location, price, listingType, ownerId, propertyTypeId)." });
+  if (!title || !location || !price || !ownerId || !propertyTypeId) {
+    return res.status(400).json({ message: "Missing required fields (title, location, price, ownerId, propertyTypeId)." });
   }
 
   try {
@@ -55,9 +57,9 @@ export const createProperty = async (req, res) => {
           create: features.map(name => ({ name }))
         } : undefined
       },
-      include: { 
-        images: { orderBy: { id: 'desc' } }, 
-        features: true 
+      include: {
+        images: { orderBy: { id: 'desc' } },
+        features: true
       }
     });
 
@@ -133,7 +135,7 @@ export const updateProperty = async (req, res) => {
       const newImages = req.files.map(file => ({ url: `/uploads/${file.filename}` }));
       updateData.images = {
         // This will DELETE all existing images for this property and CREATE the new ones
-        deleteMany: {}, 
+        deleteMany: {},
         create: newImages
       };
     }
@@ -153,7 +155,7 @@ export const updateProperty = async (req, res) => {
       }
 
       updateData.features = {
-        deleteMany: {}, 
+        deleteMany: {},
         create: finalFeatures.map(name => ({ name }))
       };
     }
@@ -161,7 +163,7 @@ export const updateProperty = async (req, res) => {
     const updatedProperty = await prisma.property.update({
       where: { id: parseInt(id) },
       data: updateData,
-      include: { 
+      include: {
         images: { orderBy: { id: 'desc' } },
         features: true
       }
@@ -194,5 +196,93 @@ export const deleteProperty = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
     res.status(500).json({ message: "Error deleting property", error: error.message });
+  }
+};
+
+// @desc    Book a property with Wafi payment
+// @route   POST /api/properties/:id/book
+export const bookNow = async (req, res) => {
+  const { id } = req.params;
+  const { userId, phone } = req.body;
+
+  if (!userId || !phone) {
+    return res.status(400).json({ message: "Missing required fields: userId, phone" });
+  }
+
+  try {
+    const propertyId = parseInt(id);
+    const property = await prisma.property.findUnique({ where: { id: propertyId } });
+    if (!property) {
+      return res.status(404).json({ message: "Property not found" });
+    }
+    if (property.status !== "AVAILABLE") {
+      return res.status(400).json({ message: "Property is no longer available" });
+    }
+
+    // Process $100 Payment with Wafi API
+    const waafiEndpoint = 'https://api.waafipay.net/asm';
+    const payload = {
+      schemaVersion: "1.0",
+      requestId: Date.now().toString(),
+      timestamp: new Date().toISOString(),
+      channelName: "WEB",
+      serviceName: "API_PURCHASE",
+      serviceParams: {
+        merchantUid: process.env.WAAFI_MERCHANT_UID,
+        apiUserId: process.env.WAAFI_API_USER_ID,
+        apiKey: process.env.WAAFI_API_KEY,
+        paymentMethod: "mwallet_account",
+        payerInfo: { accountNo: phone },
+        transactionInfo: {
+          referenceId: "BOOK-" + Date.now(),
+          invoiceId: "INV-" + Date.now(),
+          amount: "100", // Fixed $100
+          currency: "USD",
+          description: `Booking Fee for Property ${property.title}`
+        }
+      }
+    };
+
+    const wafiResponse = await axios.post(waafiEndpoint, payload);
+    const wafiResult = wafiResponse.data;
+
+    // Waafi usually replies with responseCode "2001" on success
+    if (wafiResult.responseCode !== "2001" && wafiResult.responseMsg !== "RCS_SUCCESS") {
+       throw new Error(`Wafi Payment Failed: ${wafiResult.responseMsg}`);
+    }
+
+    // Create booking and update property in DB if Wafi payment succeeds
+    const booking = await prisma.$transaction(async (tx) => {
+      // Set the start and end dates programmatically so Prisma schema is happy
+      const now = new Date();
+      // Assume "Booking" holds the property for 30 days as a standard placeholder duration since front-end input was removed.
+      const futureDate = new Date();
+      futureDate.setDate(now.getDate() + 30);
+
+      const newBooking = await tx.booking.create({
+        data: {
+          propertyId,
+          userId: parseInt(userId),
+          startDate: now,
+          endDate: futureDate,
+          price: 100
+        }
+      });
+
+      // Update property to BOOKED
+      await tx.property.update({
+        where: { id: propertyId },
+        data: { status: 'BOOKED' }
+      });
+
+      return newBooking;
+    });
+
+    res.status(200).json({ message: "Booking and payment successful via Wafi", booking, paymentResult: wafiResult });
+  } catch (error) {
+    if (error.response && error.response.data) {
+        return res.status(500).json({ message: "Wafi API error", error: error.response.data });
+    }
+    res.status(500).json({ message: "Error processing booking", error: error.message });
   }
 };

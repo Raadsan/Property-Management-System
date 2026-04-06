@@ -5,8 +5,6 @@ import roleRoute from "./Routes/roleRoute.js";
 import userRoute from "./Routes/userRoute.js";
 import propertyTypeRoute from "./Routes/propertyTypeRoute.js";
 import PropertyRoute from "./Routes/PropertyRoute.js";
-import LeaseRoute from "./Routes/LeaseRoute.js";
-import saleRoute from "./Routes/saleRoute.js";
 import paymentRoute from "./Routes/paymentRoute.js";
 
 import favoriteRoute from "./Routes/favoriteRoute.js";
@@ -20,7 +18,7 @@ import cors from 'cors';
 const app = express();
 app.use(cors());
 app.use(express.json({ type: ['application/json', 'text/plain'] }));
-app.use(express.urlencoded({ extended: true }));    
+app.use(express.urlencoded({ extended: true }));
 
 // Serve static uploads
 app.use('/uploads', express.static('uploads'));
@@ -35,8 +33,6 @@ app.use('/api/roles', roleRoute);
 app.use('/api/users', userRoute);
 app.use('/api/property-types', propertyTypeRoute);
 app.use('/api/properties', PropertyRoute);
-app.use('/api/leases', LeaseRoute);
-app.use('/api/sales', saleRoute);
 app.use('/api/payments', paymentRoute);
 
 app.use('/api/favorites', favoriteRoute);

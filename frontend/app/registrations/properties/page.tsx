@@ -17,19 +17,20 @@ import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon, ImageIcon, HomeIcon, EyeI
 
 import { getPropertyTypes, Category } from "@/api/propertyTypeApi"
 import { getUsers, User } from "@/api/userApi"
-import { 
-  getProperties, 
-  createProperty, 
-  updateProperty, 
+import {
+  getProperties,
+  createProperty,
+  updateProperty,
   deleteProperty,
-  Property 
+  bookProperty,
+  Property
 } from "@/api/propertyApi"
 
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
   DialogFooter
 } from "@/components/ui/dialog"
@@ -48,29 +49,33 @@ export default function PropertiesPage() {
   const [properties, setProperties] = React.useState<Property[]>([])
   const [categories, setCategories] = React.useState<Category[]>([])
   const [owners, setOwners] = React.useState<User[]>([])
-  
+
   const [isLoading, setIsLoading] = React.useState(true)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentProperty, setCurrentProperty] = React.useState<Property | null>(null)
-  
+
   // View Details Modal State
   const [isViewModalOpen, setIsViewModalOpen] = React.useState(false)
   const [viewProperty, setViewProperty] = React.useState<Property | null>(null)
-  
+
   // Form State
   const [title, setTitle] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [location, setLocation] = React.useState("")
   const [price, setPrice] = React.useState("")
-  const [listingType, setListingType] = React.useState<string>("RENT")
   const [status, setStatus] = React.useState<string>("AVAILABLE")
-  const [propertyTypeId, setPropertyTypeId] = React.useState<string>("")
-  const [ownerId, setOwnerId] = React.useState<string>("")
+  const [propertyTypeId, setPropertyTypeId] = React.useState<string | undefined>(undefined)
+  const [ownerId, setOwnerId] = React.useState<string | undefined>(undefined)
   const [featuresInput, setFeaturesInput] = React.useState("")
-  
+
   // File State
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [selectedFiles, setSelectedFiles] = React.useState<File[]>([])
+
+  // Booking Modal State
+  const [isBookingModalOpen, setIsBookingModalOpen] = React.useState(false)
+  const [bookingProperty, setBookingProperty] = React.useState<Property | null>(null)
+  const [wafiPhone, setWafiPhone] = React.useState("")
 
   const loadData = async () => {
     setIsLoading(true)
@@ -82,9 +87,9 @@ export default function PropertiesPage() {
       ])
       setProperties(propsData)
       setCategories(catsData)
-      
-      // Filter out only active users or specific roles if needed, currently grabbing all users
-      setOwners(usersData.filter(u => u.role?.name === "Owner" || u.status === "Owner"))
+
+      // Show all users as potential owners
+      setOwners(usersData)
     } catch (error) {
       toast.error("Failed to load property data")
     } finally {
@@ -104,7 +109,7 @@ export default function PropertiesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title || !location || !price || !listingType || !ownerId || !propertyTypeId) {
+    if (!title || !location || !price || !ownerId || !propertyTypeId) {
       return toast.error("Please fill in all strictly required fields.")
     }
 
@@ -114,17 +119,17 @@ export default function PropertiesPage() {
       formData.append("description", description)
       formData.append("location", location)
       formData.append("price", price)
-      formData.append("listingType", listingType)
+      formData.append("listingType", "BOOKING") // Hardcoded defaults to schema
       formData.append("status", status)
       formData.append("ownerId", ownerId)
       formData.append("propertyTypeId", propertyTypeId)
-      
+
       // Convert comma separated features into an array string
       if (featuresInput.trim()) {
         const featureArray = featuresInput.split(",").map(f => f.trim()).filter(f => f !== "")
         formData.append("features", JSON.stringify(featureArray))
       }
-      
+
       // Append images
       if (selectedFiles.length > 0) {
         selectedFiles.forEach((file) => {
@@ -139,7 +144,7 @@ export default function PropertiesPage() {
         await createProperty(formData)
         toast.success("Property created successfully")
       }
-      
+
       setIsModalOpen(false)
       resetForm()
       loadData()
@@ -161,24 +166,57 @@ export default function PropertiesPage() {
     }
   }
 
+  const handleBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!bookingProperty || !wafiPhone) {
+      return toast.error("Please provide a Wafi Merchant Phone Number.")
+    }
+
+    try {
+      const userStr = localStorage.getItem("user")
+      if (!userStr) {
+        toast.error("You must be logged in to book.")
+        return
+      }
+      const user = JSON.parse(userStr)
+
+      await bookProperty(bookingProperty.id, {
+        userId: user.id || user.userId, // fallback in case
+        phone: wafiPhone
+      })
+
+      toast.success("Payment successful via Wafi! Property is secured.")
+      setIsBookingModalOpen(false)
+      loadData() // Refresh status to BOOKED
+    } catch (error: any) {
+      const errMsg = error.response?.data?.message || "An error occurred while booking"
+      toast.error(`Booking Failed: ${errMsg}`)
+    }
+  }
+
+  const openBookingModal = (property: Property) => {
+    setBookingProperty(property)
+    setWafiPhone("252") // Default Somalia prefix
+    setIsBookingModalOpen(true)
+  }
+
   const openEditModal = (property: Property) => {
     setCurrentProperty(property)
     setTitle(property.title)
     setDescription(property.description || "")
     setLocation(property.location)
     setPrice(property.price.toString())
-    setListingType(property.listingType)
     setStatus(property.status || "AVAILABLE")
     setPropertyTypeId(property.propertyTypeId.toString())
     setOwnerId(property.ownerId.toString())
-    
+
     // Map features array back to comma separated string
     if (property.features && property.features.length > 0) {
       setFeaturesInput(property.features.map(f => f.name).join(", "))
     } else {
       setFeaturesInput("")
     }
-    
+
     setSelectedFiles([])
     setIsModalOpen(true)
   }
@@ -194,10 +232,9 @@ export default function PropertiesPage() {
     setDescription("")
     setLocation("")
     setPrice("")
-    setListingType("RENT")
     setStatus("AVAILABLE")
-    setPropertyTypeId("")
-    setOwnerId("")
+    setPropertyTypeId(undefined)
+    setOwnerId(undefined)
     setFeaturesInput("")
     setSelectedFiles([])
     if (fileInputRef.current) {
@@ -249,7 +286,7 @@ export default function PropertiesPage() {
                   <DialogTitle>{currentProperty ? "Edit Property Parameters" : "Add New Property"}</DialogTitle>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-                  
+
                   {/* Title */}
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="title">Headline / Title <span className="text-red-500">*</span></Label>
@@ -271,7 +308,7 @@ export default function PropertiesPage() {
                   {/* Category / Type */}
                   <div className="space-y-2">
                     <Label htmlFor="propertyTypeId">Property Type <span className="text-red-500">*</span></Label>
-                    <Select value={propertyTypeId} onValueChange={setPropertyTypeId} required>
+                    <Select value={propertyTypeId} onValueChange={(val) => setPropertyTypeId(val)}>
                       <SelectTrigger id="propertyTypeId">
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
@@ -286,7 +323,7 @@ export default function PropertiesPage() {
                   {/* Owner */}
                   <div className="space-y-2">
                     <Label htmlFor="ownerId">Owner <span className="text-red-500">*</span></Label>
-                    <Select value={ownerId} onValueChange={setOwnerId} required>
+                    <Select value={ownerId} onValueChange={(val) => setOwnerId(val)}>
                       <SelectTrigger id="ownerId">
                         <SelectValue placeholder="Assign an Owner" />
                       </SelectTrigger>
@@ -298,30 +335,15 @@ export default function PropertiesPage() {
                     </Select>
                   </div>
 
-                  {/* Listing Type & Status */}
-                  <div className="space-y-2">
-                    <Label htmlFor="listingType">Listing Model <span className="text-red-500">*</span></Label>
-                    <Select value={listingType} onValueChange={setListingType} required>
-                      <SelectTrigger id="listingType">
-                        <SelectValue placeholder="Listing Type" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="RENT">For Rent</SelectItem>
-                        <SelectItem value="SALE">For Sale</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
                   <div className="space-y-2">
                     <Label htmlFor="status">Current Status <span className="text-red-500">*</span></Label>
-                    <Select value={status} onValueChange={setStatus} required>
+                    <Select value={status} onValueChange={setStatus}>
                       <SelectTrigger id="status">
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="AVAILABLE">AVAILABLE</SelectItem>
-                        <SelectItem value="RENTED">RENTED</SelectItem>
-                        <SelectItem value="SOLD">SOLD</SelectItem>
+                        <SelectItem value="BOOKED">BOOKED</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -329,22 +351,22 @@ export default function PropertiesPage() {
                   {/* Features */}
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="features">Property Features</Label>
-                    <Input 
-                      id="features" 
-                      value={featuresInput} 
-                      onChange={(e) => setFeaturesInput(e.target.value)} 
-                      placeholder="e.g. Swimming Pool, Garage, Free Wi-Fi (comma separated)" 
+                    <Input
+                      id="features"
+                      value={featuresInput}
+                      onChange={(e) => setFeaturesInput(e.target.value)}
+                      placeholder="e.g. Swimming Pool, Garage, Free Wi-Fi (comma separated)"
                     />
                   </div>
 
                   {/* Description */}
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="description">Detailed Description</Label>
-                    <textarea 
-                      id="description" 
+                    <textarea
+                      id="description"
                       rows={3}
-                      value={description} 
-                      onChange={(e) => setDescription(e.target.value)} 
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
                       className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                       placeholder="Describe the property highlights, rules, and benefits."
                     />
@@ -355,22 +377,22 @@ export default function PropertiesPage() {
                     <Label htmlFor="images" className="flex items-center gap-2 text-sm font-semibold mb-2">
                       <ImageIcon className="h-4 w-4" /> Media Upload (max 10)
                     </Label>
-                    <Input 
-                      id="images" 
-                      type="file" 
+                    <Input
+                      id="images"
+                      type="file"
                       ref={fileInputRef}
-                      multiple 
-                      accept="image/*" 
-                      onChange={handleFileChange} 
+                      multiple
+                      accept="image/*"
+                      onChange={handleFileChange}
                       className="cursor-pointer file:cursor-pointer"
                     />
                     <p className="text-[10px] text-muted-foreground mt-1">
-                      {currentProperty?.images && currentProperty.images.length > 0 
+                      {currentProperty?.images && currentProperty.images.length > 0
                         ? `This property currently has ${currentProperty.images.length} image(s). Uploading new ones will replace them.`
                         : "Select one or multiple images to attach to this listing."}
                     </p>
                   </div>
-                  
+
                   <DialogFooter className="md:col-span-2 mt-4">
                     <Button type="submit" className="btn-category w-full md:w-auto">
                       {currentProperty ? "Update Listing" : "Publish Property"}
@@ -391,10 +413,10 @@ export default function PropertiesPage() {
                     {viewProperty.images && viewProperty.images.length > 0 ? (
                       <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
                         {viewProperty.images.map((img) => (
-                          <img 
+                          <img
                             key={img.id}
-                            src={`http://127.0.0.1:5000${img.url}`} 
-                            alt={viewProperty.title} 
+                            src={`http://127.0.0.1:5000${img.url}`}
+                            alt={viewProperty.title}
                             className="h-48 w-auto min-w-[200px] object-cover rounded-md border shadow-sm snap-center"
                           />
                         ))}
@@ -404,24 +426,24 @@ export default function PropertiesPage() {
                         <ImageIcon className="h-8 w-8 opacity-50 mr-2" /> No media attached
                       </div>
                     )}
-                    
+
                     {/* Information Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 text-sm">
                       <div className="col-span-1 md:col-span-2">
                         <span className="font-semibold text-muted-foreground block mb-1">Name</span>
                         <p className="font-medium text-lg leading-tight">{viewProperty.title}</p>
                       </div>
-                      
+
                       <div>
                         <span className="font-semibold text-muted-foreground block mb-1">Price</span>
                         <p className="font-bold text-[#166534] dark:text-[#6ee7b7] text-lg">${viewProperty.price.toLocaleString()}</p>
                       </div>
-                      
+
                       <div>
                         <span className="font-semibold text-muted-foreground block mb-1">Location</span>
                         <p className="font-medium bg-muted/40 p-2 rounded-md">{viewProperty.location}</p>
                       </div>
-                      
+
                       <div>
                         <span className="font-semibold text-muted-foreground block mb-1">Category & Type</span>
                         <div className="flex items-center gap-2">
@@ -434,7 +456,7 @@ export default function PropertiesPage() {
                         <span className="font-semibold text-muted-foreground block mb-1">Listing Status</span>
                         <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${getStatusBadge(viewProperty.status)}`}>{viewProperty.status}</span>
                       </div>
-                      
+
                       <div>
                         <span className="font-semibold text-muted-foreground block mb-1">Owner Contact</span>
                         <div className="bg-muted/30 p-2 rounded-md">
@@ -453,7 +475,7 @@ export default function PropertiesPage() {
                           ) : <span className="text-muted-foreground italic">No features listed</span>}
                         </div>
                       </div>
-                      
+
                       <div className="col-span-1 md:col-span-2 mt-2">
                         <span className="font-semibold text-muted-foreground block mb-2">Description</span>
                         <div className="bg-muted/20 border p-3 rounded-md text-muted-foreground leading-relaxed">
@@ -465,7 +487,33 @@ export default function PropertiesPage() {
                 )}
               </DialogContent>
             </Dialog>
-            
+
+            <Dialog open={isBookingModalOpen} onOpenChange={setIsBookingModalOpen}>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Secure Your Booking</DialogTitle>
+                </DialogHeader>
+                {bookingProperty && (
+                  <form onSubmit={handleBookingSubmit} className="space-y-4 py-4">
+                    <div className="bg-muted/30 p-3 rounded-md text-sm mb-4">
+                      <p className="font-semibold">{bookingProperty.title}</p>
+                      <p className="text-muted-foreground mt-1">Booking Fee: <strong>$100</strong></p>
+                    </div>
+
+                    <div className="space-y-2 mb-4">
+                      <Label htmlFor="b-phone">Wafi Mobile Account <span className="text-red-500">*</span></Label>
+                      <Input id="b-phone" type="tel" placeholder="e.g. 25261..." value={wafiPhone} onChange={e => setWafiPhone(e.target.value)} required />
+                    </div>
+
+                    <DialogFooter className="mt-6">
+                      <Button type="submit" className="w-full btn-category bg-[#16a34a] hover:bg-[#15803d] text-white">
+                        Confirm & Pay $100 via WaafiPay
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                )}
+              </DialogContent>
+            </Dialog>
           </div>
 
           <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
@@ -505,11 +553,11 @@ export default function PropertiesPage() {
                 ) : (
                   properties.map((property) => (
                     <TableRow key={property.id} className="hover:bg-muted/30 transition-colors">
-                      
+
                       <TableCell className="font-bold text-sm">
                         <div className="line-clamp-1">{property.title}</div>
                       </TableCell>
-                      
+
                       <TableCell>
                         <span className="bg-muted border px-2 py-0.5 rounded text-xs font-medium">
                           {property.propertyType?.name || 'None'}
@@ -517,12 +565,12 @@ export default function PropertiesPage() {
                       </TableCell>
 
                       <TableCell className="max-w-[150px] truncate text-xs text-muted-foreground" title={property.features?.map(f => f.name).join(", ")}>
-                        {property.features && property.features.length > 0 
-                           ? property.features.map(f => f.name).join(", ") 
-                           : "—"
+                        {property.features && property.features.length > 0
+                          ? property.features.map(f => f.name).join(", ")
+                          : "—"
                         }
                       </TableCell>
-                      
+
                       <TableCell className="font-bold text-[#166534] dark:text-[#6ee7b7]">
                         ${property.price.toLocaleString()}
                       </TableCell>
@@ -534,7 +582,7 @@ export default function PropertiesPage() {
                       <TableCell className="text-sm font-medium line-clamp-2 max-w-[150px]">
                         {property.location}
                       </TableCell>
-                      
+
                       <TableCell>
                         <div className="font-semibold text-sm">{property.owner?.name || "Unknown"}</div>
                         <div className="text-[10px] text-muted-foreground">{property.owner?.phone}</div>
@@ -545,12 +593,21 @@ export default function PropertiesPage() {
                           {property.status}
                         </span>
                       </TableCell>
-                      
+
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                        <div className="flex flex-wrap justify-end gap-1">
+                          {property.status === "AVAILABLE" && (
+                            <Button
+                              size="sm"
+                              onClick={() => openBookingModal(property)}
+                              className="mr-2 px-3 h-8 text-[10px] font-black uppercase tracking-wider bg-[#15803d] hover:bg-[#166534] text-white border-none shadow-sm transition-all hover:scale-105 active:scale-95"
+                            >
+                              Book Now
+                            </Button>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => openViewModal(property)}
                             className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 h-8 w-8"
                             title="View Property Details"
@@ -558,18 +615,18 @@ export default function PropertiesPage() {
                             <EyeIcon className="h-4 w-4" />
                             <span className="sr-only">View</span>
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => openEditModal(property)}
                             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
                           >
                             <PencilIcon className="h-4 w-4" />
                             <span className="sr-only">Edit</span>
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => handleDelete(property.id)}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
                           >

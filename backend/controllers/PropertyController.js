@@ -248,7 +248,7 @@ export const bookNow = async (req, res) => {
 
     // Waafi usually replies with responseCode "2001" on success
     if (wafiResult.responseCode !== "2001" && wafiResult.responseMsg !== "RCS_SUCCESS") {
-       throw new Error(`Wafi Payment Failed: ${wafiResult.responseMsg}`);
+      throw new Error(`Wafi Payment Failed: ${wafiResult.responseMsg}`);
     }
 
     // Create booking and update property in DB if Wafi payment succeeds
@@ -281,8 +281,29 @@ export const bookNow = async (req, res) => {
     res.status(200).json({ message: "Booking and payment successful via Wafi", booking, paymentResult: wafiResult });
   } catch (error) {
     if (error.response && error.response.data) {
-        return res.status(500).json({ message: "Wafi API error", error: error.response.data });
+      return res.status(500).json({ message: "Wafi API error", error: error.response.data });
     }
     res.status(500).json({ message: "Error processing booking", error: error.message });
+  }
+};
+// @desc    Get all bookings for a specific user
+// @route   GET /api/properties/user/:userId/bookings
+export const getBookingsByUser = async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const bookings = await prisma.booking.findMany({
+      where: { userId: parseInt(userId) },
+      include: {
+        property: {
+          include: {
+            images: { orderBy: { id: "desc" } }
+          }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    res.status(200).json(bookings);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching user bookings", error: error.message });
   }
 };

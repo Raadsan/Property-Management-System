@@ -1,6 +1,19 @@
-import { redirect } from "next/navigation";
+import Navbar from "@/components/landing/Navbar";
+import Hero from "@/components/landing/Hero";
+import FeaturedProperties from "@/components/landing/FeaturedProperties";
+import CityExplorer from "@/components/landing/CityExplorer";
+import CTA from "@/components/landing/CTA";
+import Footer from "@/components/landing/Footer";
 
 export default function Home() {
-  redirect("/login");
-  return null;
+  return (
+    <main className="min-h-screen">
+      <Navbar />
+      <Hero />
+      <FeaturedProperties />
+      <CityExplorer />
+      <CTA />
+      <Footer />
+    </main>
+  );
 }

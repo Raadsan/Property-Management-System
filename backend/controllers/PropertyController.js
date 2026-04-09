@@ -4,55 +4,81 @@ import axios from "axios";
 // @desc    Create a new property
 // @route   POST /api/properties
 export const createProperty = async (req, res) => {
-  console.log("📥 CREATE PROPERTY REQUEST:", { body: req.body, headers: req.headers['content-type'] });
-  const {
-    title, description, location, price,
-    ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures
-  } = req.body || {};
-  const listingType = "BOOKING"; // Force all new properties to be BOOKING type
+  try {
+    console.log("📥 CREATE PROPERTY REQUEST:", { 
+      body: req.body, 
+      filesCount: req.files ? req.files.length : 0 
+    });
 
-  // Combine images from body (URLs) and files (uploads)
-  let images = [];
-  if (req.files && req.files.length > 0) {
-    images = req.files.map(file => `/uploads/${file.filename}`);
-  } else if (bodyImages) {
-    images = Array.isArray(bodyImages) ? bodyImages : [bodyImages];
-  }
+    const {
+      title, description, location, city, price,
+      ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures,
+      sizeLabel, area, listingType: bodyListingType, status: bodyStatus
+    } = req.body || {};
 
-  // Parse features if they come as a JSON string (common in form-data)
-  let features = [];
-  if (bodyFeatures) {
-    if (Array.isArray(bodyFeatures)) {
-      features = bodyFeatures;
-    } else {
-      try {
-        const parsed = JSON.parse(bodyFeatures);
-        features = Array.isArray(parsed) ? parsed : [parsed];
-      } catch (e) {
-        features = [bodyFeatures];
+    const listingType = (bodyListingType || "RENT").trim().toUpperCase();
+    const status = (bodyStatus || "AVAILABLE").trim().toUpperCase();
+
+    // Validation
+    if (!title || !location || !city || !price || !ownerId || !propertyTypeId) {
+      return res.status(400).json({ 
+        message: "Missing required fields.",
+        received: { title: !!title, location: !!location, city: !!city, price: !!price, ownerId: !!ownerId, propertyTypeId: !!propertyTypeId }
+      });
+    }
+
+    // Combine images from body (URLs) and files (uploads)
+    let images = [];
+    if (req.files && req.files.length > 0) {
+      images = req.files.map(file => `/uploads/${file.filename}`);
+    } else if (bodyImages) {
+      images = Array.isArray(bodyImages) ? bodyImages : [bodyImages];
+    }
+
+    // Parse features
+    let features = [];
+    if (bodyFeatures) {
+      if (Array.isArray(bodyFeatures)) {
+        features = bodyFeatures;
+      } else {
+        try {
+          const parsed = JSON.parse(bodyFeatures);
+          features = Array.isArray(parsed) ? parsed : [parsed];
+        } catch (e) {
+          features = [bodyFeatures];
+        }
       }
     }
-  }
 
-  if (!title || !location || !price || !ownerId || !propertyTypeId) {
-    return res.status(400).json({ message: "Missing required fields (title, location, price, ownerId, propertyTypeId)." });
-  }
+    // Safe parsing
+    const parsedPrice = parseFloat(price);
+    const parsedOwnerId = parseInt(ownerId);
+    const parsedPropertyTypeId = parseInt(propertyTypeId);
+    const parsedArea = area ? parseFloat(area) : null;
 
-  try {
+    if (isNaN(parsedPrice) || isNaN(parsedOwnerId) || isNaN(parsedPropertyTypeId)) {
+      return res.status(400).json({ 
+        message: "Invalid numeric values provided.",
+        details: { price, ownerId, propertyTypeId }
+      });
+    }
+
     const property = await prisma.property.create({
       data: {
         title,
         description,
         location,
-        price: parseFloat(price),
+        city,
+        price: parsedPrice,
         listingType,
-        ownerId: parseInt(ownerId),
-        propertyTypeId: parseInt(propertyTypeId),
-        // Create nested images if provided (array of strings)
+        status,
+        ownerId: parsedOwnerId,
+        propertyTypeId: parsedPropertyTypeId,
+        sizeLabel,
+        area: isNaN(parsedArea) ? null : parsedArea,
         images: images && images.length > 0 ? {
           create: images.map(url => ({ url }))
         } : undefined,
-        // Create nested features if provided (array of strings)
         features: features && features.length > 0 ? {
           create: features.map(name => ({ name }))
         } : undefined
@@ -63,9 +89,16 @@ export const createProperty = async (req, res) => {
       }
     });
 
-    res.status(201).json({ message: "Property created successfully", property });
+    return res.status(201).json({ message: "Property created successfully", property });
   } catch (error) {
-    res.status(500).json({ message: "Error creating property", error: error.message });
+    console.error("❌ CREATE PROPERTY ERROR:", error);
+    // Ensure we don't send a circular object and provide maximum detail
+    const errorDetails = error.message || "Unknown error";
+    return res.status(500).json({ 
+      message: "Server error creating property", 
+      error: errorDetails,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
@@ -81,19 +114,29 @@ export const getProperties = async (req, res) => {
         owner: { select: { name: true, phone: true } }
       }
     });
-    res.status(200).json(properties);
+    return res.status(200).json(properties);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching properties", error: error.message });
+    console.error("❌ GET PROPERTIES ERROR:", error);
+    return res.status(500).json({ 
+      message: "Error fetching properties", 
+      error: error.message || "Unknown error" 
+    });
   }
 };
 
 // @desc    Get property by ID
 // @route   GET /api/properties/:id
 export const getPropertyById = async (req, res) => {
-  const { id } = req.params;
   try {
+    const { id } = req.params;
+    const propertyId = parseInt(id);
+
+    if (isNaN(propertyId)) {
+      return res.status(400).json({ message: "Invalid property ID provided." });
+    }
+
     const property = await prisma.property.findUnique({
-      where: { id: parseInt(id) },
+      where: { id: propertyId },
       include: {
         images: { orderBy: { id: 'desc' } },
         features: true,
@@ -106,41 +149,65 @@ export const getPropertyById = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    res.status(200).json(property);
+    return res.status(200).json(property);
   } catch (error) {
-    res.status(500).json({ message: "Error fetching property", error: error.message });
+    console.error("❌ GET PROPERTY BY ID ERROR:", error);
+    return res.status(500).json({ 
+      message: "Error fetching property", 
+      error: error.message || "Unknown error" 
+    });
   }
 };
 
 // @desc    Update a property
 // @route   PATCH /api/properties/:id
 export const updateProperty = async (req, res) => {
-  const { id } = req.params;
-  const updateFields = req.body || {};
-
   try {
-    // Process numeric fields
+    const { id } = req.params;
+    const updateFields = req.body || {};
+    const propertyId = parseInt(id);
+
+    if (isNaN(propertyId)) {
+      return res.status(400).json({ message: "Invalid property ID provided." });
+    }
+
+    // Process numeric and other fields
     const updateData = {};
     if (updateFields.title) updateData.title = updateFields.title;
-    if (updateFields.description) updateData.description = updateFields.description;
+    if (updateFields.description !== undefined) updateData.description = updateFields.description;
     if (updateFields.location) updateData.location = updateFields.location;
+    if (updateFields.city) updateData.city = updateFields.city;
     if (updateFields.price) updateData.price = parseFloat(updateFields.price);
-    if (updateFields.listingType) updateData.listingType = updateFields.listingType;
-    if (updateFields.status) updateData.status = updateFields.status;
-    if (updateFields.ownerId) updateData.ownerId = parseInt(updateFields.ownerId);
-    if (updateFields.propertyTypeId) updateData.propertyTypeId = parseInt(updateFields.propertyTypeId);
+    if (updateFields.listingType) updateData.listingType = updateFields.listingType.trim().toUpperCase();
+    if (updateFields.status) updateData.status = updateFields.status.trim().toUpperCase();
+    
+    if (updateFields.ownerId) {
+      updateData.ownerId = parseInt(updateFields.ownerId);
+      if (isNaN(updateData.ownerId)) delete updateData.ownerId;
+    }
+    
+    if (updateFields.propertyTypeId) {
+      updateData.propertyTypeId = parseInt(updateFields.propertyTypeId);
+      if (isNaN(updateData.propertyTypeId)) delete updateData.propertyTypeId;
+    }
 
-    // Handle IMAGE REPLACEMENT if new ones are uploaded during patch
+    if (updateFields.sizeLabel !== undefined) updateData.sizeLabel = updateFields.sizeLabel;
+    
+    if (updateFields.area !== undefined) {
+      const parsedArea = parseFloat(updateFields.area);
+      updateData.area = isNaN(parsedArea) ? null : parsedArea;
+    }
+
+    // Handle IMAGE REPLACEMENT
     if (req.files && req.files.length > 0) {
       const newImages = req.files.map(file => ({ url: `/uploads/${file.filename}` }));
       updateData.images = {
-        // This will DELETE all existing images for this property and CREATE the new ones
         deleteMany: {},
         create: newImages
       };
     }
 
-    // Handle FEATURE REPLACEMENT if provided during patch (array of strings)
+    // Handle FEATURE REPLACEMENT
     if (updateFields.features) {
       let finalFeatures = [];
       if (Array.isArray(updateFields.features)) {
@@ -161,7 +228,7 @@ export const updateProperty = async (req, res) => {
     }
 
     const updatedProperty = await prisma.property.update({
-      where: { id: parseInt(id) },
+      where: { id: propertyId },
       data: updateData,
       include: {
         images: { orderBy: { id: 'desc' } },
@@ -169,12 +236,16 @@ export const updateProperty = async (req, res) => {
       }
     });
 
-    res.status(200).json({ message: "Property updated successfully", property: updatedProperty });
+    return res.status(200).json({ message: "Property updated successfully", property: updatedProperty });
   } catch (error) {
+    console.error("❌ UPDATE PROPERTY ERROR:", error);
     if (error.code === 'P2025') {
       return res.status(404).json({ message: "Property not found" });
     }
-    res.status(500).json({ message: "Error updating property", error: error.message });
+    return res.status(500).json({ 
+      message: "Server error updating property", 
+      error: error.message || "Unknown error" 
+    });
   }
 };
 
@@ -305,5 +376,28 @@ export const getBookingsByUser = async (req, res) => {
     res.status(200).json(bookings);
   } catch (error) {
     res.status(500).json({ message: "Error fetching user bookings", error: error.message });
+  }
+};
+
+// @desc    Get dynamic city statistics (city names and listing counts)
+// @route   GET /api/properties/stats/cities
+export const getCityStats = async (req, res) => {
+  try {
+    const stats = await prisma.property.groupBy({
+      by: ['city'],
+      _count: {
+        id: true,
+      },
+    });
+
+    const result = stats.map(s => ({
+      name: s.city,
+      listings: s._count.id
+    }));
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("❌ ERROR FETCHING CITY STATS:", error);
+    return res.status(500).json({ error: "Failed to fetch city statistics" });
   }
 };

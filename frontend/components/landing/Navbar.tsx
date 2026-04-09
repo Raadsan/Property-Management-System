@@ -2,15 +2,29 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Menu, X, ChevronDown, Home as HomeIcon, Key } from "lucide-react";
+import { Menu, X, ChevronDown, Home as HomeIcon, Key, LayoutDashboard } from "lucide-react";
+import { useEffect } from "react";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("user");
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error("Failed to parse user from localStorage");
+      }
+    }
+  }, []);
 
   const navLinks = [
     { name: "Home", href: "/" },
     { name: "About", href: "/about" },
+    { name: "Explore", href: "/explore" },
     { 
       name: "Property", 
       dropdown: [
@@ -18,7 +32,7 @@ export default function Navbar() {
         { name: "Rent Property", href: "/rent", icon: Key }
       ]
     },
-    { name: "Contact", href: "/contact" },
+    { name: "Contact Us", href: "/contact" },
   ];
 
   return (
@@ -82,14 +96,24 @@ export default function Navbar() {
           })}
         </div>
 
-        {/* Login Button */}
+        {/* Action Button */}
         <div className="hidden md:block">
-          <Link
-            href="/login"
-            className="bg-[#1e3a3a] text-white px-8 py-3 rounded-full font-bold text-sm tracking-wide hover:bg-[#0d2326] transition-all active:scale-95"
-          >
-            Log in
-          </Link>
+          {user ? (
+            <Link
+              href="/dashboard"
+              className="bg-[#214347] text-white px-8 py-3 rounded-full font-bold text-sm tracking-wide hover:bg-[#163033] transition-all active:scale-95 flex items-center gap-2"
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              Dashboard
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              className="bg-[#1e3a3a] text-white px-8 py-3 rounded-full font-bold text-sm tracking-wide hover:bg-[#0d2326] transition-all active:scale-95"
+            >
+              Log in
+            </Link>
+          )}
         </div>
 
         {/* Mobile Toggle */}
@@ -149,13 +173,24 @@ export default function Navbar() {
               })}
             </div>
             
-            <Link
-              href="/login"
-              className="bg-[#1e3a3a] text-white text-center py-4 rounded-full font-bold mt-8 text-sm shadow-md"
-              onClick={() => setIsOpen(false)}
-            >
-              Log in
-            </Link>
+            {user ? (
+              <Link
+                href="/dashboard"
+                className="bg-[#214347] text-white text-center py-4 rounded-full font-bold mt-8 text-sm shadow-md flex items-center justify-center gap-2"
+                onClick={() => setIsOpen(false)}
+              >
+                <LayoutDashboard className="w-5 h-5" />
+                Dashboard
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="bg-[#1e3a3a] text-white text-center py-4 rounded-full font-bold mt-8 text-sm shadow-md"
+                onClick={() => setIsOpen(false)}
+              >
+                Log in
+              </Link>
+            )}
           </div>
         </div>
       )}

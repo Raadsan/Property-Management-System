@@ -1,32 +1,28 @@
 "use client";
-
+ 
 import { MapPin, Heart, ArrowLeftRight } from "lucide-react";
 import Link from "next/link";
-
+import { Property } from "@/api/propertyApi";
+ 
 interface PropertyCardProps {
-  prop: {
-    id: number;
-    title: string;
-    price: string;
-    category: string;
-    location: string;
-    floors: number;
-    sqrm: string;
-    units?: number;
-    tag: string;
-    isFeatured?: boolean;
-    image: string;
-  };
+  prop: Property;
 }
-
+ 
 export default function PropertyCard({ prop }: PropertyCardProps) {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const baseUrl = apiUrl.replace("/api", "");
+  
+  const imageUrl = prop.images && prop.images.length > 0 
+    ? `${baseUrl}${prop.images[0].url}`
+    : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
+
   return (
     <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group border border-gray-100">
       {/* Image Section */}
       <div className="relative aspect-[4/3] overflow-hidden">
         <Link href={`/properties/${prop.id}`} className="block w-full h-full">
           <img
-            src={prop.image}
+            src={imageUrl}
             alt={prop.title}
             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
           />
@@ -34,20 +30,18 @@ export default function PropertyCard({ prop }: PropertyCardProps) {
         
         {/* Badges */}
         <div className="absolute top-4 left-4 flex gap-2 pointer-events-none">
-          {prop.isFeatured && (
-            <span className="bg-[#214347] text-white px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">
-              Featured
-            </span>
-          )}
+          <span className="bg-[#214347] text-white px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">
+            {prop.listingType}
+          </span>
           <span className="bg-[#eae1d2] text-[#214347] px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">
-            {prop.tag}
+            {prop.status}
           </span>
         </div>
-
+ 
         {/* Image Footer Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/60 to-transparent flex justify-between items-end pointer-events-none">
           <div className="text-white text-xl font-bold drop-shadow-sm">
-            {prop.price.includes("/") ? prop.price : (prop.units ? `${prop.floors} Floors ${prop.units} Units` : prop.price)}
+             ${prop.price.toLocaleString()}
           </div>
           <div className="flex gap-2 mb-1 pointer-events-auto">
             <button className="p-2 bg-white hover:bg-[#eae1d2] transition-colors rounded-lg text-[#214347] shadow-sm">
@@ -59,11 +53,11 @@ export default function PropertyCard({ prop }: PropertyCardProps) {
           </div>
         </div>
       </div>
-
+ 
       {/* Content Section */}
       <div className="p-6">
         <div className="text-[#214347] text-xs font-bold uppercase tracking-widest mb-2">
-          {prop.category}
+          {prop.propertyType?.name || "Property"}
         </div>
         <Link href={`/properties/${prop.id}`}>
           <h3 className="text-xl font-bold text-[#444] mb-3 hover:text-[#214347] cursor-pointer transition-colors capitalize line-clamp-1">
@@ -72,12 +66,12 @@ export default function PropertyCard({ prop }: PropertyCardProps) {
         </Link>
         <div className="flex items-center gap-1.5 text-gray-500 mb-4 text-sm truncate">
           <MapPin className="h-4 w-4" />
-          {prop.location}
+          {prop.city}, {prop.location}
         </div>
-
+ 
         <div className="flex gap-6 pt-4 border-t border-gray-50 text-sm text-gray-500 font-medium">
-          <div>Floors: {prop.floors}</div>
-          <div>SqrM: {prop.sqrm}</div>
+          <div>Size: {prop.sizeLabel || "N/A"}</div>
+          {prop.area && <div>Area: {prop.area} sqm</div>}
         </div>
       </div>
     </div>

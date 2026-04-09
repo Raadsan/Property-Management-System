@@ -62,10 +62,14 @@ export default function PropertiesPage() {
   const [title, setTitle] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [location, setLocation] = React.useState("")
+  const [city, setCity] = React.useState("")
   const [price, setPrice] = React.useState("")
   const [status, setStatus] = React.useState<string>("AVAILABLE")
-  const [propertyTypeId, setPropertyTypeId] = React.useState<string | undefined>(undefined)
-  const [ownerId, setOwnerId] = React.useState<string | undefined>(undefined)
+  const [propertyTypeId, setPropertyTypeId] = React.useState<string>("")
+  const [ownerId, setOwnerId] = React.useState<string>("")
+  const [listingType, setListingType] = React.useState<string>("RENT")
+  const [sizeLabel, setSizeLabel] = React.useState("")
+  const [area, setArea] = React.useState("")
   const [featuresInput, setFeaturesInput] = React.useState("")
 
   // File State
@@ -88,8 +92,9 @@ export default function PropertiesPage() {
       setProperties(propsData)
       setCategories(catsData)
 
-      // Show all users as potential owners
-      setOwners(usersData)
+      // Filter users to only show those with the 'Owner' role
+      const ownersOnly = usersData.filter(user => user.role?.name === "Owner")
+      setOwners(ownersOnly)
     } catch (error) {
       toast.error("Failed to load property data")
     } finally {
@@ -109,7 +114,7 @@ export default function PropertiesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title || !location || !price || !ownerId || !propertyTypeId) {
+    if (!title || !location || !city || !price || !ownerId || !propertyTypeId) {
       return toast.error("Please fill in all strictly required fields.")
     }
 
@@ -118,11 +123,14 @@ export default function PropertiesPage() {
       formData.append("title", title)
       formData.append("description", description)
       formData.append("location", location)
+      formData.append("city", city)
       formData.append("price", price)
-      formData.append("listingType", "BOOKING") // Hardcoded defaults to schema
+      formData.append("listingType", listingType)
       formData.append("status", status)
       formData.append("ownerId", ownerId)
       formData.append("propertyTypeId", propertyTypeId)
+      if (sizeLabel) formData.append("sizeLabel", sizeLabel)
+      if (area) formData.append("area", area)
 
       // Convert comma separated features into an array string
       if (featuresInput.trim()) {
@@ -200,20 +208,34 @@ export default function PropertiesPage() {
     setIsBookingModalOpen(true)
   }
 
-  const openEditModal = (property: Property) => {
-    setCurrentProperty(property)
-    setTitle(property.title)
-    setDescription(property.description || "")
-    setLocation(property.location)
-    setPrice(property.price.toString())
-    setStatus(property.status || "AVAILABLE")
-    setPropertyTypeId(property.propertyTypeId.toString())
-    setOwnerId(property.ownerId.toString())
-
-    // Map features array back to comma separated string
-    if (property.features && property.features.length > 0) {
-      setFeaturesInput(property.features.map(f => f.name).join(", "))
+  const openEditModal = (prop: Property) => {
+    if (prop) {
+      setCurrentProperty(prop)
+      setTitle(prop.title)
+      setDescription(prop.description || "")
+      setLocation(prop.location)
+      setCity(prop.city)
+      setPrice(prop.price.toString())
+      setListingType(prop.listingType)
+      setStatus(prop.status)
+      setOwnerId(prop.ownerId.toString())
+      setPropertyTypeId(prop.propertyTypeId.toString())
+      setSizeLabel(prop.sizeLabel || "")
+      setArea(prop.area?.toString() || "")
+      setFeaturesInput(prop.features?.map(f => f.name).join(", ") || "")
     } else {
+      setCurrentProperty(null)
+      setTitle("")
+      setDescription("")
+      setLocation("")
+      setCity("")
+      setPrice("")
+      setListingType("RENT")
+      setStatus("AVAILABLE")
+      setOwnerId("")
+      setPropertyTypeId("")
+      setSizeLabel("")
+      setArea("")
       setFeaturesInput("")
     }
 
@@ -231,10 +253,14 @@ export default function PropertiesPage() {
     setTitle("")
     setDescription("")
     setLocation("")
+    setCity("")
     setPrice("")
     setStatus("AVAILABLE")
-    setPropertyTypeId(undefined)
-    setOwnerId(undefined)
+    setPropertyTypeId("")
+    setOwnerId("")
+    setListingType("RENT")
+    setSizeLabel("")
+    setArea("")
     setFeaturesInput("")
     setSelectedFiles([])
     if (fileInputRef.current) {
@@ -293,10 +319,16 @@ export default function PropertiesPage() {
                     <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Luxurious Downtown Apartment" required />
                   </div>
 
-                  {/* Location */}
+                  {/* Location Area */}
                   <div className="space-y-2">
-                    <Label htmlFor="location">Location <span className="text-red-500">*</span></Label>
-                    <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. 123 Main St, NY" required />
+                    <Label htmlFor="location">Address / Location <span className="text-red-500">*</span></Label>
+                    <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Full Address" />
+                  </div>
+
+                  {/* City */}
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
+                    <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Mogadishu" />
                   </div>
 
                   {/* Price */}
@@ -308,13 +340,16 @@ export default function PropertiesPage() {
                   {/* Category / Type */}
                   <div className="space-y-2">
                     <Label htmlFor="propertyTypeId">Property Type <span className="text-red-500">*</span></Label>
-                    <Select value={propertyTypeId} onValueChange={(val) => setPropertyTypeId(val)}>
+                    <Select 
+                      value={propertyTypeId || ""} 
+                      onValueChange={(val) => setPropertyTypeId(val)}
+                    >
                       <SelectTrigger id="propertyTypeId">
                         <SelectValue placeholder="Select Category" />
                       </SelectTrigger>
                       <SelectContent>
                         {categories.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
+                          <SelectItem key={`cat-${cat.id}`} value={cat.id.toString()}>{cat.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -323,18 +358,50 @@ export default function PropertiesPage() {
                   {/* Owner */}
                   <div className="space-y-2">
                     <Label htmlFor="ownerId">Owner <span className="text-red-500">*</span></Label>
-                    <Select value={ownerId} onValueChange={(val) => setOwnerId(val)}>
+                    <Select 
+                      value={ownerId || ""} 
+                      onValueChange={(val) => setOwnerId(val)}
+                    >
                       <SelectTrigger id="ownerId">
                         <SelectValue placeholder="Assign an Owner" />
                       </SelectTrigger>
                       <SelectContent>
                         {owners.map((user) => (
-                          <SelectItem key={user.id} value={user.id.toString()}>{user.name}</SelectItem>
+                          <SelectItem key={`owner-${user.id}`} value={user.id.toString()}>{user.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
+                  <div className="space-y-2">
+                    <Label htmlFor="listingType">Listing Type <span className="text-red-500">*</span></Label>
+                    <Select 
+                      value={listingType || "RENT"} 
+                      onValueChange={(val) => setListingType(val)}
+                    >
+                      <SelectTrigger id="listingType">
+                        <SelectValue placeholder="Select Listing Type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="RENT">RENT</SelectItem>
+                        <SelectItem value="SALE">SALE</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Size Label */}
+                  <div className="space-y-2">
+                    <Label htmlFor="sizeLabel">Size Label (e.g. 20x30)</Label>
+                    <Input id="sizeLabel" value={sizeLabel} onChange={(e) => setSizeLabel(e.target.value)} placeholder="Dimensions" />
+                  </div>
+
+                  {/* Area */}
+                  <div className="space-y-2">
+                    <Label htmlFor="area">Numerical Area (sq ft/m)</Label>
+                    <Input id="area" type="number" value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. 600" />
+                  </div>
+
+                  {/* Status */}
                   <div className="space-y-2">
                     <Label htmlFor="status">Current Status <span className="text-red-500">*</span></Label>
                     <Select value={status} onValueChange={setStatus}>
@@ -344,6 +411,8 @@ export default function PropertiesPage() {
                       <SelectContent>
                         <SelectItem value="AVAILABLE">AVAILABLE</SelectItem>
                         <SelectItem value="BOOKED">BOOKED</SelectItem>
+                        <SelectItem value="RENTED">RENTED</SelectItem>
+                        <SelectItem value="SOLD">SOLD</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -440,7 +509,12 @@ export default function PropertiesPage() {
                       </div>
 
                       <div>
-                        <span className="font-semibold text-muted-foreground block mb-1">Location</span>
+                        <span className="font-semibold text-muted-foreground block mb-1">City</span>
+                        <p className="font-medium bg-muted/40 p-2 rounded-md capitalize">{viewProperty.city}</p>
+                      </div>
+
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">Location / Address</span>
                         <p className="font-medium bg-muted/40 p-2 rounded-md">{viewProperty.location}</p>
                       </div>
 
@@ -463,6 +537,13 @@ export default function PropertiesPage() {
                           <p className="font-medium">{viewProperty.owner?.name}</p>
                           <p className="text-xs text-muted-foreground mt-0.5 font-mono">{viewProperty.owner?.phone}</p>
                         </div>
+                      </div>
+
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">Dimensions & Area</span>
+                        <p className="font-medium bg-muted/40 p-2 rounded-md">
+                          {viewProperty.sizeLabel || "N/A"} ({viewProperty.area ? `${viewProperty.area} units` : "No area specified"})
+                        </p>
                       </div>
 
                       <div className="col-span-1 md:col-span-2 mt-2">
@@ -524,8 +605,10 @@ export default function PropertiesPage() {
                   <TableHead>PropertyType</TableHead>
                   <TableHead>Feature</TableHead>
                   <TableHead>Price</TableHead>
+                  <TableHead>Size</TableHead>
                   <TableHead>ListingType</TableHead>
                   <TableHead>Location</TableHead>
+                  <TableHead>City</TableHead>
                   <TableHead>Owner</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -534,7 +617,7 @@ export default function PropertiesPage() {
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-24 text-center">
+                    <TableCell colSpan={11} className="h-24 text-center">
                       <div className="flex items-center justify-center gap-2">
                         <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
                         <span>Loading property assets...</span>
@@ -543,7 +626,7 @@ export default function PropertiesPage() {
                   </TableRow>
                 ) : properties.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="h-32 text-center">
+                    <TableCell colSpan={11} className="h-32 text-center">
                       <div className="flex flex-col items-center justify-center text-muted-foreground">
                         <HomeIcon className="h-10 w-10 mb-2 opacity-20" />
                         <p>No properties listed on the market yet.</p>
@@ -575,17 +658,28 @@ export default function PropertiesPage() {
                         ${property.price.toLocaleString()}
                       </TableCell>
 
+                      <TableCell className="text-xs">
+                        {property.sizeLabel || "—"}
+                        {property.area && <div className="text-[10px] text-muted-foreground">{property.area} sqm</div>}
+                      </TableCell>
+
                       <TableCell className="text-xs uppercase font-bold tracking-wider opacity-80">
                         {property.listingType}
                       </TableCell>
 
-                      <TableCell className="text-sm font-medium line-clamp-2 max-w-[150px]">
+                      <TableCell className="max-w-[200px] truncate text-sm" title={property.location}>
                         {property.location}
                       </TableCell>
 
-                      <TableCell>
-                        <div className="font-semibold text-sm">{property.owner?.name || "Unknown"}</div>
-                        <div className="text-[10px] text-muted-foreground">{property.owner?.phone}</div>
+                      <TableCell className="font-medium text-sm capitalize">
+                        {property.city}
+                      </TableCell>
+
+                      <TableCell className="text-sm">
+                        <div className="flex flex-col">
+                          <span className="font-bold">{property.owner?.name}</span>
+                          <span className="text-[10px] text-muted-foreground font-mono">{property.owner?.phone}</span>
+                        </div>
                       </TableCell>
 
                       <TableCell>

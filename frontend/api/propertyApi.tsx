@@ -17,9 +17,12 @@ export interface Property {
   title: string;
   description?: string;
   location: string;
+  city: string;
   price: number;
   listingType: 'RENT' | 'SALE';
-  status: 'AVAILABLE' | 'SOLD' | 'RENTED';
+  status: 'AVAILABLE' | 'SOLD' | 'RENTED' | 'BOOKED';
+  sizeLabel?: string;
+  area?: number;
   ownerId: number;
   propertyTypeId: number;
   createdAt: string;
@@ -64,4 +67,9 @@ export const updateProperty = async (id: number, data: FormData): Promise<Proper
 
 export const deleteProperty = async (id: number): Promise<void> => {
   await api.delete(`/properties/${id}`);
+};
+
+export const getCityStats = async (): Promise<{ name: string; listings: number }[]> => {
+  const response = await api.get("/properties/stats/cities");
+  return response.data;
 };

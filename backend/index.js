@@ -17,8 +17,8 @@ import cors from 'cors';
 
 const app = express();
 app.use(cors());
-app.use(express.json({ type: ['application/json', 'text/plain'] }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '30mb', type: ['application/json', 'text/plain'] }));
+app.use(express.urlencoded({ limit: '30mb', extended: true }));
 
 // Serve static uploads
 app.use('/uploads', express.static('uploads'));
@@ -43,6 +43,15 @@ app.use('/api/role-permissions', rolePermissionsRoute);
 
 
 
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+  console.error("🔥 Global Error Handler:", err);
+  res.status(err.status || 500).json({
+    message: err.message || "Internal Server Error",
+    error: err.message
+  });
+});
 
 async function main() {
   try {

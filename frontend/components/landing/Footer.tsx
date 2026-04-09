@@ -10,12 +10,14 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-x-16 gap-y-12 mb-16">
           {/* Column 1: Company Name & Logo */}
           <div className="flex flex-col gap-6">
-            <Link href="/#home" className="flex items-center">
-              <img src="/logo.png" alt="Damal Logo" className="h-14 w-auto" />
-            </Link>
+            <div className="flex justify-center">
+              <Link href="/#home" className="flex items-center">
+                <img src="/Damal-02.png" alt="Damal Logo" className="h-24 w-auto" />
+              </Link>
+            </div>
             <p className="text-gray-300 text-sm leading-relaxed">
-              Damal Property Management is one of the innovative digital property service 
-              providers in Somalia, founded to offer a wide range of premium real estate 
+              Damal Property Management is one of the innovative digital property service
+              providers in Somalia, founded to offer a wide range of premium real estate
               solutions.
             </p>
           </div>
@@ -46,19 +48,19 @@ export default function Footer() {
             <ul className="flex flex-col gap-4">
               <li className="flex items-center gap-3 text-gray-300 text-sm">
                 <div className="w-5 flex justify-center">
-                   <Phone className="h-4 w-4" />
+                  <Phone className="h-4 w-4" />
                 </div>
                 +252 61 700 0000
               </li>
               <li className="flex items-center gap-3 text-gray-300 text-sm">
                 <div className="w-5 flex justify-center">
-                   <Mail className="h-4 w-4" />
+                  <Mail className="h-4 w-4" />
                 </div>
                 info@damal.so
               </li>
               <li className="flex items-center gap-3 text-gray-300 text-sm">
                 <div className="w-5 flex justify-center">
-                   <MapPin className="h-4 w-4" />
+                  <MapPin className="h-4 w-4" />
                 </div>
                 HQ Digfeer, Mogadishu
               </li>

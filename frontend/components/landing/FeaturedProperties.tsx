@@ -1,53 +1,29 @@
 "use client";
-
+ 
 import PropertyCard from "./PropertyCard";
-import { useState } from "react";
-
-const properties = [
-  {
-    id: 1,
-    title: "waaberi-mall",
-    price: "$125,100/mo",
-    category: "Mall",
-    location: "Hodan, Mogadishu, Banaadir",
-    floors: 7,
-    sqrm: "20x20",
-    units: 5,
-    tag: "For Rent",
-    isFeatured: true,
-    image: "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: 2,
-    title: "al-noor-commercial-hub",
-    price: "$125,100/mo",
-    category: "Business center",
-    location: "Maka Almukarama, Mogadishu, Banaadir",
-    floors: 2,
-    sqrm: "25x30",
-    units: 3,
-    tag: "For Sale",
-    isFeatured: true,
-    image: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-  },
-  {
-    id: 3,
-    title: "golden-gate-plaza",
-    price: "$125,100/mo",
-    category: "Hotel",
-    location: "Howlwadaag, Mogadishu, Banaadir",
-    floors: 5,
-    sqrm: "20x22",
-    units: 1,
-    tag: "For Rent",
-    isFeatured: true,
-    image: "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
-  },
-];
-
+import { useState, useEffect } from "react";
+import { getProperties, Property } from "@/api/propertyApi";
+import { Skeleton } from "@/components/ui/skeleton";
+ 
 export default function FeaturedProperties() {
-  const [activeIndex, setActiveIndex] = useState(0);
-
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+ 
+  useEffect(() => {
+    const fetchProperties = async () => {
+      try {
+        const data = await getProperties();
+        setProperties(data.slice(0, 6)); // Display first 6 properties
+      } catch (error) {
+        console.error("Failed to fetch featured properties:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+ 
+    fetchProperties();
+  }, []);
+ 
   return (
     <section className="pt-36 pb-8 bg-white">
       <div className="max-w-7xl mx-auto px-4 md:px-8">
@@ -56,22 +32,38 @@ export default function FeaturedProperties() {
             Featured Properties
           </h2>
         </div>
-
+ 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {properties.map((prop) => (
-             <PropertyCard key={prop.id} prop={prop} />
-          ))}
+          {isLoading ? (
+            Array(3).fill(0).map((_, idx) => (
+              <div key={idx} className="space-y-4">
+                <Skeleton className="aspect-[4/3] w-full rounded-xl" />
+                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="h-4 w-1/2" />
+              </div>
+            ))
+          ) : properties.length > 0 ? (
+            properties.map((prop) => (
+              <PropertyCard key={prop.id} prop={prop} />
+            ))
+          ) : (
+             <div className="col-span-full text-center text-gray-500 py-10">
+               No properties found.
+             </div>
+          )}
         </div>
-
+ 
         {/* Pagination Dots */}
-        <div className="flex justify-center gap-2 mt-12">
-            {[0, 1, 2, 3].map((i) => (
-                <div 
-                  key={i} 
-                  className={`w-2 h-2 rounded-full transition-all ${i === 0 ? "bg-gray-800" : "bg-gray-300"}`}
-                />
-            ))}
-        </div>
+        {!isLoading && properties.length > 1 && (
+          <div className="flex justify-center gap-2 mt-12">
+              {Array(Math.ceil(properties.length / 3)).fill(0).map((_, i) => (
+                  <div 
+                    key={i} 
+                    className={`w-2 h-2 rounded-full transition-all ${i === 0 ? "bg-gray-800" : "bg-gray-300"}`}
+                  />
+              ))}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -118,9 +118,12 @@ model Property {
   title          String
   description    String?
   location       String
+  city           String
   price          Float
-  listingType    ListingType     @default(BOOKING)
+  listingType    ListingType     @default(RENT)
   status         PropertyStatus  @default(AVAILABLE)
+  sizeLabel      String?   // e.g. "20x20"
+  area           Float?    // e.g. 400 (for filtering)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   ownerId        Int
@@ -171,7 +174,7 @@ model Booking {
   userId     Int
   startDate  DateTime
   endDate    DateTime
-  price      Float         @default(100)
+  price      Float         
   status     BookingStatus @default(PENDING)
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
@@ -213,7 +216,8 @@ enum PropertyStatus {
 }
 
 enum ListingType {
-  BOOKING
+  RENT
+  SALE
 }
 
 enum PaymentMethod {

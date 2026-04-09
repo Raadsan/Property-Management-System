@@ -11,11 +11,17 @@ import { Search, SlidersHorizontal, MapPin, Loader2, Home } from "lucide-react";
 function ExploreContent() {
   const searchParams = useSearchParams();
   const initialCity = searchParams.get("city") || "";
+  const initialType = searchParams.get("type") || "";
+  const initialListingType = searchParams.get("listingType") || "";
+  const initialMinPrice = searchParams.get("minPrice") ? parseInt(searchParams.get("minPrice")!) : null;
+  const initialMaxPrice = searchParams.get("maxPrice") ? parseInt(searchParams.get("maxPrice")!) : null;
 
   const [properties, setProperties] = React.useState<Property[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedCity, setSelectedCity] = React.useState(initialCity);
+  const [selectedType, setSelectedType] = React.useState(initialType);
+  const [selectedListingType, setSelectedListingType] = React.useState(initialListingType);
 
   React.useEffect(() => {
     const fetchProps = async () => {
@@ -37,7 +43,14 @@ function ExploreContent() {
     const matchesSearch = !searchTerm || 
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       p.location.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesCity && matchesSearch;
+    const matchesType = !selectedType || p.propertyType?.name.toLowerCase() === selectedType.toLowerCase();
+    const matchesListingType = !selectedListingType || p.listingType.toUpperCase() === selectedListingType.toUpperCase();
+    
+    let matchesPrice = true;
+    if (initialMinPrice !== null && p.price < initialMinPrice) matchesPrice = false;
+    if (initialMaxPrice !== null && p.price > initialMaxPrice) matchesPrice = false;
+
+    return matchesCity && matchesSearch && matchesType && matchesListingType && matchesPrice;
   });
 
   // Get unique cities for the filter dropdown/pills

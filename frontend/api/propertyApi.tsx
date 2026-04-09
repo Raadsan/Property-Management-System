@@ -73,3 +73,8 @@ export const getCityStats = async (): Promise<{ name: string; listings: number }
   const response = await api.get("/properties/stats/cities");
   return response.data;
 };
+
+export const getPropertyTypes = async (): Promise<{ id: number; name: string }[]> => {
+  const response = await api.get("/property-types");
+  return response.data;
+};

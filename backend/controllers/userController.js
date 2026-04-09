@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js";
 import bcrypt from "bcrypt";
+import nodemailer from "nodemailer";
 
 // @desc    Create a new user
 // @route   POST /api/users
@@ -16,6 +17,11 @@ export const createUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
+    let photoPath = photo;
+    if (req.file) {
+      photoPath = `/uploads/${req.file.filename}`;
+    }
+
     const user = await prisma.user.create({
       data: {
         name,
@@ -23,7 +29,7 @@ export const createUser = async (req, res) => {
         phone,
         roleId: parseInt(roleId),
         password: hashedPassword,
-        photo,
+        photo: photoPath,
         status: status || "ACTIVE",
       },
     });
@@ -93,6 +99,7 @@ export const getUserById = async (req, res) => {
 // @route   PATCH /api/users/:id
 export const updateUser = async (req, res) => {
   const { id } = req.params;
+  console.log("📥 UPDATE USER REQUEST:", { id, body: req.body, file: req.file });
   const { name, email, phone, roleId, password, photo, status } = req.body || {};
 
   try {
@@ -100,9 +107,15 @@ export const updateUser = async (req, res) => {
     if (name) updateData.name = name;
     if (email) updateData.email = email;
     if (phone) updateData.phone = phone;
-    if (photo) updateData.photo = photo;
     if (status) updateData.status = status;
     if (roleId) updateData.roleId = parseInt(roleId);
+    
+    // Handle photo upload
+    if (req.file) {
+      updateData.photo = `/uploads/${req.file.filename}`;
+    } else if (photo) {
+      updateData.photo = photo;
+    }
     
     // If updating password, hash it
     if (password) {
@@ -118,6 +131,7 @@ export const updateUser = async (req, res) => {
     const { password: _, ...userWithoutPassword } = updatedUser;
     res.status(200).json({ message: "User updated successfully", user: userWithoutPassword });
   } catch (error) {
+    console.error("❌ UPDATE USER ERROR:", error);
     if (error.code === 'P2025') {
       return res.status(404).json({ message: "User not found" });
     }
@@ -184,5 +198,98 @@ export const loginUser = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ message: "Error during login process", error: error.message });
+  }
+};
+
+// --- FORGOT PASSWORD LOGIC ---
+
+// Helper to generate 6-digit code
+const generateResetCode = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+// @desc    Forgot Password - Send Code
+// @route   POST /api/users/forgot-password
+export const forgotPassword = async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ message: "Email is required" });
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) return res.status(404).json({ message: "User not found" });
+
+    const code = generateResetCode();
+    const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    await prisma.user.update({
+      where: { email },
+      data: { resetCode: code, resetCodeExpires: expires }
+    });
+
+    // Configure transporter
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS
+      }
+    });
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "Password Reset Code",
+      text: `Your password reset code is: ${code}. It expires in 10 minutes.`
+    };
+
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: "Reset code sent to email" });
+  } catch (error) {
+    res.status(500).json({ message: "Error sending reset code", error: error.message });
+  }
+};
+
+// @desc    Verify Code
+// @route   POST /api/users/verify-code
+export const verifyCode = async (req, res) => {
+  const { email, code } = req.body;
+  if (!email || !code) return res.status(400).json({ message: "Email and code are required" });
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || user.resetCode !== code || (user.resetCodeExpires && user.resetCodeExpires < new Date())) {
+      return res.status(400).json({ message: "Invalid or expired code" });
+    }
+    res.status(200).json({ message: "Code verified successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error verifying code", error: error.message });
+  }
+};
+
+// @desc    Reset Password
+// @route   POST /api/users/reset-password
+export const resetPassword = async (req, res) => {
+  const { email, code, newPassword } = req.body;
+  if (!email || !code || !newPassword) return res.status(400).json({ message: "Missing required fields" });
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user || user.resetCode !== code || (user.resetCodeExpires && user.resetCodeExpires < new Date())) {
+      return res.status(400).json({ message: "Invalid or expired code" });
+    }
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        resetCode: null,
+        resetCodeExpires: null
+      }
+    });
+
+    res.status(200).json({ message: "Password reset successful" });
+  } catch (error) {
+    res.status(500).json({ message: "Error resetting password", error: error.message });
   }
 };

@@ -97,6 +97,8 @@ model User {
   updatedAt       DateTime   @updatedAt
   password        String
   photo           String?
+  resetCode       String?
+  resetCodeExpires DateTime?
   favorites       Favorite[]
   bookings        Booking[]
   payments        Payment[]

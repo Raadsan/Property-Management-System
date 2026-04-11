@@ -70,6 +70,8 @@ export default function PropertiesPage() {
   const [listingType, setListingType] = React.useState<string>("RENT")
   const [sizeLabel, setSizeLabel] = React.useState("")
   const [area, setArea] = React.useState("")
+  const [rooms, setRooms] = React.useState("")
+  const [bathrooms, setBathrooms] = React.useState("")
   const [featuresInput, setFeaturesInput] = React.useState("")
 
   // File State
@@ -131,6 +133,8 @@ export default function PropertiesPage() {
       formData.append("propertyTypeId", propertyTypeId)
       if (sizeLabel) formData.append("sizeLabel", sizeLabel)
       if (area) formData.append("area", area)
+      if (rooms) formData.append("Rooms", rooms)
+      if (bathrooms) formData.append("Bathrooms", bathrooms)
 
       // Convert comma separated features into an array string
       if (featuresInput.trim()) {
@@ -222,6 +226,8 @@ export default function PropertiesPage() {
       setPropertyTypeId(prop.propertyTypeId.toString())
       setSizeLabel(prop.sizeLabel || "")
       setArea(prop.area?.toString() || "")
+      setRooms(prop.Rooms?.toString() || "")
+      setBathrooms(prop.Bathrooms?.toString() || "")
       setFeaturesInput(prop.features?.map(f => f.name).join(", ") || "")
     } else {
       setCurrentProperty(null)
@@ -236,6 +242,8 @@ export default function PropertiesPage() {
       setPropertyTypeId("")
       setSizeLabel("")
       setArea("")
+      setRooms("")
+      setBathrooms("")
       setFeaturesInput("")
     }
 
@@ -261,6 +269,8 @@ export default function PropertiesPage() {
     setListingType("RENT")
     setSizeLabel("")
     setArea("")
+    setRooms("")
+    setBathrooms("")
     setFeaturesInput("")
     setSelectedFiles([])
     if (fileInputRef.current) {
@@ -399,6 +409,18 @@ export default function PropertiesPage() {
                   <div className="space-y-2">
                     <Label htmlFor="area">Numerical Area (sq ft/m)</Label>
                     <Input id="area" type="number" value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. 600" />
+                  </div>
+
+                  {/* Rooms */}
+                  <div className="space-y-2">
+                    <Label htmlFor="rooms">Rooms</Label>
+                    <Input id="rooms" type="number" value={rooms} onChange={(e) => setRooms(e.target.value)} placeholder="0" />
+                  </div>
+
+                  {/* Bathrooms */}
+                  <div className="space-y-2">
+                    <Label htmlFor="bathrooms">Bathrooms</Label>
+                    <Input id="bathrooms" type="number" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} placeholder="0" />
                   </div>
 
                   {/* Status */}
@@ -543,6 +565,13 @@ export default function PropertiesPage() {
                         <span className="font-semibold text-muted-foreground block mb-1">Dimensions & Area</span>
                         <p className="font-medium bg-muted/40 p-2 rounded-md">
                           {viewProperty.sizeLabel || "N/A"} ({viewProperty.area ? `${viewProperty.area} units` : "No area specified"})
+                        </p>
+                      </div>
+
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">Rooms & Bathrooms</span>
+                        <p className="font-medium bg-muted/40 p-2 rounded-md">
+                          {viewProperty.Rooms || 0} Rooms, {viewProperty.Bathrooms || 0} Bathrooms
                         </p>
                       </div>
 

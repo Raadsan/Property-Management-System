@@ -121,6 +121,8 @@ model Property {
   description    String?
   location       String
   city           String
+  Rooms          Int             @default(0)
+  Bathrooms      Int             @default(0)
   price          Float
   listingType    ListingType     @default(RENT)
   status         PropertyStatus  @default(AVAILABLE)

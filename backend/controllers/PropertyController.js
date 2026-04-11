@@ -13,7 +13,8 @@ export const createProperty = async (req, res) => {
     const {
       title, description, location, city, price,
       ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures,
-      sizeLabel, area, listingType: bodyListingType, status: bodyStatus
+      sizeLabel, area, listingType: bodyListingType, status: bodyStatus,
+      Rooms, Bathrooms
     } = req.body || {};
 
     const listingType = (bodyListingType || "RENT").trim().toUpperCase();
@@ -55,6 +56,8 @@ export const createProperty = async (req, res) => {
     const parsedOwnerId = parseInt(ownerId);
     const parsedPropertyTypeId = parseInt(propertyTypeId);
     const parsedArea = area ? parseFloat(area) : null;
+    const parsedRooms = Rooms !== undefined ? parseInt(Rooms) : 0;
+    const parsedBathrooms = Bathrooms !== undefined ? parseInt(Bathrooms) : 0;
 
     if (isNaN(parsedPrice) || isNaN(parsedOwnerId) || isNaN(parsedPropertyTypeId)) {
       return res.status(400).json({ 
@@ -72,6 +75,8 @@ export const createProperty = async (req, res) => {
         price: parsedPrice,
         listingType,
         status,
+        Rooms: isNaN(parsedRooms) ? 0 : parsedRooms,
+        Bathrooms: isNaN(parsedBathrooms) ? 0 : parsedBathrooms,
         ownerId: parsedOwnerId,
         propertyTypeId: parsedPropertyTypeId,
         sizeLabel,
@@ -177,6 +182,8 @@ export const updateProperty = async (req, res) => {
     if (updateFields.description !== undefined) updateData.description = updateFields.description;
     if (updateFields.location) updateData.location = updateFields.location;
     if (updateFields.city) updateData.city = updateFields.city;
+    if (updateFields.Rooms !== undefined) updateData.Rooms = parseInt(updateFields.Rooms) || 0;
+    if (updateFields.Bathrooms !== undefined) updateData.Bathrooms = parseInt(updateFields.Bathrooms) || 0;
     if (updateFields.price) updateData.price = parseFloat(updateFields.price);
     if (updateFields.listingType) updateData.listingType = updateFields.listingType.trim().toUpperCase();
     if (updateFields.status) updateData.status = updateFields.status.trim().toUpperCase();

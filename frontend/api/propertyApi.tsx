@@ -23,6 +23,8 @@ export interface Property {
   status: 'AVAILABLE' | 'SOLD' | 'RENTED' | 'BOOKED';
   sizeLabel?: string;
   area?: number;
+  Rooms?: number;
+  Bathrooms?: number;
   ownerId: number;
   propertyTypeId: number;
   createdAt: string;

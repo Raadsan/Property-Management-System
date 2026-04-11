@@ -72,6 +72,7 @@ export default function PropertiesPage() {
   const [area, setArea] = React.useState("")
   const [rooms, setRooms] = React.useState("")
   const [bathrooms, setBathrooms] = React.useState("")
+  const [reservationFee, setReservationFee] = React.useState("0.01")
   const [featuresInput, setFeaturesInput] = React.useState("")
 
   // File State
@@ -135,6 +136,7 @@ export default function PropertiesPage() {
       if (area) formData.append("area", area)
       if (rooms) formData.append("Rooms", rooms)
       if (bathrooms) formData.append("Bathrooms", bathrooms)
+      if (reservationFee) formData.append("ReservationFee", reservationFee)
 
       // Convert comma separated features into an array string
       if (featuresInput.trim()) {
@@ -228,6 +230,7 @@ export default function PropertiesPage() {
       setArea(prop.area?.toString() || "")
       setRooms(prop.Rooms?.toString() || "")
       setBathrooms(prop.Bathrooms?.toString() || "")
+      setReservationFee(prop.ReservationFee?.toString() || "0.01")
       setFeaturesInput(prop.features?.map(f => f.name).join(", ") || "")
     } else {
       setCurrentProperty(null)
@@ -244,6 +247,7 @@ export default function PropertiesPage() {
       setArea("")
       setRooms("")
       setBathrooms("")
+      setReservationFee("0.01")
       setFeaturesInput("")
     }
 
@@ -271,6 +275,7 @@ export default function PropertiesPage() {
     setArea("")
     setRooms("")
     setBathrooms("")
+    setReservationFee("0.01")
     setFeaturesInput("")
     setSelectedFiles([])
     if (fileInputRef.current) {
@@ -437,6 +442,12 @@ export default function PropertiesPage() {
                         <SelectItem value="SOLD">SOLD</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  
+                  {/* Reservation Fee */}
+                  <div className="space-y-2">
+                    <Label htmlFor="reservationFee">Reservation Fee ($)</Label>
+                    <Input id="reservationFee" type="number" step="0.01" value={reservationFee} onChange={(e) => setReservationFee(e.target.value)} placeholder="0.01" />
                   </div>
 
                   {/* Features */}

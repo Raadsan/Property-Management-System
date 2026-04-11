@@ -124,6 +124,7 @@ model Property {
   Rooms          Int             @default(0)
   Bathrooms      Int             @default(0)
   price          Float
+  ReservationFee Float           @default(0.01)
   listingType    ListingType     @default(RENT)
   status         PropertyStatus  @default(AVAILABLE)
   sizeLabel      String?   // e.g. "20x20"

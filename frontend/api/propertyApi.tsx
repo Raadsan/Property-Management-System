@@ -20,7 +20,7 @@ export interface Property {
   city: string;
   price: number;
   listingType: 'RENT' | 'SALE';
-  status: 'AVAILABLE' | 'SOLD' | 'RENTED' | 'BOOKED';
+  status: 'AVAILABLE' | 'BOOKED';
   sizeLabel?: string;
   area?: number;
   Rooms?: number;

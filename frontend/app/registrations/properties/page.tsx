@@ -730,15 +730,7 @@ export default function PropertiesPage() {
 
                       <TableCell className="text-right">
                         <div className="flex flex-wrap justify-end gap-1">
-                          {property.status === "AVAILABLE" && (
-                            <Button
-                              size="sm"
-                              onClick={() => openBookingModal(property)}
-                              className="mr-2 px-3 h-8 text-[10px] font-black uppercase tracking-wider bg-[#15803d] hover:bg-[#166534] text-white border-none shadow-sm transition-all hover:scale-105 active:scale-95"
-                            >
-                              Book Now
-                            </Button>
-                          )}
+
                           <Button
                             variant="ghost"
                             size="icon"

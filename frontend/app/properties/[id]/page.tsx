@@ -112,7 +112,7 @@ export default function PropertyDetailPage() {
         userId: user.id || user.userId,
         phone: wafiPhone
       });
-      toast.success("Booking fee of $100 processed successfully via WafiPay!");
+      toast.success(`Booking fee of $${property.ReservationFee ?? 100} processed successfully via WafiPay!`);
       setIsBookingOpen(false);
       // Optional: Refresh property status
       const updated = await getPropertyById(property.id);
@@ -300,12 +300,21 @@ export default function PropertyDetailPage() {
               <div>
                 <h4 className="text-2xl font-bold text-gray-900 mb-8">Secure Booking</h4>
                 <div className="space-y-4">
-                  <button 
-                    onClick={handleAction}
-                    className="w-full flex items-center justify-center gap-4 bg-[#214347] text-white py-5 rounded-2xl font-bold hover:bg-[#1a3539] transition-all text-sm uppercase tracking-widest active:scale-[0.98]"
-                  >
-                    <Activity className="h-5 w-5" />  Book Now
-                  </button>
+                  {property.status === 'AVAILABLE' ? (
+                    <button 
+                      onClick={handleAction}
+                      className="w-full flex items-center justify-center gap-4 bg-[#214347] text-white py-5 rounded-2xl font-bold hover:bg-[#1a3539] transition-all text-sm uppercase tracking-widest active:scale-[0.98]"
+                    >
+                      <Activity className="h-5 w-5" />  Book Now
+                    </button>
+                  ) : (
+                    <button 
+                      disabled
+                      className="w-full flex items-center justify-center gap-4 bg-gray-300 text-white py-5 rounded-2xl font-bold text-sm uppercase tracking-widest cursor-not-allowed"
+                    >
+                      Out of Market
+                    </button>
+                  )}
                   <a 
                     href={`https://wa.me/252613052542`}
                     target="_blank"
@@ -336,7 +345,7 @@ export default function PropertyDetailPage() {
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">Complete Your Booking</DialogTitle>
             <DialogDescription>
-              To secure this property, you need to pay a non-refundable booking fee of <strong>$100</strong> via WafiPay.
+              To secure this property, you need to pay a non-refundable booking fee of <strong>${property?.ReservationFee ?? 100}</strong> via WafiPay.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleBookingSubmit} className="space-y-6 py-4">
@@ -364,7 +373,7 @@ export default function PropertyDetailPage() {
                 disabled={isBookingLoading}
                 className="w-full bg-[#16a34a] hover:bg-[#15803d] text-white py-6 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-all outline-none!"
               >
-                {isBookingLoading ? "Processing Payment..." : "Confirm & Pay $100"}
+                {isBookingLoading ? "Processing Payment..." : `Confirm & Pay $${property?.ReservationFee ?? 100}`}
               </Button>
             </DialogFooter>
           </form>

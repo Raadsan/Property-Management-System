@@ -43,14 +43,14 @@ export default function ContactPage() {
                           <span className="text-xs font-bold text-teal-300 uppercase tracking-widest flex items-center gap-2">
                             <Phone className="h-4 w-4" /> Phone
                           </span>
-                          <span className="text-lg font-medium">+252 61 700 0000</span>
+                          <span className="text-lg font-medium">+252 613052542 / 613055580</span>
                        </div>
                        
                        <div className="flex flex-col gap-2">
                           <span className="text-xs font-bold text-teal-300 uppercase tracking-widest flex items-center gap-2">
                             <Mail className="h-4 w-4" /> Email
                           </span>
-                          <span className="text-lg font-medium">info@damal.so</span>
+                          <span className="text-lg font-medium">imustaqbalproperties@gmail.com</span>
                        </div>
                        
                        <div className="flex flex-col gap-2">

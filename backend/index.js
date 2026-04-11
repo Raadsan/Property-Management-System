@@ -10,6 +10,7 @@ import paymentRoute from "./Routes/paymentRoute.js";
 import favoriteRoute from "./Routes/favoriteRoute.js";
 import menuRoute from "./Routes/menuRoute.js";
 import rolePermissionsRoute from "./Routes/rolePermissionsRoute.js";
+import dashboardRoute from "./Routes/dashboardRoute.js";
 
 import path from 'path';
 import cors from 'cors';
@@ -38,6 +39,7 @@ app.use('/api/payments', paymentRoute);
 app.use('/api/favorites', favoriteRoute);
 app.use('/api/menus', menuRoute);
 app.use('/api/role-permissions', rolePermissionsRoute);
+app.use('/api/dashboard', dashboardRoute);
 
 
 

@@ -69,9 +69,11 @@ export default function PropertyCard({ prop }: PropertyCardProps) {
           {prop.city}, {prop.location}
         </div>
  
-        <div className="flex gap-6 pt-4 border-t border-gray-50 text-sm text-gray-500 font-medium">
+        <div className="flex flex-wrap gap-x-4 gap-y-2 pt-4 border-t border-gray-50 text-[12px] text-gray-500 font-medium">
           <div>Size: {prop.sizeLabel || "N/A"}</div>
           {prop.area && <div>Area: {prop.area} sqm</div>}
+          <div>Rooms: {prop.Rooms || 0}</div>
+          <div>Baths: {prop.Bathrooms || 0}</div>
         </div>
       </div>
     </div>

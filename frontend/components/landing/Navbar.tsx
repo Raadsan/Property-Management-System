@@ -28,7 +28,7 @@ export default function Navbar() {
     { 
       name: "Property", 
       dropdown: [
-        { name: "Buy Property", href: "/buy", icon: HomeIcon },
+        { name: "Sale Property", href: "/buy", icon: HomeIcon },
         { name: "Rent Property", href: "/rent", icon: Key }
       ]
     },

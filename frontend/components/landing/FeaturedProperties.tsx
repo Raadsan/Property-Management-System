@@ -37,9 +37,9 @@ export default function FeaturedProperties() {
           {isLoading ? (
             Array(3).fill(0).map((_, idx) => (
               <div key={idx} className="space-y-4">
-                <Skeleton className="aspect-[4/3] w-full rounded-xl" />
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
+                <Skeleton className="aspect-[4/3] w-full rounded-xl bg-gray-200" />
+                <Skeleton className="h-4 w-3/4 bg-gray-200" />
+                <Skeleton className="h-4 w-1/2 bg-gray-200" />
               </div>
             ))
           ) : properties.length > 0 ? (

@@ -24,7 +24,11 @@ import {
 import { getPropertyById, Property } from "@/api/propertyApi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { bookProperty } from "@/api/propertyApi";
  
 export default function PropertyDetailPage() {
   const params = useParams();
@@ -35,6 +39,9 @@ export default function PropertyDetailPage() {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [selectedImgIndex, setSelectedImgIndex] = useState(0);
   const [user, setUser] = useState<any>(null);
+  const [isBookingOpen, setIsBookingOpen] = useState(false);
+  const [wafiPhone, setWafiPhone] = useState("252");
+  const [isBookingLoading, setIsBookingLoading] = useState(false);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
  
   useEffect(() => {
@@ -74,11 +81,48 @@ export default function PropertyDetailPage() {
   }, [id]);
 
   const handleAction = (e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log("🖱️ handleAction triggered. User:", user);
+
     if (!user) {
-      e.preventDefault();
-      toast.error("Please login to contact the owner");
+      console.log("❌ No user found, redirecting to login.");
+      toast.error("Please login to proceed with booking");
       router.push("/login");
       return;
+    }
+
+    // Restriction: Only users with the 'User' role can make bookings
+    if (user.role?.name !== "User") {
+      console.log(`❌ Role restriction: "${user.role?.name}" is not allowed to book.`);
+      toast.error(`Access Denied: As an ${user.role?.name || "Administrator"}, you are not allowed to make bookings. Please use a standard client account.`);
+      return;
+    }
+
+    console.log("✅ Opening booking modal.");
+    setIsBookingOpen(true);
+  };
+
+  const handleBookingSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user || !property) return;
+    
+    setIsBookingLoading(true);
+    try {
+      await bookProperty(property.id, {
+        userId: user.id || user.userId,
+        phone: wafiPhone
+      });
+      toast.success("Booking fee of $100 processed successfully via WafiPay!");
+      setIsBookingOpen(false);
+      // Optional: Refresh property status
+      const updated = await getPropertyById(property.id);
+      setProperty(updated);
+    } catch (error: any) {
+      console.error("Booking failed:", error);
+      const msg = error.response?.data?.message || "Booking failed. Please try again.";
+      toast.error(msg);
+    } finally {
+      setIsBookingLoading(false);
     }
   };
  
@@ -223,9 +267,17 @@ export default function PropertyDetailPage() {
                    <div className="text-gray-300 group-hover:text-[#0a74b3] transition-colors"><Home className="h-5 w-5 stroke-[1.5]" /></div>
                    <span className="text-[13px] font-semibold text-gray-800">{property.sizeLabel || "Standard"}</span>
                 </div>
+                <div className="flex items-center gap-3 group">
+                   <div className="text-gray-300 group-hover:text-[#0a74b3] transition-colors"><BedDouble className="h-5 w-5 stroke-[1.5]" /></div>
+                   <span className="text-[13px] font-semibold text-gray-800">{property.Rooms || 0} Rooms</span>
+                </div>
+                <div className="flex items-center gap-3 group">
+                   <div className="text-gray-300 group-hover:text-[#0a74b3] transition-colors"><Bath className="h-5 w-5 stroke-[1.5]" /></div>
+                   <span className="text-[13px] font-semibold text-gray-800">{property.Bathrooms || 0} Baths</span>
+                </div>
                 {property.area && (
                   <div className="flex items-center gap-3 group">
-                     <div className="text-gray-300 group-hover:text-[#0a74b3] transition-colors"><MapPin className="h-5 w-5 stroke-[1.5]" /></div>
+                     <div className="text-gray-300 group-hover:text-[#0a74b3] transition-colors"><Container className="h-5 w-5 stroke-[1.5]" /></div>
                      <span className="text-[13px] font-semibold text-gray-800">{property.area} sqm</span>
                   </div>
                 )}
@@ -252,10 +304,10 @@ export default function PropertyDetailPage() {
                     onClick={handleAction}
                     className="w-full flex items-center justify-center gap-4 bg-[#214347] text-white py-5 rounded-2xl font-bold hover:bg-[#1a3539] transition-all text-sm uppercase tracking-widest active:scale-[0.98]"
                   >
-                    <Activity className="h-5 w-5" /> Login to Book Now
+                    <Activity className="h-5 w-5" />  Book Now
                   </button>
                   <a 
-                    href={`https://wa.me/${property.owner?.phone?.replace(/\+/g, '')}`}
+                    href={`https://wa.me/252613052542`}
                     target="_blank"
                     onClick={handleAction}
                     className="w-full flex items-center justify-center gap-4 bg-[#26ce61] text-white py-5 rounded-2xl font-bold hover:bg-[#20b453] transition-all text-sm uppercase tracking-widest active:scale-[0.98]"
@@ -277,6 +329,47 @@ export default function PropertyDetailPage() {
       </div>
  
       <Footer />
+ 
+      {/* Booking Modal */}
+      <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Complete Your Booking</DialogTitle>
+            <DialogDescription>
+              To secure this property, you need to pay a non-refundable booking fee of <strong>$100</strong> via WafiPay.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleBookingSubmit} className="space-y-6 py-4">
+            {property && (
+              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-2">
+                 <p className="text-sm font-semibold text-gray-600 mb-1 leading-none">Property</p>
+                 <p className="text-lg font-bold text-[#214347] truncate">{property.title}</p>
+              </div>
+            )}
+            <div className="space-y-3">
+              <Label htmlFor="wafiPhone" className="text-sm font-bold text-gray-700">Wafi Mobile Account Number</Label>
+              <Input 
+                id="wafiPhone" 
+                placeholder="e.g. 25261..." 
+                value={wafiPhone} 
+                onChange={(e) => setWafiPhone(e.target.value)}
+                className="rounded-xl h-12"
+                required 
+              />
+              <p className="text-[11px] text-gray-400 leading-tight">Enter your Somalia mobile money number linked to WafiPay.</p>
+            </div>
+            <DialogFooter>
+              <Button 
+                type="submit" 
+                disabled={isBookingLoading}
+                className="w-full bg-[#16a34a] hover:bg-[#15803d] text-white py-6 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-all outline-none!"
+              >
+                {isBookingLoading ? "Processing Payment..." : "Confirm & Pay $100"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Lightbox / Gallery Modal */}
       <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>

@@ -50,13 +50,15 @@ export default function Footer() {
                 <div className="w-5 flex justify-center">
                   <Phone className="h-4 w-4" />
                 </div>
-                +252 61 700 0000
+                <a href="https://wa.me/252613052542" target="_blank" className="hover:text-white transition-colors">
+                  +252 613052542 / 613055580
+                </a>
               </li>
               <li className="flex items-center gap-3 text-gray-300 text-sm">
                 <div className="w-5 flex justify-center">
                   <Mail className="h-4 w-4" />
                 </div>
-                info@damal.so
+                imustaqbalproperties@gmail.com
               </li>
               <li className="flex items-center gap-3 text-gray-300 text-sm">
                 <div className="w-5 flex justify-center">

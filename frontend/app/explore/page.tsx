@@ -57,7 +57,7 @@ function ExploreContent() {
   const uniqueCities = Array.from(new Set(properties.map(p => p.city))).filter(Boolean);
 
   return (
-    <main className="min-h-screen bg-gray-50/50">
+    <main className="min-h-screen bg-white">
       <Navbar />
 
       {/* 1. Header Banner (Styled like Contact Us) */}

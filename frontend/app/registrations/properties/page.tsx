@@ -632,12 +632,12 @@ export default function PropertiesPage() {
                 <TableRow className="bg-muted/50">
                   <TableHead>Name</TableHead>
                   <TableHead>PropertyType</TableHead>
-                  <TableHead>Feature</TableHead>
                   <TableHead>Price</TableHead>
-                  <TableHead>Size</TableHead>
-                  <TableHead>ListingType</TableHead>
+                  <TableHead>Specs</TableHead>
+                  <TableHead>Rooms</TableHead>
+                  <TableHead>Baths</TableHead>
+                  <TableHead>Listing</TableHead>
                   <TableHead>Location</TableHead>
-                  <TableHead>City</TableHead>
                   <TableHead>Owner</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -676,32 +676,32 @@ export default function PropertiesPage() {
                         </span>
                       </TableCell>
 
-                      <TableCell className="max-w-[150px] truncate text-xs text-muted-foreground" title={property.features?.map(f => f.name).join(", ")}>
-                        {property.features && property.features.length > 0
-                          ? property.features.map(f => f.name).join(", ")
-                          : "—"
-                        }
-                      </TableCell>
+
 
                       <TableCell className="font-bold text-[#166534] dark:text-[#6ee7b7]">
                         ${property.price.toLocaleString()}
                       </TableCell>
 
                       <TableCell className="text-xs">
-                        {property.sizeLabel || "—"}
+                        <div className="font-medium">{property.sizeLabel || "—"}</div>
                         {property.area && <div className="text-[10px] text-muted-foreground">{property.area} sqm</div>}
+                      </TableCell>
+
+                      <TableCell className="text-sm font-semibold">
+                        {property.Rooms || 0}
+                      </TableCell>
+
+                      <TableCell className="text-sm font-semibold">
+                        {property.Bathrooms || 0}
                       </TableCell>
 
                       <TableCell className="text-xs uppercase font-bold tracking-wider opacity-80">
                         {property.listingType}
                       </TableCell>
 
-                      <TableCell className="max-w-[200px] truncate text-sm" title={property.location}>
-                        {property.location}
-                      </TableCell>
-
-                      <TableCell className="font-medium text-sm capitalize">
-                        {property.city}
+                      <TableCell className="max-w-[200px] text-sm">
+                        <div className="truncate font-medium">{property.location}</div>
+                        <div className="text-[10px] text-muted-foreground capitalize">{property.city}</div>
                       </TableCell>
 
                       <TableCell className="text-sm">

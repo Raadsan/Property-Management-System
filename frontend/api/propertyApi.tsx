@@ -25,6 +25,7 @@ export interface Property {
   area?: number;
   Rooms?: number;
   Bathrooms?: number;
+  ReservationFee?: number;
   ownerId: number;
   propertyTypeId: number;
   createdAt: string;

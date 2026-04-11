@@ -14,7 +14,7 @@ export const createProperty = async (req, res) => {
       title, description, location, city, price,
       ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures,
       sizeLabel, area, listingType: bodyListingType, status: bodyStatus,
-      Rooms, Bathrooms
+      Rooms, Bathrooms, ReservationFee
     } = req.body || {};
 
     const listingType = (bodyListingType || "RENT").trim().toUpperCase();
@@ -58,6 +58,7 @@ export const createProperty = async (req, res) => {
     const parsedArea = area ? parseFloat(area) : null;
     const parsedRooms = Rooms !== undefined ? parseInt(Rooms) : 0;
     const parsedBathrooms = Bathrooms !== undefined ? parseInt(Bathrooms) : 0;
+    const parsedReservationFee = ReservationFee !== undefined ? parseFloat(ReservationFee) : 0.01;
 
     if (isNaN(parsedPrice) || isNaN(parsedOwnerId) || isNaN(parsedPropertyTypeId)) {
       return res.status(400).json({ 
@@ -81,6 +82,7 @@ export const createProperty = async (req, res) => {
         propertyTypeId: parsedPropertyTypeId,
         sizeLabel,
         area: isNaN(parsedArea) ? null : parsedArea,
+        ReservationFee: isNaN(parsedReservationFee) ? 0.01 : parsedReservationFee,
         images: images && images.length > 0 ? {
           create: images.map(url => ({ url }))
         } : undefined,
@@ -111,7 +113,21 @@ export const createProperty = async (req, res) => {
 // @route   GET /api/properties
 export const getProperties = async (req, res) => {
   try {
+    const { city, rooms, minPrice, maxPrice, propertyTypeId } = req.query;
+
+    const where = {};
+    if (city) where.city = city;
+    if (rooms) where.Rooms = parseInt(rooms);
+    if (propertyTypeId) where.propertyTypeId = parseInt(propertyTypeId);
+    
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = parseFloat(minPrice);
+      if (maxPrice) where.price.lte = parseFloat(maxPrice);
+    }
+
     const properties = await prisma.property.findMany({
+      where,
       include: {
         images: { orderBy: { id: 'desc' } },
         features: true,
@@ -187,6 +203,11 @@ export const updateProperty = async (req, res) => {
     if (updateFields.price) updateData.price = parseFloat(updateFields.price);
     if (updateFields.listingType) updateData.listingType = updateFields.listingType.trim().toUpperCase();
     if (updateFields.status) updateData.status = updateFields.status.trim().toUpperCase();
+    
+    if (updateFields.ReservationFee !== undefined) {
+      const parsedResFee = parseFloat(updateFields.ReservationFee);
+      updateData.ReservationFee = isNaN(parsedResFee) ? 0.01 : parsedResFee;
+    }
     
     if (updateFields.ownerId) {
       updateData.ownerId = parseInt(updateFields.ownerId);
@@ -314,7 +335,7 @@ export const bookNow = async (req, res) => {
         transactionInfo: {
           referenceId: "BOOK-" + Date.now(),
           invoiceId: "INV-" + Date.now(),
-          amount: "100", // Fixed $100
+          amount: (property.ReservationFee || 0.01).toString(),
           currency: "USD",
           description: `Booking Fee for Property ${property.title}`
         }
@@ -343,7 +364,7 @@ export const bookNow = async (req, res) => {
           userId: parseInt(userId),
           startDate: now,
           endDate: futureDate,
-          price: 100
+          price: property.ReservationFee || 0.01
         }
       });
 

@@ -54,21 +54,21 @@ app.use((err, req, res, next) => {
 });
 
 async function main() {
-  const PORT = process.env.PORT || 5000;
-  
-  // Start listening on all network interfaces immediately
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🚀 Server running on http://0.0.0.0:${PORT}`);
-  });
-
   try {
     console.log('Connecting to MySQL database...');
-    // Connect to database in the background
+
+    // Attempt to connect
     await prisma.$connect();
     console.log('✅ Successfully connected to the MySQL database!');
+
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on http://localhost:${PORT}`);
+    });
+
   } catch (error) {
     console.error('❌ Error connecting to MySQL:', error.message);
-    // Keep the server running so we can see the error via logs/routes
+    process.exit(1);
   }
 }
 

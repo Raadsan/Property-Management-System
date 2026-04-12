@@ -11,7 +11,7 @@ export const createUser = async (req, res) => {
   if (!name || !phone || !roleId || !password) {
     return res.status(400).json({ message: "Missing required fields (name, phone, roleId, password)" });
   }
-// welcome
+
   try {
     // Hash the password
     const salt = await bcrypt.genSalt(10);

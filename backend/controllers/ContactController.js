@@ -66,3 +66,24 @@ export const sendContactMessage = async (req, res) => {
     res.status(500).json({ status: 'ERR', message: 'Failed to send message: ' + error.message });
   }
 };
+
+export const getContactMessages = async (req, res) => {
+  try {
+    const messages = await prisma.contact.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+
+    res.status(200).json({
+      status: 'OK',
+      data: messages
+    });
+  } catch (error) {
+    console.error('Fetch messages error:', error);
+    res.status(500).json({
+      status: 'ERR',
+      message: 'Failed to fetch messages'
+    });
+  }
+};

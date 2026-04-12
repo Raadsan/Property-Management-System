@@ -13,3 +13,8 @@ export const sendContactMessage = async (contactData: ContactData) => {
   const response = await api.post('/contact', contactData);
   return response.data;
 };
+
+export const getContactMessages = async () => {
+  const response = await api.get('/contact');
+  return response.data;
+};

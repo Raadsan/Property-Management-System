@@ -236,3 +236,16 @@ enum PaymentStatus {
   PAID
   LATE
 }
+
+model Contact {
+  id          Int      @id @default(autoincrement())
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  inquiryType String
+  message     String   @db.Text
+  status      String   @default("UNREAD")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

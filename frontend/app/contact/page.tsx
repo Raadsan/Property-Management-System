@@ -1,10 +1,62 @@
 "use client";
 
+import * as React from "react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
-import { Mail, Phone, MapPin, Send, MessageSquare, Clock } from "lucide-react";
+import { Mail, Phone, MapPin, Send, MessageSquare, Clock, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { sendContactMessage } from "@/api/contactApi";
 
 export default function ContactPage() {
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [formData, setFormData] = React.useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    inquiryType: "General",
+    message: ""
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleInquiryChange = (subject: string) => {
+    setFormData(prev => ({ ...prev, inquiryType: subject }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.message) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const response = await sendContactMessage(formData);
+      toast.success(response.message || "Message sent successfully!");
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        phone: "",
+        inquiryType: "General",
+        message: ""
+      });
+    } catch (error: any) {
+      console.error("Contact submit error:", error);
+      const errorMsg = error.response?.data?.message || "Something went wrong. Please try again later.";
+      toast.error(errorMsg);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <main className="min-h-screen font-sans bg-[#f8f9fa]">
       <Navbar />
@@ -76,12 +128,16 @@ export default function ContactPage() {
 
               {/* Right Side: Contact Form */}
               <div className="lg:w-3/5 p-8 md:p-12 lg:p-14 bg-white">
-                 <form className="flex flex-col gap-7 text-gray-800">
+                 <form onSubmit={handleSubmit} className="flex flex-col gap-7 text-gray-800">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-7">
                        <div className="flex flex-col gap-2">
                           <label className="text-[13px] font-bold text-gray-600 uppercase tracking-wide">First Name</label>
                           <input 
                             type="text" 
+                            name="firstName"
+                            value={formData.firstName}
+                            onChange={handleChange}
+                            required
                             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#214347]/20 focus:border-[#214347] transition-all text-[15px]"
                             placeholder="John"
                           />
@@ -90,6 +146,10 @@ export default function ContactPage() {
                           <label className="text-[13px] font-bold text-gray-600 uppercase tracking-wide">Last Name</label>
                           <input 
                             type="text" 
+                            name="lastName"
+                            value={formData.lastName}
+                            onChange={handleChange}
+                            required
                             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#214347]/20 focus:border-[#214347] transition-all text-[15px]"
                             placeholder="Doe"
                           />
@@ -101,6 +161,10 @@ export default function ContactPage() {
                           <label className="text-[13px] font-bold text-gray-600 uppercase tracking-wide">Email</label>
                           <input 
                             type="email" 
+                            name="email"
+                            value={formData.email}
+                            onChange={handleChange}
+                            required
                             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#214347]/20 focus:border-[#214347] transition-all text-[15px]"
                             placeholder="john@example.com"
                           />
@@ -109,6 +173,9 @@ export default function ContactPage() {
                           <label className="text-[13px] font-bold text-gray-600 uppercase tracking-wide">Phone</label>
                           <input 
                             type="tel" 
+                            name="phone"
+                            value={formData.phone}
+                            onChange={handleChange}
                             className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#214347]/20 focus:border-[#214347] transition-all text-[15px]"
                             placeholder="+252 61..."
                           />
@@ -120,8 +187,14 @@ export default function ContactPage() {
                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                           {["General", "Renting", "Buying", "Support"].map((subject) => (
                              <label key={subject} className="cursor-pointer">
-                                <input type="radio" name="subject" className="peer sr-only" />
-                                <div className="text-center px-2 py-2.5 rounded-xl border border-gray-200 text-[14px] font-semibold text-gray-500 peer-checked:bg-[#214347] peer-checked:text-white peer-checked:border-[#214347] hover:bg-gray-50 transition-all">
+                                <input 
+                                  type="radio" 
+                                  name="inquiryType" 
+                                  className="peer sr-only" 
+                                  checked={formData.inquiryType === subject}
+                                  onChange={() => handleInquiryChange(subject)}
+                                />
+                                <div className="text-center px-2 py-2.5 rounded-xl border border-gray-200 text-[14px] font-semibold text-gray-500 peer-checked:bg-[#214347] peer-checked:text-white peer-checked:border-[#214347] hover:bg-gray-50 transition-all font-sans">
                                    {subject}
                                 </div>
                              </label>
@@ -132,6 +205,10 @@ export default function ContactPage() {
                     <div className="flex flex-col gap-2 pt-2">
                        <label className="text-[13px] font-bold text-gray-600 uppercase tracking-wide">Message</label>
                        <textarea 
+                         name="message"
+                         value={formData.message}
+                         onChange={handleChange}
+                         required
                          rows={5} 
                          className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#214347]/20 focus:border-[#214347] transition-all resize-none text-[15px]"
                          placeholder="How can we help you?"
@@ -139,8 +216,16 @@ export default function ContactPage() {
                     </div>
 
                     <div className="pt-6">
-                       <button type="button" className="bg-[#214347] text-white px-8 py-4 rounded-xl font-bold text-[15px] tracking-wide hover:bg-[#0d2326] transition-colors active:scale-[0.98] w-full sm:w-auto flex items-center justify-center gap-2 shadow-sm">
-                          Send Message <Send className="w-4 h-4 ml-1" />
+                       <button 
+                         type="submit" 
+                         disabled={isLoading}
+                         className="bg-[#214347] text-white px-8 py-4 rounded-xl font-bold text-[15px] tracking-wide hover:bg-[#0d2326] transition-colors active:scale-[0.98] w-full sm:w-auto flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+                       >
+                          {isLoading ? (
+                            <>Sending... <Loader2 className="w-4 h-4 ml-1 animate-spin" /></>
+                          ) : (
+                            <>Send Message <Send className="w-4 h-4 ml-1" /></>
+                          )}
                        </button>
                     </div>
                  </form>

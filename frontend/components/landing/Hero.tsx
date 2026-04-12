@@ -100,7 +100,7 @@ export default function Hero() {
         <div className="text-center max-w-4xl">
           <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-[1.1] mb-6 drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
             Find Your Perfect <br />
-            Home in Mogadishu
+            Home in Somalia
           </h1>
           <p className="text-white/95 text-lg md:text-xl font-medium max-w-2xl mx-auto drop-shadow-md">
             Browse hundreds of verified properties — apartments, villas &amp; commercial spaces tailored to your lifestyle and budget.

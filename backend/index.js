@@ -11,6 +11,7 @@ import favoriteRoute from "./Routes/favoriteRoute.js";
 import menuRoute from "./Routes/menuRoute.js";
 import rolePermissionsRoute from "./Routes/rolePermissionsRoute.js";
 import dashboardRoute from "./Routes/dashboardRoute.js";
+import contactRoute from "./Routes/contactRoute.js";
 
 import path from 'path';
 import cors from 'cors';
@@ -40,6 +41,7 @@ app.use('/api/favorites', favoriteRoute);
 app.use('/api/menus', menuRoute);
 app.use('/api/role-permissions', rolePermissionsRoute);
 app.use('/api/dashboard', dashboardRoute);
+app.use('/api/contact', contactRoute);
 
 
 

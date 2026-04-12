@@ -31,7 +31,7 @@ export const createProperty = async (req, res) => {
     // Combine images from body (URLs) and files (uploads)
     let images = [];
     if (req.files && req.files.length > 0) {
-      images = req.files.map(file => `/uploads/${file.filename}`);
+      images = req.files.map(file => file.path);
     } else if (bodyImages) {
       images = Array.isArray(bodyImages) ? bodyImages : [bodyImages];
     }
@@ -228,7 +228,7 @@ export const updateProperty = async (req, res) => {
 
     // Handle IMAGE REPLACEMENT
     if (req.files && req.files.length > 0) {
-      const newImages = req.files.map(file => ({ url: `/uploads/${file.filename}` }));
+      const newImages = req.files.map(file => ({ url: file.path }));
       updateData.images = {
         deleteMany: {},
         create: newImages

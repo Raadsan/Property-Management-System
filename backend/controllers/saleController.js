@@ -13,7 +13,7 @@ export const createSale = async (req, res) => {
   // Handle uploaded document if present
   let documentUrl = null;
   if (req.file) {
-    documentUrl = `/uploads/${req.file.filename}`;
+    documentUrl = req.file.path;
   }
 
   try {
@@ -94,7 +94,7 @@ export const updateSale = async (req, res) => {
 
   // Handle new document upload
   if (req.file) {
-    updateFields.documentUrl = `/uploads/${req.file.filename}`;
+    updateFields.documentUrl = req.file.path;
   }
 
   try {

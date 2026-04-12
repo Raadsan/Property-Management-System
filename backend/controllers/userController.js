@@ -19,7 +19,7 @@ export const createUser = async (req, res) => {
 
     let photoPath = photo;
     if (req.file) {
-      photoPath = `/uploads/${req.file.filename}`;
+      photoPath = req.file.path;
     }
 
     const user = await prisma.user.create({
@@ -112,7 +112,7 @@ export const updateUser = async (req, res) => {
     
     // Handle photo upload
     if (req.file) {
-      updateData.photo = `/uploads/${req.file.filename}`;
+      updateData.photo = req.file.path;
     } else if (photo) {
       updateData.photo = photo;
     }

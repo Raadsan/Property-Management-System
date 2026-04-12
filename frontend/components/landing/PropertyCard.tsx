@@ -9,11 +9,11 @@ interface PropertyCardProps {
 }
  
 export default function PropertyCard({ prop }: PropertyCardProps) {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
   const baseUrl = apiUrl.replace("/api", "");
   
   const imageUrl = prop.images && prop.images.length > 0 
-    ? `${baseUrl}${prop.images[0].url}`
+    ? (prop.images[0].url.startsWith('http') ? prop.images[0].url : `${baseUrl}/${prop.images[0].url.replace(/\\/g, '/').replace(/^\//, '')}`)
     : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
 
   return (

@@ -14,11 +14,12 @@ const FALLBACK_IMAGES = [
   "https://images.unsplash.com/photo-1444723121867-7a241cacace9?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80"
 ];
 
+
 const LAYOUT_SIZES = [
-  "md:col-span-2 md:row-span-2", // Big one
-  "md:col-span-1 md:row-span-1",
-  "md:col-span-1 md:row-span-1",
-  "md:col-span-2 md:row-span-1", // Wide one
+  "md:col-span-2", // Wide
+  "md:col-span-1", // Normal
+  "md:col-span-1", // Normal
+  "md:col-span-2", // Wide
 ];
 
 interface CityData {
@@ -73,12 +74,12 @@ export default function CityExplorer() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 min-h-[400px]">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {cities.map((city, index) => (
             <div
               key={city.name}
               onClick={() => handleCityClick(city.name)}
-              className={`relative group overflow-hidden rounded-2xl cursor-pointer ${LAYOUT_SIZES[index] || "md:col-span-1 md:row-span-1"} min-h-[220px]`}
+              className={`relative group overflow-hidden rounded-2xl cursor-pointer h-[350px] w-full ${LAYOUT_SIZES[index] || "md:col-span-1"}`}
             >
               <img
                 src={FALLBACK_IMAGES[index % FALLBACK_IMAGES.length]}

@@ -153,11 +153,11 @@ export default function PropertyDetailPage() {
     );
   }
  
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
   const baseUrl = apiUrl.replace("/api", "");
   
   const displayImages = property.images && property.images.length > 0 
-    ? property.images.map(img => img.url.startsWith('http') ? img.url : `${baseUrl}${img.url}`)
+    ? property.images.map(img => img.url.startsWith('http') ? img.url : `${baseUrl}/${img.url.replace(/\\/g, '/').replace(/^\//, '')}`)
     : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"];
 
   const openGallery = (index: number) => {

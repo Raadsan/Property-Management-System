@@ -353,9 +353,12 @@ export function DashboardContent() {
               const daysActive = Math.floor((new Date().getTime() - new Date(l.createdAt).getTime()) / (1000 * 3600 * 24));
               let imgUrl = l.images && l.images.length > 0 ? l.images[0].url : "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=400&q=80";
               
-              // Map local multer uploads to absolute dev server URL
-              if (imgUrl.includes('uploads')) {
-                imgUrl = `http://localhost:5000/${imgUrl.replace(/\\/g, '/').replace(/^\//, '')}`;
+              // Resolve absolute URL for images if it's a relative path
+              if (!imgUrl.startsWith('http')) {
+                const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace("/api", "") : "https://property-management-system-production-e024.up.railway.app";
+                // Ensure proper slashes
+                const cleanImgUrl = imgUrl.replace(/\\/g, '/').replace(/^\//, '');
+                imgUrl = `${apiBaseUrl}/${cleanImgUrl}`;
               }
 
               const priceStr = l.listingType === 'RENT' ? `$${l.price.toLocaleString()}/mo` : `$${l.price.toLocaleString()}`;

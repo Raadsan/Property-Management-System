@@ -298,7 +298,7 @@ export default function SalePage() {
                                <span className="text-sm font-medium">SalesContract.pdf</span>
                             </div>
                             <Button variant="outline" size="sm" asChild>
-                               <a href={`http://localhost:5000${viewSale.documentUrl}`} target="_blank" rel="noopener noreferrer">
+                               <a href={viewSale.documentUrl.startsWith('http') ? viewSale.documentUrl : `${process.env.NEXT_PUBLIC_API_URL ? process.env.NEXT_PUBLIC_API_URL.replace('/api', '') : 'https://property-management-system-production-e024.up.railway.app'}${viewSale.documentUrl}`} target="_blank" rel="noopener noreferrer">
                                   <DownloadIcon className="h-4 w-4 mr-2" /> Download
                                </a>
                             </Button>

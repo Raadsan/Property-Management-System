@@ -16,6 +16,8 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
+import Image from "next/image"
+import { useTheme } from "next-themes"
 import * as Icons from "lucide-react"
 import { getPermissionMenusByRole } from "@/api/menuApi"
 
@@ -28,6 +30,12 @@ const DynamicIcon = ({ name }: { name?: string }) => {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [navMain, setNavMain] = React.useState<any[]>([])
   const router = useRouter()
+  const { resolvedTheme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleLogout = () => {
     localStorage.removeItem("user");
@@ -72,19 +80,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   return (
     <Sidebar collapsible="offcanvas" {...props}>
       <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              asChild
-              className="data-[slot=sidebar-menu-button]:p-1.5!"
-            >
-              <a href="#">
-                <Icons.CommandIcon className="size-5!" />
-                <span className="text-base font-semibold">PropManage PMS</span>
-              </a>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+        <div className="flex items-center justify-center py-1 px-4">
+          <a href="#" className="flex flex-col items-center">
+            <div className="relative w-[120px] h-[72px]">
+              {mounted && (
+                <Image 
+                  src={resolvedTheme === "dark" ? "/Damal-02.png" : "/logo.png"} 
+                  alt="Damal Logo" 
+                  fill 
+                  className="object-contain" 
+                  priority
+                />
+              )}
+            </div>
+          </a>
+        </div>
       </SidebarHeader>
       <SidebarContent>
         {navMain.length > 0 ? (

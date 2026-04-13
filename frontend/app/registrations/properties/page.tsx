@@ -4,14 +4,8 @@ import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable } from "@/components/data-table"
+import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon, ImageIcon, HomeIcon, EyeIcon } from "lucide-react"
 
@@ -295,6 +289,126 @@ export default function PropertiesPage() {
     if (status === "RENTED") return "bg-purple-100 text-purple-800 ring-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:ring-purple-800";
     return "bg-gray-100 text-gray-800 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700";
   }
+
+  // Define columns for DataTable
+  const columns: ColumnDef<Property>[] = [
+    {
+      accessorKey: "title",
+      header: "Name",
+      cell: ({ row }) => (
+        <div className="font-bold text-sm line-clamp-1">{row.getValue("title")}</div>
+      ),
+    },
+    {
+      accessorKey: "propertyType.name",
+      header: "PropertyType",
+      cell: ({ row }) => (
+        <span className="bg-muted border px-2 py-0.5 rounded text-xs font-medium">
+          {row.original.propertyType?.name || 'None'}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "price",
+      header: "Price",
+      cell: ({ row }) => (
+        <div className="font-bold text-[#166534] dark:text-[#6ee7b7]">
+          ${Number(row.getValue("price")).toLocaleString()}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "sizeLabel",
+      header: "Specs",
+      cell: ({ row }) => (
+        <div className="text-xs">
+          <div className="font-medium">{row.original.sizeLabel || "—"}</div>
+          {row.original.area && <div className="text-[10px] text-muted-foreground">{row.original.area} sqm</div>}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "Rooms",
+      header: "Rooms",
+      cell: ({ row }) => <div className="text-sm font-semibold">{row.getValue("Rooms") || 0}</div>,
+    },
+    {
+      accessorKey: "Bathrooms",
+      header: "Baths",
+      cell: ({ row }) => <div className="text-sm font-semibold">{row.getValue("Bathrooms") || 0}</div>,
+    },
+    {
+      accessorKey: "listingType",
+      header: "Listing",
+      cell: ({ row }) => (
+        <div className="text-xs uppercase font-bold tracking-wider opacity-80">
+          {row.getValue("listingType")}
+        </div>
+      ),
+    },
+    {
+      accessorKey: "location",
+      header: "Location",
+      cell: ({ row }) => (
+        <div className="max-w-[200px] text-sm">
+          <div className="truncate font-medium">{row.getValue("location")}</div>
+          <div className="text-[10px] text-muted-foreground capitalize">{row.original.city}</div>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "owner.name",
+      header: "Owner",
+      cell: ({ row }) => (
+        <div className="text-sm flex flex-col">
+          <span className="font-bold">{row.original.owner?.name}</span>
+          <span className="text-[10px] text-muted-foreground font-mono">{row.original.owner?.phone}</span>
+        </div>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${getStatusBadge(row.getValue("status") as string)}`}>
+          {row.getValue("status")}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => (
+        <div className="flex flex-wrap justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openViewModal(row.original)}
+            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 h-8 w-8"
+            title="View Property Details"
+          >
+            <EyeIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openEditModal(row.original)}
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => handleDelete(row.original.id)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
 
   return (
     <SidebarProvider
@@ -637,136 +751,13 @@ export default function PropertiesPage() {
             </Dialog>
           </div>
 
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead>Name</TableHead>
-                  <TableHead>PropertyType</TableHead>
-                  <TableHead>Price</TableHead>
-                  <TableHead>Specs</TableHead>
-                  <TableHead>Rooms</TableHead>
-                  <TableHead>Baths</TableHead>
-                  <TableHead>Listing</TableHead>
-                  <TableHead>Location</TableHead>
-                  <TableHead>Owner</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={11} className="h-24 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
-                        <span>Loading property assets...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : properties.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={11} className="h-32 text-center">
-                      <div className="flex flex-col items-center justify-center text-muted-foreground">
-                        <HomeIcon className="h-10 w-10 mb-2 opacity-20" />
-                        <p>No properties listed on the market yet.</p>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  properties.map((property) => (
-                    <TableRow key={property.id} className="hover:bg-muted/30 transition-colors">
-
-                      <TableCell className="font-bold text-sm">
-                        <div className="line-clamp-1">{property.title}</div>
-                      </TableCell>
-
-                      <TableCell>
-                        <span className="bg-muted border px-2 py-0.5 rounded text-xs font-medium">
-                          {property.propertyType?.name || 'None'}
-                        </span>
-                      </TableCell>
-
-
-
-                      <TableCell className="font-bold text-[#166534] dark:text-[#6ee7b7]">
-                        ${property.price.toLocaleString()}
-                      </TableCell>
-
-                      <TableCell className="text-xs">
-                        <div className="font-medium">{property.sizeLabel || "—"}</div>
-                        {property.area && <div className="text-[10px] text-muted-foreground">{property.area} sqm</div>}
-                      </TableCell>
-
-                      <TableCell className="text-sm font-semibold">
-                        {property.Rooms || 0}
-                      </TableCell>
-
-                      <TableCell className="text-sm font-semibold">
-                        {property.Bathrooms || 0}
-                      </TableCell>
-
-                      <TableCell className="text-xs uppercase font-bold tracking-wider opacity-80">
-                        {property.listingType}
-                      </TableCell>
-
-                      <TableCell className="max-w-[200px] text-sm">
-                        <div className="truncate font-medium">{property.location}</div>
-                        <div className="text-[10px] text-muted-foreground capitalize">{property.city}</div>
-                      </TableCell>
-
-                      <TableCell className="text-sm">
-                        <div className="flex flex-col">
-                          <span className="font-bold">{property.owner?.name}</span>
-                          <span className="text-[10px] text-muted-foreground font-mono">{property.owner?.phone}</span>
-                        </div>
-                      </TableCell>
-
-                      <TableCell>
-                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${getStatusBadge(property.status)}`}>
-                          {property.status}
-                        </span>
-                      </TableCell>
-
-                      <TableCell className="text-right">
-                        <div className="flex flex-wrap justify-end gap-1">
-
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openViewModal(property)}
-                            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 h-8 w-8"
-                            title="View Property Details"
-                          >
-                            <EyeIcon className="h-4 w-4" />
-                            <span className="sr-only">View</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => openEditModal(property)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDelete(property.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable 
+            columns={columns} 
+            data={properties} 
+            isLoading={isLoading} 
+            filterColumn="title"
+            filterPlaceholder="Search properties by title..."
+          />
         </div>
       </SidebarInset>
     </SidebarProvider>

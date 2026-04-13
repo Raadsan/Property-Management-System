@@ -114,11 +114,19 @@ export default function Footer() {
             </div>
           </div>
         </div>
+      </div>
 
+      {/* Full-width Divider */}
+      <div className="border-t border-white/10 w-full" />
+
+      <div className="max-w-6xl mx-auto px-6">
         {/* Bottom Bar */}
-        <div className="pt-8 border-t border-white/10 text-center text-[10px] text-gray-400 font-medium">
+        <div className="py-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[13px] text-gray-400 font-medium">
           <p>
-            Copyright © 2026 Raadsan Prop. All rights reserved. &nbsp; | &nbsp; Powered by Raadsan Teach.
+            Copyright © {new Date().getFullYear()}{" "} Damal Property. All rights reserved.
+          </p>
+          <p>
+            Powered by Raadsan Teach.
           </p>
         </div>
       </div>

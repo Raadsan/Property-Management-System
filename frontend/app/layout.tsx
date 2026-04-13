@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PropManage PMS",
-  description: "Comprehensive Property Management System",
+  title: "Damal Property PMS",
+  description: "Comprehensive Property Management System by Damal Property",
 };
 
 export default function RootLayout({

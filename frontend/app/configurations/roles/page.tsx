@@ -4,14 +4,8 @@ import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable } from "@/components/data-table"
+import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon } from "lucide-react"
 import { 
@@ -109,6 +103,57 @@ export default function RolesPage() {
     setDescription("")
   }
 
+  // Define columns for DataTable
+  const columns: ColumnDef<Role>[] = [
+    {
+      accessorKey: "id",
+      header: "ID",
+      cell: ({ row }) => <span className="font-medium text-muted-foreground">#{row.getValue("id")}</span>,
+    },
+    {
+      accessorKey: "name",
+      header: "Role Name",
+      cell: ({ row }) => <div className="font-semibold text-foreground">{row.getValue("name")}</div>,
+    },
+    {
+      accessorKey: "description",
+      header: "Description",
+      cell: ({ row }) => (
+        <div className="text-muted-foreground">
+          {row.getValue("description") ? (
+            row.getValue("description")
+          ) : (
+            <span className="italic opacity-50 text-[10px]">No description provided</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => openEditModal(row.original)}
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handleDelete(row.original.id)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
   return (
     <SidebarProvider
       style={{
@@ -174,72 +219,13 @@ export default function RolesPage() {
             </Dialog>
           </div>
 
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-[100px]">ID</TableHead>
-                  <TableHead>Role Name</TableHead>
-                  <TableHead>Description</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
-                        <span>Loading roles...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : roles.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                      No roles found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  roles.map((role) => (
-                    <TableRow key={role.id} className="hover:bg-muted/30 transition-colors">
-                      <TableCell className="font-medium">#{role.id}</TableCell>
-                      <TableCell className="font-semibold">{role.name}</TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {role.description ? (
-                          role.description
-                        ) : (
-                          <span className="italic opacity-50">No description provided</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => openEditModal(role)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDelete(role.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable 
+            columns={columns} 
+            data={roles} 
+            isLoading={isLoading} 
+            filterColumn="name"
+            filterPlaceholder="Search roles by name..."
+          />
         </div>
       </SidebarInset>
     </SidebarProvider>

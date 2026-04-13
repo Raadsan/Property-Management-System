@@ -4,14 +4,8 @@ import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable } from "@/components/data-table"
+import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon } from "lucide-react"
 import { 
@@ -152,6 +146,72 @@ export default function UsersPage() {
     setPassword("")
   }
 
+  // Define columns for DataTable
+  const columns: ColumnDef<User>[] = [
+    {
+      accessorKey: "id",
+      header: "ID",
+      cell: ({ row }) => <span className="font-medium text-muted-foreground">#{row.getValue("id")}</span>,
+    },
+    {
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => <div className="font-semibold text-foreground">{row.getValue("name")}</div>,
+    },
+    {
+      accessorKey: "email",
+      header: "Email",
+      cell: ({ row }) => <div className="text-sm text-muted-foreground">{row.getValue("email") || "No email"}</div>,
+    },
+    {
+      accessorKey: "phone",
+      header: "Phone",
+      cell: ({ row }) => <div className="text-sm">{row.getValue("phone")}</div>,
+    },
+    {
+      accessorKey: "role.name",
+      header: "Role",
+      cell: ({ row }) => (
+        <span className="font-semibold text-muted-foreground">
+          {row.original.role?.name || "No Role"}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${row.getValue("status") === 'ACTIVE' ? 'bg-[#dcfce7] text-[#166534] ring-[#bbf7d0] dark:bg-[#064e3b] dark:text-[#6ee7b7] dark:ring-[#047857]' : 'bg-[#fee2e2] text-[#991b1b] ring-[#fecaca] dark:bg-[#7f1d1d] dark:text-[#fca5a5] dark:ring-[#b91c1c]'}`}>
+          {row.getValue("status")}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => openEditModal(row.original)}
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handleDelete(row.original.id)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
   return (
     <SidebarProvider
       style={{
@@ -253,80 +313,13 @@ export default function UsersPage() {
             </Dialog>
           </div>
 
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-[80px]">ID</TableHead>
-                  <TableHead>Name</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Phone</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
-                        <span>Loading users and roles...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : users.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
-                      No users found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  users.map((user) => (
-                    <TableRow key={user.id} className="hover:bg-muted/30 transition-colors">
-                      <TableCell className="font-medium">#{user.id}</TableCell>
-                      <TableCell className="font-semibold">{user.name}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{user.email || "No email"}</TableCell>
-                      <TableCell className="text-sm">{user.phone}</TableCell>
-                      <TableCell>
-                        <span className="font-semibold text-muted-foreground">
-                          {user.role?.name || "No Role"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${user.status === 'ACTIVE' ? 'bg-[#dcfce7] text-[#166534] ring-[#bbf7d0] dark:bg-[#064e3b] dark:text-[#6ee7b7] dark:ring-[#047857]' : 'bg-[#fee2e2] text-[#991b1b] ring-[#fecaca] dark:bg-[#7f1d1d] dark:text-[#fca5a5] dark:ring-[#b91c1c]'}`}>
-                          {user.status}
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => openEditModal(user)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDelete(user.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable 
+            columns={columns} 
+            data={users} 
+            isLoading={isLoading} 
+            filterColumn="name"
+            filterPlaceholder="Search users by name..."
+          />
         </div>
       </SidebarInset>
     </SidebarProvider>

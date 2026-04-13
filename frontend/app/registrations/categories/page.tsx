@@ -4,14 +4,8 @@ import * as React from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { DataTable } from "@/components/data-table"
+import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon } from "lucide-react"
 import { 
@@ -101,6 +95,53 @@ export default function CategoriesPage() {
     setIsModalOpen(true)
   }
 
+  // Define columns for DataTable
+  const columns: ColumnDef<Category>[] = [
+    {
+      accessorKey: "id",
+      header: "ID",
+      cell: ({ row }) => <span className="font-medium text-muted-foreground">#{row.getValue("id")}</span>,
+    },
+    {
+      accessorKey: "name",
+      header: "Category Name",
+      cell: ({ row }) => <div className="font-semibold text-foreground">{row.getValue("name")}</div>,
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Created At",
+      cell: ({ row }) => (
+        <span className="text-muted-foreground text-sm">
+          {new Date(row.getValue("createdAt")).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      id: "actions",
+      header: () => <div className="text-right">Actions</div>,
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => openEditModal(row.original)}
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          >
+            <PencilIcon className="h-4 w-4" />
+          </Button>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => handleDelete(row.original.id)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ]
+
   return (
     <SidebarProvider
       style={{
@@ -150,68 +191,13 @@ export default function CategoriesPage() {
             </Dialog>
           </div>
 
-          <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-muted/50">
-                  <TableHead className="w-[100px]">ID</TableHead>
-                  <TableHead>Category Name</TableHead>
-                  <TableHead className="hidden md:table-cell">Created At</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <Loader2Icon className="h-5 w-5 animate-spin text-muted-foreground" />
-                        <span>Loading categories...</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ) : categories.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
-                      No categories found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  categories.map((category) => (
-                    <TableRow key={category.id} className="hover:bg-muted/30 transition-colors">
-                      <TableCell className="font-medium">#{category.id}</TableCell>
-                      <TableCell>{category.name}</TableCell>
-                      <TableCell className="hidden md:table-cell text-muted-foreground">
-                        {new Date(category.createdAt).toLocaleDateString()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => openEditModal(category)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                          >
-                            <PencilIcon className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            onClick={() => handleDelete(category.id)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <TrashIcon className="h-4 w-4" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
+          <DataTable 
+            columns={columns} 
+            data={categories} 
+            isLoading={isLoading} 
+            filterColumn="name"
+            filterPlaceholder="Search categories by name..."
+          />
         </div>
       </SidebarInset>
     </SidebarProvider>

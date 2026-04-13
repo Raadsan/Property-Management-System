@@ -31,6 +31,13 @@ import {
   DropdownMenuContent,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2, Search } from "lucide-react"
 
 interface DataTableProps<TData, TValue> {
@@ -84,17 +91,17 @@ export function DataTable<TData, TValue>({
               onChange={(event) =>
                 table.getColumn(filterColumn)?.setFilterValue(event.target.value)
               }
-              className="pl-10 h-10 rounded-xl border-gray-200 focus:ring-[#214347]/10"
+              className="pl-10 h-10 rounded-xl border-border bg-transparent focus:ring-primary/10"
             />
           )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto rounded-xl border-gray-200 font-bold text-xs uppercase tracking-wider">
+            <Button variant="outline" className="ml-auto rounded-xl border-border font-bold text-xs uppercase tracking-wider">
               Columns <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="rounded-xl border-gray-100">
+          <DropdownMenuContent align="end" className="rounded-xl border-border bg-card">
             {table
               .getAllColumns()
               .filter((column) => column.getCanHide())
@@ -113,14 +120,14 @@ export function DataTable<TData, TValue>({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="rounded-2xl border border-gray-100 bg-white overflow-hidden shadow-sm">
+      <div className="rounded-2xl border bg-card overflow-hidden shadow-sm">
         <Table>
-          <TableHeader className="bg-gray-50/50">
+          <TableHeader className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id} className="hover:bg-transparent border-gray-100">
+              <TableRow key={headerGroup.id} className="hover:bg-transparent border-border">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="font-bold text-[#64748b] text-[12px] uppercase tracking-wider p-4">
+                    <TableHead key={header.id} className="font-bold text-muted-foreground text-[12px] uppercase tracking-wider p-4">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -148,7 +155,7 @@ export function DataTable<TData, TValue>({
                 <TableRow
                   key={row.id}
                   data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-gray-50/30 transition-colors border-gray-50 group"
+                  className="hover:bg-muted/30 transition-colors border-border group"
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id} className="p-4">
@@ -170,35 +177,39 @@ export function DataTable<TData, TValue>({
 
       {/* Pagination */}
       <div className="flex items-center justify-between px-2">
-        <div className="flex-1 text-xs font-bold text-gray-400 uppercase tracking-tight">
-          {table.getFilteredSelectedRowModel().rows.length} of{" "}
-          {table.getFilteredRowModel().rows.length} row(s) selected.
+        <div className="flex items-center space-x-2">
+          <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight">Rows per page</p>
+          <Select
+            value={`${table.getState().pagination.pageSize}`}
+            onValueChange={(value) => {
+              table.setPageSize(Number(value))
+            }}
+          >
+            <SelectTrigger className="h-8 w-[70px] rounded-lg border-border bg-transparent text-xs font-bold focus:ring-primary/20 hover:bg-muted/50 transition-colors">
+              <SelectValue placeholder={table.getState().pagination.pageSize} />
+            </SelectTrigger>
+            <SelectContent side="top" className="rounded-xl border-border bg-card">
+              {[5, 10, 50, 100].map((pageSize) => (
+                <SelectItem 
+                  key={pageSize} 
+                  value={`${pageSize}`}
+                  className="text-xs font-bold hover:bg-primary/10 transition-colors cursor-pointer"
+                >
+                  {pageSize}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <div className="flex items-center space-x-6 lg:space-x-8">
-          <div className="flex items-center space-x-2">
-            <p className="text-xs font-bold text-gray-500 uppercase tracking-tight">Rows per page</p>
-            <select
-              className="h-8 w-[70px] rounded-lg border border-gray-200 bg-transparent px-2 py-1 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-[#214347]"
-              value={table.getState().pagination.pageSize}
-              onChange={(e) => {
-                table.setPageSize(Number(e.target.value))
-              }}
-            >
-              {[10, 20, 30, 40, 50].map((pageSize) => (
-                <option key={pageSize} value={pageSize}>
-                  {pageSize}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex w-[100px] items-center justify-center text-xs font-bold text-gray-500 uppercase tracking-tight">
+          <div className="flex w-[100px] items-center justify-center text-xs font-bold text-muted-foreground uppercase tracking-tight">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </div>
           <div className="flex items-center space-x-2">
             <Button
               variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex rounded-lg border-gray-200"
+              className="hidden h-8 w-8 p-0 lg:flex rounded-lg border-border"
               onClick={() => table.setPageIndex(0)}
               disabled={!table.getCanPreviousPage()}
             >
@@ -206,7 +217,7 @@ export function DataTable<TData, TValue>({
             </Button>
             <Button
               variant="outline"
-              className="h-8 w-8 p-0 rounded-lg border-gray-200"
+              className="h-8 w-8 p-0 rounded-lg border-border"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
@@ -214,7 +225,7 @@ export function DataTable<TData, TValue>({
             </Button>
             <Button
               variant="outline"
-              className="h-8 w-8 p-0 rounded-lg border-gray-200"
+              className="h-8 w-8 p-0 rounded-lg border-border"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
@@ -222,7 +233,7 @@ export function DataTable<TData, TValue>({
             </Button>
             <Button
               variant="outline"
-              className="hidden h-8 w-8 p-0 lg:flex rounded-lg border-gray-200"
+              className="hidden h-8 w-8 p-0 lg:flex rounded-lg border-border"
               onClick={() => table.setPageIndex(table.getPageCount() - 1)}
               disabled={!table.getCanNextPage()}
             >

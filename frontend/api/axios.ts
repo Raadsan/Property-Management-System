@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const api = axios.create({
-  // baseURL: process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api",
-  baseURL: "http://localhost:5000/api",
+  baseURL: process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api",
+  // baseURL: "http://localhost:5000/api",
   headers: {
     "Content-Type": "application/json",
   },

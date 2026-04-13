@@ -53,7 +53,7 @@ export default function CityExplorer() {
 
   if (isLoading) {
     return (
-      <div className="py-20 flex justify-center items-center">
+      <div className="py-20 flex justify-center items-center bg-white">
         <Loader2 className="h-10 w-10 animate-spin text-[#214347] opacity-20" />
       </div>
     );

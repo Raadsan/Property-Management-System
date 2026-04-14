@@ -68,3 +68,20 @@ export const loginUser = async (email: string, password: string): Promise<LoginR
   const response = await api.post("/users/login", { email, password });
   return response.data;
 };
+
+// --- Forgot Password API ---
+
+export const forgotPassword = async (email: string) => {
+  const response = await api.post("/users/forgot-password", { email });
+  return response.data;
+};
+
+export const verifyResetCode = async (email: string, code: string) => {
+  const response = await api.post("/users/verify-code", { email, code });
+  return response.data;
+};
+
+export const resetPassword = async (email: string, code: string, newPassword: string) => {
+  const response = await api.post("/users/reset-password", { email, code, newPassword });
+  return response.data;
+};

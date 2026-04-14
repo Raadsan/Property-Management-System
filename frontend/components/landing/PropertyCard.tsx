@@ -1,5 +1,6 @@
 "use client";
- 
+
+import { useState, useEffect } from "react";
 import { MapPin, Heart, ArrowLeftRight } from "lucide-react";
 import Link from "next/link";
 import { Property } from "@/api/propertyApi";
@@ -9,6 +10,32 @@ interface PropertyCardProps {
 }
  
 export default function PropertyCard({ prop }: PropertyCardProps) {
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  useEffect(() => {
+    // Check if property is in favorites on mount
+    const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+    setIsFavorite(favorites.includes(prop.id));
+  }, [prop.id]);
+
+  const toggleFavorite = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const favorites = JSON.parse(localStorage.getItem("favorites") || "[]");
+    let newFavorites: number[];
+    
+    if (favorites.includes(prop.id)) {
+      newFavorites = favorites.filter((id: number) => id !== prop.id);
+      setIsFavorite(false);
+    } else {
+      newFavorites = [...favorites, prop.id];
+      setIsFavorite(true);
+    }
+    
+    localStorage.setItem("favorites", JSON.stringify(newFavorites));
+  };
+
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
   const baseUrl = apiUrl.replace("/api", "");
   
@@ -47,8 +74,13 @@ export default function PropertyCard({ prop }: PropertyCardProps) {
             <button className="p-2 bg-white hover:bg-[#eae1d2] transition-colors rounded-lg text-[#214347] shadow-sm">
               <ArrowLeftRight className="h-4 w-4" />
             </button>
-            <button className="p-2 bg-white hover:bg-[#eae1d2] transition-colors rounded-lg text-[#214347] shadow-sm">
-              <Heart className="h-4 w-4" />
+            <button 
+              onClick={toggleFavorite}
+              className={`p-2 transition-colors rounded-lg shadow-sm ${
+                isFavorite ? "bg-[#214347] text-white" : "bg-white hover:bg-[#eae1d2] text-[#214347]"
+              }`}
+            >
+              <Heart className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
             </button>
           </div>
         </div>

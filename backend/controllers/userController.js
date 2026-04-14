@@ -224,20 +224,33 @@ export const forgotPassword = async (req, res) => {
       data: { resetCode: code, resetCodeExpires: expires }
     });
 
-    // Configure transporter
+    // Configure transporter (use same env vars as ContactController)
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
+        user: process.env.SMTP_EMAIL || process.env.EMAIL_USER,
+        pass: process.env.SMTP_PASSWORD || process.env.EMAIL_PASS
       }
     });
 
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: `"${process.env.FROM_NAME || 'Property Management'}" <${process.env.SMTP_EMAIL || process.env.EMAIL_USER}>`,
       to: email,
       subject: "Password Reset Code",
-      text: `Your password reset code is: ${code}. It expires in 10 minutes.`
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 10px; background-color: #fdfdfd;">
+          <h2 style="color: #214347; text-align: center; border-bottom: 2px solid #214347; padding-bottom: 10px;">Password Reset</h2>
+          <p style="text-align: center; color: #555; font-size: 15px;">You requested a password reset. Use the code below to reset your password:</p>
+          <div style="text-align: center; margin: 30px 0;">
+            <span style="font-size: 36px; font-weight: bold; letter-spacing: 8px; color: #214347; background: #e6f2f3; padding: 15px 30px; border-radius: 12px; display: inline-block;">${code}</span>
+          </div>
+          <p style="text-align: center; color: #888; font-size: 13px;">This code expires in <strong>10 minutes</strong>.</p>
+          <p style="text-align: center; color: #888; font-size: 13px;">If you did not request this, please ignore this email.</p>
+          <p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center;">
+            Sent from Damal Property Management System.
+          </p>
+        </div>
+      `
     };
 
     await transporter.sendMail(mailOptions);

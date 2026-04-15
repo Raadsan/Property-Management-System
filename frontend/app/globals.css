@@ -137,6 +137,13 @@
   }
 }
 
+@layer utilities {
+  .bg-dots-pattern {
+    background-image: radial-gradient(circle, rgba(234, 225, 210, 0.45) 2px, transparent 2px);
+    background-size: 28px 28px;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

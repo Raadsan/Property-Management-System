@@ -78,8 +78,8 @@ export default function CTA() {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-white/5 blur-[60px] rounded-full pointer-events-none"></div>
 
                 <motion.img
-                  // src="/Mobile-Mockup.png"
-                  src="/Damal-App.png"
+                  src="/Mobile-Mockup.png"
+                  // src="/Damal-App.png"
                   alt="Damal Mobile App Mockup"
                   className="w-full h-auto drop-shadow-[0_20px_50px_rgba(0,0,0,0.5)] relative z-10"
                   whileHover={{ scale: 1.05, rotate: -2 }}

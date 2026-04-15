@@ -11,17 +11,20 @@ export default function AboutPage() {
       <Navbar />
 
       {/* 1. Header Banner */}
-      <section className="relative pt-[120px] pb-16 md:pt-[140px] md:pb-20 bg-[#214347]">
-        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6 text-white/90 text-sm font-medium">
-            <span className="w-2 h-2 rounded-full bg-[#eae1d2]"></span>
-            Who We Are
+      <section className="relative pt-[120px] pb-16 md:pt-[140px] md:pb-20 bg-[#214347] overflow-hidden">
+        {/* Subtle radial gradient and Grid Lines */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#1a3538]/50 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none [mask-image:linear-gradient(to_bottom,white_10%,transparent_80%)]"></div>
+        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center flex flex-col items-center">
+          <div className="inline-flex items-center gap-2.5 px-5 py-1.5 rounded-full bg-[#eef1f1] mb-6 md:mb-8 text-[#3d5a5e] text-[13px] md:text-[14px]">
+            <span className="w-2 h-2 rounded-full bg-[#527a7d]"></span>
+            who we are?
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-            Elevating <span className="text-[#eae1d2]">Property</span> Management
+          <h1 className="text-3xl md:text-[44px] font-serif text-white mb-5 font-normal tracking-wide leading-tight">
+            Elevating Property Management
           </h1>
-          <p className="text-white/80 text-lg max-w-2xl mx-auto">
-            Discover who we are, what drives us, and how we're transforming real estate and property management in Somalia with digital innovation.
+          <p className="text-white/80 text-[14px] md:text-[16px] max-w-3xl mx-auto leading-relaxed font-serif tracking-wide">
+            Discover who we are, what drives us, and how we're transforming real estate and<br className="hidden md:block" /> property management in Somalia with digital innovation.
           </p>
         </div>
       </section>

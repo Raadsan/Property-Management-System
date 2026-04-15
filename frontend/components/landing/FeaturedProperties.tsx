@@ -29,7 +29,7 @@ export default function FeaturedProperties() {
       <div className="max-w-7xl mx-auto px-4 md:px-8">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-5xl font-bold text-gray-900 leading-tight">
-            Featured Properties
+            Properties
           </h2>
         </div>
  

@@ -52,7 +52,10 @@ export default function RentPage() {
       <Navbar />
 
       {/* Page Header */}
-      <section className="relative pt-[120px] pb-16 md:pt-[140px] md:pb-20 bg-[#214347]">
+      <section className="relative pt-[120px] pb-16 md:pt-[140px] md:pb-20 bg-[#214347] overflow-hidden">
+        {/* Subtle radial gradient and Grid Lines */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#1a3538]/50 pointer-events-none"></div>
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#ffffff0a_1px,transparent_1px),linear-gradient(to_bottom,#ffffff0a_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none [mask-image:linear-gradient(to_bottom,white_10%,transparent_80%)]"></div>
         <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
             Properties For Rent
@@ -120,12 +123,12 @@ export default function RentPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="rounded-xl overflow-hidden border border-gray-100 bg-white shadow-sm">
-                  <Skeleton className="h-56 w-full" />
+                  <Skeleton className="h-56 w-full bg-gray-200" />
                   <div className="p-5 space-y-3">
-                    <Skeleton className="h-4 w-1/3" />
-                    <Skeleton className="h-6 w-2/3" />
-                    <Skeleton className="h-4 w-1/2" />
-                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-1/3 bg-gray-200" />
+                    <Skeleton className="h-6 w-2/3 bg-gray-200" />
+                    <Skeleton className="h-4 w-1/2 bg-gray-200" />
+                    <Skeleton className="h-4 w-full bg-gray-200" />
                   </div>
                 </div>
               ))}

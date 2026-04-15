@@ -113,7 +113,7 @@ export default function Hero() {
         
         {/* Tabs */}
         <div className="flex">
-          {["all", "rent", "sale"].map((tab) => (
+          {["all", "rent", "buy"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}

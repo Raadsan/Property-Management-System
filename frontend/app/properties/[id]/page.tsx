@@ -128,13 +128,13 @@ export default function PropertyDetailPage() {
  
   if (isLoading) {
     return (
-      <main className="min-h-screen bg-white">
+      <main className="light min-h-screen bg-white" style={{ colorScheme: 'light' }}>
         <Navbar />
         <div className="max-w-[1300px] mx-auto px-6 pt-32 pb-20">
-          <Skeleton className="h-[500px] w-full rounded-2xl mb-10" />
-          <Skeleton className="h-12 w-1/2 mb-4" />
-          <Skeleton className="h-6 w-1/3 mb-10" />
-          <Skeleton className="h-40 w-full rounded-2xl" />
+          <Skeleton className="h-[500px] w-full rounded-2xl mb-10 bg-gray-100" />
+          <Skeleton className="h-12 w-1/2 mb-4 bg-gray-100" />
+          <Skeleton className="h-6 w-1/3 mb-10 bg-gray-100" />
+          <Skeleton className="h-40 w-full rounded-2xl bg-gray-100" />
         </div>
         <Footer />
       </main>

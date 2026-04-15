@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Menu, X, ChevronDown, Home as HomeIcon, Key, LayoutDashboard } from "lucide-react";
-import { useEffect } from "react";
 
 export default function Navbar() {
+  const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
@@ -28,7 +29,7 @@ export default function Navbar() {
     { 
       name: "Property", 
       dropdown: [
-        { name: "Sale Property", href: "/buy", icon: HomeIcon },
+        { name: "Buy Property", href: "/buy", icon: HomeIcon },
         { name: "Rent Property", href: "/rent", icon: Key }
       ]
     },
@@ -49,11 +50,16 @@ export default function Navbar() {
         <div className="hidden md:flex items-center gap-8 lg:gap-10">
           {navLinks.map((link) => {
             if (link.dropdown) {
+              const isSubActive = link.dropdown.some(sub => pathname === sub.href);
               return (
                 <div key={link.name} className="relative group">
-                  <button className="flex items-center gap-1 text-gray-700 font-semibold hover:text-[#214347] transition-all text-[15px]">
+                  <button className={`flex items-center gap-1 font-semibold transition-all text-[15px] ${
+                    isSubActive ? "text-[#214347]" : "text-gray-700 hover:text-[#214347]"
+                  }`}>
                     {link.name}
-                    <ChevronDown className="w-4 h-4 text-gray-400 group-hover:text-[#214347] transition-colors" />
+                    <ChevronDown className={`w-4 h-4 transition-colors ${
+                      isSubActive ? "text-[#214347]" : "text-gray-400 group-hover:text-[#214347]"
+                    }`} />
                   </button>
                   
                   {/* Dropdown Menu */}
@@ -61,11 +67,14 @@ export default function Navbar() {
                     <div className="flex flex-col py-3">
                       {link.dropdown.map((sublink, idx) => {
                         const Icon = sublink.icon;
+                        const isSubLinkActive = pathname === sublink.href;
                         return (
                           <div key={sublink.name} className="relative group/item">
                             <Link
                               href={sublink.href}
-                              className="flex items-center gap-3.5 px-6 py-3.5 text-gray-700 hover:text-[#214347] hover:bg-gray-50 transition-colors font-medium text-[15px]"
+                              className={`flex items-center gap-3.5 px-6 py-3.5 transition-colors font-medium text-[15px] ${
+                                isSubLinkActive ? "text-[#214347] bg-gray-50" : "text-gray-700 hover:text-[#214347] hover:bg-gray-50"
+                              }`}
                             >
                               {Icon && <Icon className="w-[18px] h-[18px] text-[#214347]" strokeWidth={2} />}
                               {sublink.name}
@@ -84,13 +93,19 @@ export default function Navbar() {
               );
             }
 
+            const isActive = pathname === link.href;
             return (
               <Link
                 key={link.name}
                 href={link.href!}
-                className="text-gray-700 font-semibold hover:text-[#214347] transition-colors text-[15px]"
+                className={`relative py-1 text-[15px] font-semibold transition-colors ${
+                  isActive ? "text-[#214347]" : "text-gray-700 hover:text-[#214347]"
+                }`}
               >
                 {link.name}
+                {isActive && (
+                  <div className="absolute -bottom-1 left-0 w-full h-[2px] bg-[#214347] rounded-full animate-in fade-in zoom-in duration-300" />
+                )}
               </Link>
             );
           })}

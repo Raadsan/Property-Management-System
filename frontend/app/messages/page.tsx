@@ -12,7 +12,7 @@ import { getContactMessages } from "@/api/contactApi"
 import { toast } from "sonner"
 import { format } from "date-fns"
 
-
+// Define the Message type based on the response
 export type Message = {
   id: number
   firstName: string

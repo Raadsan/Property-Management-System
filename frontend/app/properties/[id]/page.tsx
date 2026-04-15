@@ -56,7 +56,7 @@ export default function PropertyDetailPage() {
     if (!id) return;
     
     // Check for user session
-    const savedUser = localStorage.getItem("user");
+    const savedUser = sessionStorage.getItem("user");
     if (savedUser) {
       try {
         setUser(JSON.parse(savedUser));

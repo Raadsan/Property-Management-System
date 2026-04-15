@@ -36,7 +36,7 @@ export default function LoginPage() {
     try {
       const response = await performLogin(email, password)
       
-      localStorage.setItem("user", JSON.stringify(response.user))
+      sessionStorage.setItem("user", JSON.stringify(response.user))
       setSuccessStatus(response.message || "Signed in successfully")
       setTimeout(() => router.push("/dashboard"), 800)
       

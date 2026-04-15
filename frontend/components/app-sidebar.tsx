@@ -38,14 +38,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [])
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    sessionStorage.removeItem("user");
     router.push("/login");
   };
 
   React.useEffect(() => {
     const fetchNav = async () => {
       try {
-        const userStr = localStorage.getItem("user");
+        const userStr = sessionStorage.getItem("user");
         if (!userStr) {
           router.push("/login");
           return;
@@ -54,7 +54,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         const user = JSON.parse(userStr);
         if (!user || !user.roleId) {
           console.warn("User roleId not found, redirecting to login");
-          localStorage.removeItem("user");
+          sessionStorage.removeItem("user");
           router.push("/login");
           return;
         }

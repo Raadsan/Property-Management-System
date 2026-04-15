@@ -181,7 +181,7 @@ export default function PropertiesPage() {
     }
 
     try {
-      const userStr = localStorage.getItem("user")
+      const userStr = sessionStorage.getItem("user")
       if (!userStr) {
         toast.error("You must be logged in to book.")
         return

@@ -53,7 +53,7 @@ export default function CityExplorer() {
             if (rawUrl.startsWith('http')) {
               cityMap[cityName].image = rawUrl;
             } else {
-              const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+              const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
               const baseUrl = apiUrl.replace("/api", "");
               cityMap[cityName].image = `${baseUrl}/${rawUrl.replace(/\\/g, '/').replace(/^\//, '')}`;
             }

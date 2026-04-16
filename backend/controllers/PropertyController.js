@@ -185,12 +185,19 @@ export const getPropertyById = async (req, res) => {
 export const updateProperty = async (req, res) => {
   try {
     const { id } = req.params;
-    const updateFields = req.body || {};
     const propertyId = parseInt(id);
+
+    console.log("📥 UPDATE PROPERTY REQUEST:", { 
+      id: propertyId, 
+      body: req.body, 
+      filesCount: req.files ? req.files.length : 0 
+    });
 
     if (isNaN(propertyId)) {
       return res.status(400).json({ message: "Invalid property ID provided." });
     }
+
+    const updateFields = req.body || {};
 
     // Process numeric and other fields
     const updateData = {};

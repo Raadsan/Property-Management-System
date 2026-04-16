@@ -628,14 +628,22 @@ export default function PropertiesPage() {
                     {/* Horizontal Image Gallery */}
                     {viewProperty.images && viewProperty.images.length > 0 ? (
                       <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
-                        {viewProperty.images.map((img) => (
-                          <img
-                            key={img.id}
-                            src={`http://127.0.0.1:5000${img.url}`}
-                            alt={viewProperty.title}
-                            className="h-48 w-auto min-w-[200px] object-cover rounded-md border shadow-sm snap-center"
-                          />
-                        ))}
+                        {viewProperty.images.map((img) => {
+                          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
+                          const baseUrl = apiUrl.replace("/api", "");
+                          const finalUrl = img.url.startsWith('http') 
+                            ? img.url 
+                            : `${baseUrl}/${img.url.replace(/\\/g, '/').replace(/^\//, '')}`;
+                          
+                          return (
+                            <img
+                              key={img.id}
+                              src={finalUrl}
+                              alt={viewProperty.title}
+                              className="h-48 w-auto min-w-[200px] object-cover rounded-md border shadow-sm snap-center"
+                            />
+                          );
+                        })}
                       </div>
                     ) : (
                       <div className="h-40 w-full flex items-center justify-center bg-muted rounded-md text-muted-foreground border border-dashed">

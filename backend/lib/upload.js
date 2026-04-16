@@ -4,11 +4,18 @@ import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryStorage } from 'multer-storage-cloudinary';
 import 'dotenv/config';
 
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET
-});
+// Configure Cloudinary
+if (process.env.CLOUDINARY_URL) {
+  // If CLOUDINARY_URL is present, the SDK handles config automatically
+  console.log("☁️ Cloudinary configured using CLOUDINARY_URL");
+} else {
+  cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key: process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET
+  });
+  console.log("☁️ Cloudinary configured using individual keys");
+}
 
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,

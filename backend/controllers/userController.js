@@ -157,16 +157,21 @@ export const deleteUser = async (req, res) => {
 // @desc    Login a user
 // @route   POST /api/users/login
 export const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { identifier, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ message: "Please provide email and password" });
+  if (!identifier || !password) {
+    return res.status(400).json({ message: "Please provide email/phone and password" });
   }
 
   try {
-    // 1. Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email },
+    // 1. Find user by email or phone
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { email: identifier },
+          { phone: identifier }
+        ]
+      },
       include: {
         role: {
           select: { name: true }
@@ -175,7 +180,7 @@ export const loginUser = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // 2. Check if user is active
@@ -186,7 +191,7 @@ export const loginUser = async (req, res) => {
     // 3. Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
     // 4. Return success (and user data without password)

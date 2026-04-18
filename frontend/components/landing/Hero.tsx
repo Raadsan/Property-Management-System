@@ -4,6 +4,8 @@ import React, { useState, useEffect, useRef } from "react";
 import { Search, MapPin, ChevronDown, Check, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { getCityStats, getPropertyTypes } from "@/api/propertyApi";
+import { Country, City } from "country-state-city";
+import ReactSelect from "react-select";
 
 const PRICE_RANGES = [
   { label: "$0 - $1,000", min: 0, max: 1000 },
@@ -15,11 +17,13 @@ const PRICE_RANGES = [
 export default function Hero() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("all"); // all, rent, sale
-  
+
   // Selection States
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [selectedPrice, setSelectedPrice] = useState<any>(null);
+  const [keyword, setKeyword] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("Somalia");
 
   // Data States
   const [cities, setCities] = useState<string[]>([]);
@@ -37,7 +41,14 @@ export default function Hero() {
           getCityStats(),
           getPropertyTypes()
         ]);
-        setCities(cityData.map(c => c.name));
+        
+        // Use library to get all cities for the current country (default SO)
+        const countryIso = Country.getAllCountries().find(c => c.name === selectedCountry)?.isoCode || "SO";
+        const libCities = (City.getCitiesOfCountry(countryIso) || []).map(c => c.name);
+        const apiCities = cityData.map(c => c.name);
+        const combinedCities = Array.from(new Set([...libCities, ...apiCities])).sort();
+        
+        setCities(combinedCities);
         setTypes(typeData);
       } catch (error) {
         console.error("Hero data fetch error:", error);
@@ -55,7 +66,7 @@ export default function Hero() {
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [selectedCountry]);
 
   const toggleDropdown = (name: string) => {
     setOpenDropdown(openDropdown === name ? null : name);
@@ -66,9 +77,11 @@ export default function Hero() {
     if (activeTab !== "all") {
       query += `listingType=${activeTab.toUpperCase()}&`;
     }
-    
+
     if (selectedCity) query += `city=${encodeURIComponent(selectedCity)}&`;
     if (selectedType) query += `type=${encodeURIComponent(selectedType)}&`;
+    if (keyword) query += `keyword=${encodeURIComponent(keyword)}&`;
+    if (selectedCountry) query += `country=${encodeURIComponent(selectedCountry)}&`;
     if (selectedPrice) {
       const range = PRICE_RANGES.find(r => r.label === selectedPrice);
       if (range) {
@@ -76,7 +89,7 @@ export default function Hero() {
         if (range.max) query += `maxPrice=${range.max}&`;
       }
     }
-    
+
     // Remove trailing & or ?
     query = query.replace(/[&?]$/, "");
     router.push(query);
@@ -110,18 +123,17 @@ export default function Hero() {
 
       {/* Search Bar - Positioned HALF-BETWEEN Hero and the section below */}
       <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-full max-w-7xl px-4 z-40" ref={dropdownRef}>
-        
+
         {/* Tabs */}
         <div className="flex">
           {["all", "rent", "buy"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-10 py-4 text-sm font-bold uppercase tracking-widest rounded-t-3xl transition-all ${
-                activeTab === tab
+              className={`px-10 py-4 text-sm font-bold uppercase tracking-widest rounded-t-3xl transition-all ${activeTab === tab
                   ? "bg-white text-[#214347]"
                   : "bg-white/10 text-white backdrop-blur-md hover:bg-white/20 border-t border-x border-white/20"
-              }`}
+                }`}
             >
               {tab}
             </button>
@@ -130,57 +142,129 @@ export default function Hero() {
 
         {/* Main Search Pill */}
         <div className="bg-white rounded-b-[2.5rem] rounded-tr-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.12)] p-3 flex flex-col md:flex-row items-center gap-2 border border-gray-100">
-          
-          <div className="flex-1 w-full border-r border-gray-100 last:border-0 relative">
-            <div 
-              onClick={() => toggleDropdown("city")}
-              className="px-8 py-3 hover:bg-gray-50 rounded-2xl transition-all cursor-pointer group relative"
-            >
-              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-1 block">Location</span>
-              <div className="flex items-center justify-between">
-                <span className={`text-sm font-semibold ${selectedCity ? "text-gray-900" : "text-gray-400"}`}>
-                  {selectedCity || "Select Your City"}
-                </span>
-                <MapPin className="h-4 w-4 text-[#214347]" />
-              </div>
-            </div>
 
-            {/* Custom Styled Dropdown */}
-            {openDropdown === "city" && (
-              <div className="absolute top-[105%] left-0 w-full bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 py-2 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-                <div 
-                  onClick={() => { setSelectedCity(""); setOpenDropdown(null); }}
-                  className={`px-6 py-2.5 text-sm font-medium cursor-pointer hover:bg-gray-50 ${!selectedCity ? "bg-[#214347] text-white" : "text-gray-500"}`}
-                >
-                  Select Your City
-                </div>
-                {cities.map(city => (
-                  <div 
-                    key={city} 
-                    onClick={() => { setSelectedCity(city); setOpenDropdown(null); }}
-                    className={`px-6 py-3 flex items-center justify-between cursor-pointer group transition-colors ${
-                      selectedCity === city 
-                        ? "bg-[#214347] text-white" 
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
-                  >
-                    <span className="text-sm font-bold">{city}</span>
-                    {selectedCity === city && <Check className="h-4 w-4 text-white" />}
-                  </div>
-                ))}
-              </div>
-            )}
+          <div className="flex-[1.5] w-full border-r border-gray-100 relative">
+            <div className="px-8 py-3 hover:bg-gray-50 rounded-2xl transition-all group relative">
+              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-1 block">Keyword</span>
+              <input
+                type="text"
+                placeholder="Search properties..."
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                className="w-full text-sm font-semibold bg-transparent border-none p-0 focus:ring-0 placeholder:text-gray-400 text-gray-900"
+              />
+            </div>
           </div>
 
-          <div className="flex-1 w-full border-r border-gray-100 last:border-0 relative">
-             <div 
-               onClick={() => toggleDropdown("type")}
-               className="px-8 py-3 hover:bg-gray-50 rounded-2xl transition-all cursor-pointer group relative"
-             >
-              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-1 block">Property Type</span>
+          <div className="flex-1 w-full border-r border-gray-100 relative">
+            <div className="px-6 py-1 transition-all group relative">
+              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-0.5 block ml-2">Country</span>
+              <ReactSelect
+                instanceId="hero-country-select"
+                options={Country.getAllCountries().map(c => ({ value: c.isoCode, label: c.name }))}
+                value={Country.getAllCountries().find(c => c.name === selectedCountry) ? { value: Country.getAllCountries().find(c => c.name === selectedCountry)?.isoCode, label: selectedCountry } : { value: "SO", label: "Somalia" }}
+                onChange={(opt: any) => {
+                  if (opt) {
+                    setSelectedCountry(opt.label);
+                    setSelectedCity(""); 
+                  }
+                }}
+                placeholder="Search..."
+                className="react-select-container"
+                classNamePrefix="react-select"
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    border: 'none',
+                    boxShadow: 'none',
+                    background: 'transparent',
+                    minHeight: '32px',
+                    cursor: 'pointer'
+                  }),
+                  valueContainer: (base) => ({ ...base, padding: '0 8px' }),
+                  input: (base) => ({ ...base, margin: 0, padding: 0 }),
+                  placeholder: (base) => ({ ...base, fontSize: '14px', fontWeight: 'bold', color: 'rgb(156 163 175)' }),
+                  singleValue: (base) => ({ ...base, fontSize: '14px', fontWeight: 'bold', color: 'black' }),
+                  menu: (base) => ({
+                    ...base, 
+                    borderRadius: '1.5rem', 
+                    padding: '0.5rem',
+                    boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+                    border: '1px solid rgb(243 244 246)',
+                    zIndex: 100
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    borderRadius: '0.75rem',
+                    margin: '2px 0',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    backgroundColor: state.isSelected ? '#214347' : state.isFocused ? 'rgb(243 244 246)' : 'transparent',
+                    color: state.isSelected ? 'white' : 'rgb(55 65 81)',
+                    cursor: 'pointer'
+                  })
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 w-full border-r border-gray-100 relative">
+            <div className="px-6 py-1 transition-all group relative">
+              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-0.5 block ml-2">City</span>
+              <ReactSelect
+                instanceId="hero-city-select"
+                options={cities.map(c => ({ value: c, label: c }))}
+                value={selectedCity ? { value: selectedCity, label: selectedCity } : null}
+                onChange={(opt: any) => setSelectedCity(opt?.value || "")}
+                placeholder="City..."
+                isClearable
+                className="react-select-container"
+                classNamePrefix="react-select"
+                styles={{
+                  control: (base) => ({
+                    ...base,
+                    border: 'none',
+                    boxShadow: 'none',
+                    background: 'transparent',
+                    minHeight: '32px',
+                    cursor: 'pointer'
+                  }),
+                  valueContainer: (base) => ({ ...base, padding: '0 8px' }),
+                  input: (base) => ({ ...base, margin: 0, padding: 0 }),
+                  placeholder: (base) => ({ ...base, fontSize: '14px', fontWeight: 'bold', color: 'rgb(156 163 175)' }),
+                  singleValue: (base) => ({ ...base, fontSize: '14px', fontWeight: 'bold', color: 'black' }),
+                  menu: (base) => ({
+                    ...base, 
+                    borderRadius: '1.5rem', 
+                    padding: '0.5rem',
+                    boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+                    border: '1px solid rgb(243 244 246)',
+                    zIndex: 100
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    borderRadius: '0.75rem',
+                    margin: '2px 0',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    backgroundColor: state.isSelected ? '#214347' : state.isFocused ? 'rgb(243 244 246)' : 'transparent',
+                    color: state.isSelected ? 'white' : 'rgb(55 65 81)',
+                    cursor: 'pointer'
+                  })
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 w-full border-r border-gray-100 relative">
+            <div
+              onClick={() => toggleDropdown("type")}
+              className="px-6 py-3 hover:bg-gray-50 rounded-2xl transition-all cursor-pointer group relative"
+            >
+              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-1 block">Type</span>
               <div className="flex items-center justify-between">
                 <span className={`text-sm font-semibold ${selectedType ? "text-gray-900" : "text-gray-400"}`}>
-                  {selectedType || "Choose Property Type"}
+                  {selectedType || "Choose Type"}
                 </span>
                 <ChevronDown className="h-4 w-4 text-[#214347]" />
               </div>
@@ -188,21 +272,18 @@ export default function Hero() {
 
             {openDropdown === "type" && (
               <div className="absolute top-[105%] left-0 w-full bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 py-2 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
-                <div 
+                <div
                   onClick={() => { setSelectedType(""); setOpenDropdown(null); }}
                   className={`px-6 py-2.5 text-sm font-medium cursor-pointer hover:bg-gray-50 ${!selectedType ? "bg-[#214347] text-white" : "text-gray-500"}`}
                 >
-                  Choose Property Type
+                  Choose Type
                 </div>
                 {types.map(t => (
-                  <div 
-                    key={t.id} 
+                  <div
+                    key={t.id}
                     onClick={() => { setSelectedType(t.name); setOpenDropdown(null); }}
-                    className={`px-6 py-3 flex items-center justify-between cursor-pointer group transition-colors ${
-                      selectedType === t.name 
-                        ? "bg-[#214347] text-white" 
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
+                    className={`px-6 py-3 flex items-center justify-between cursor-pointer transition-colors ${selectedType === t.name ? "bg-[#214347] text-white" : "hover:bg-gray-50 text-gray-700"
+                      }`}
                   >
                     <span className="text-sm font-bold">{t.name}</span>
                     {selectedType === t.name && <Check className="h-4 w-4 text-white" />}
@@ -213,14 +294,14 @@ export default function Hero() {
           </div>
 
           <div className="flex-1 w-full border-r border-gray-100 last:border-0 relative">
-             <div 
-               onClick={() => toggleDropdown("price")}
-               className="px-8 py-3 hover:bg-gray-50 rounded-2xl transition-all cursor-pointer group relative"
-             >
-              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-1 block">Price Range</span>
+            <div
+              onClick={() => toggleDropdown("price")}
+              className="px-6 py-3 hover:bg-gray-50 rounded-2xl transition-all cursor-pointer group relative"
+            >
+              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-1 block">Price</span>
               <div className="flex items-center justify-between">
                 <span className={`text-sm font-semibold ${selectedPrice ? "text-gray-900" : "text-gray-400"}`}>
-                  {selectedPrice || "Choose Price Range"}
+                  {selectedPrice || "Choose Range"}
                 </span>
                 <ChevronDown className="h-4 w-4 text-[#214347]" />
               </div>
@@ -228,21 +309,18 @@ export default function Hero() {
 
             {openDropdown === "price" && (
               <div className="absolute top-[105%] left-0 w-full bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 py-2 animate-in fade-in zoom-in-95 duration-200">
-                <div 
+                <div
                   onClick={() => { setSelectedPrice(""); setOpenDropdown(null); }}
                   className={`px-6 py-2.5 text-sm font-medium cursor-pointer hover:bg-gray-50 ${!selectedPrice ? "bg-[#214347] text-white" : "text-gray-500"}`}
                 >
-                  Choose Price Range
+                  Choose Range
                 </div>
                 {PRICE_RANGES.map(r => (
-                  <div 
-                    key={r.label} 
+                  <div
+                    key={r.label}
                     onClick={() => { setSelectedPrice(r.label); setOpenDropdown(null); }}
-                    className={`px-6 py-3 flex items-center justify-between cursor-pointer group transition-colors ${
-                      selectedPrice === r.label 
-                        ? "bg-[#214347] text-white" 
-                        : "bg-white text-gray-700 hover:bg-gray-50"
-                    }`}
+                    className={`px-6 py-3 flex items-center justify-between cursor-pointer transition-colors ${selectedPrice === r.label ? "bg-[#214347] text-white" : "hover:bg-gray-50 text-gray-700"
+                      }`}
                   >
                     <span className="text-sm font-bold">{r.label}</span>
                     {selectedPrice === r.label && <Check className="h-4 w-4 text-white" />}
@@ -253,7 +331,7 @@ export default function Hero() {
           </div>
 
           <div className="px-4">
-            <button 
+            <button
               onClick={handleSearch}
               className="bg-[#214347] hover:bg-[#1a3539] text-white h-16 w-16 rounded-full shadow-lg transition-all active:scale-95 flex items-center justify-center group"
             >

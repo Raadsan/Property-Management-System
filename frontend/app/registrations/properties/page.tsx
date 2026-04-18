@@ -20,6 +20,9 @@ import {
   Property
 } from "@/api/propertyApi"
 
+import { Country, City } from "country-state-city"
+import ReactSelect from "react-select"
+
 import {
   Dialog,
   DialogContent,
@@ -56,7 +59,8 @@ export default function PropertiesPage() {
   const [title, setTitle] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [location, setLocation] = React.useState("")
-  const [city, setCity] = React.useState("")
+  const [selectedCity, setSelectedCity] = React.useState("")
+  const [selectedCountry, setSelectedCountry] = React.useState("Somalia")
   const [price, setPrice] = React.useState("")
   const [status, setStatus] = React.useState<string>("AVAILABLE")
   const [propertyTypeId, setPropertyTypeId] = React.useState<string>("")
@@ -68,6 +72,19 @@ export default function PropertiesPage() {
   const [bathrooms, setBathrooms] = React.useState("")
   const [reservationFee, setReservationFee] = React.useState("0.01")
   const [featuresInput, setFeaturesInput] = React.useState("")
+
+  // 🌍 Derived Location Data for Searchable Selects
+  const countryData = React.useMemo(() => Country.getAllCountries(), []);
+  const currentCountryObj = countryData.find(c => c.name === selectedCountry);
+  const countryIso = currentCountryObj?.isoCode || "SO";
+  const cityOptions = React.useMemo(() => 
+    (City.getCitiesOfCountry(countryIso) || []).map(c => ({ value: c.name, label: c.name })),
+    [countryIso]
+  );
+  const countryOptions = React.useMemo(() => 
+    countryData.map(c => ({ value: c.isoCode, label: c.name })),
+    [countryData]
+  );
 
   // File State
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -111,7 +128,7 @@ export default function PropertiesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title || !location || !city || !price || !ownerId || !propertyTypeId) {
+    if (!title || !location || !City || !price || !ownerId || !propertyTypeId) {
       return toast.error("Please fill in all strictly required fields.")
     }
 
@@ -120,7 +137,8 @@ export default function PropertiesPage() {
       formData.append("title", title)
       formData.append("description", description)
       formData.append("location", location)
-      formData.append("city", city)
+      formData.append("city", selectedCity)
+      formData.append("country", selectedCountry)
       formData.append("price", price)
       formData.append("listingType", listingType)
       formData.append("status", status)
@@ -214,7 +232,8 @@ export default function PropertiesPage() {
       setTitle(prop.title)
       setDescription(prop.description || "")
       setLocation(prop.location)
-      setCity(prop.city)
+      setSelectedCity(prop.city)
+      setSelectedCountry(prop.country || "Somalia")
       setPrice(prop.price.toString())
       setListingType(prop.listingType)
       setStatus(prop.status)
@@ -231,7 +250,8 @@ export default function PropertiesPage() {
       setTitle("")
       setDescription("")
       setLocation("")
-      setCity("")
+      setSelectedCity("")
+      setSelectedCountry("Somalia")
       setPrice("")
       setListingType("RENT")
       setStatus("AVAILABLE")
@@ -259,7 +279,8 @@ export default function PropertiesPage() {
     setTitle("")
     setDescription("")
     setLocation("")
-    setCity("")
+    setSelectedCity("")
+    setSelectedCountry("Somalia")
     setPrice("")
     setStatus("AVAILABLE")
     setPropertyTypeId("")
@@ -318,24 +339,13 @@ export default function PropertiesPage() {
       ),
     },
     {
-      accessorKey: "sizeLabel",
-      header: "Specs",
+      accessorKey: "ReservationFee",
+      header: "Reservation Fee",
       cell: ({ row }) => (
-        <div className="text-xs">
-          <div className="font-medium">{row.original.sizeLabel || "—"}</div>
-          {row.original.area && <div className="text-[10px] text-muted-foreground">{row.original.area} sqm</div>}
+        <div className="font-semibold text-emerald-600">
+          ${Number(row.getValue("ReservationFee") || 0).toLocaleString()}
         </div>
       ),
-    },
-    {
-      accessorKey: "Rooms",
-      header: "Rooms",
-      cell: ({ row }) => <div className="text-sm font-semibold">{row.getValue("Rooms") || 0}</div>,
-    },
-    {
-      accessorKey: "Bathrooms",
-      header: "Baths",
-      cell: ({ row }) => <div className="text-sm font-semibold">{row.getValue("Bathrooms") || 0}</div>,
     },
     {
       accessorKey: "listingType",
@@ -352,7 +362,7 @@ export default function PropertiesPage() {
       cell: ({ row }) => (
         <div className="max-w-[200px] text-sm">
           <div className="truncate font-medium">{row.getValue("location")}</div>
-          <div className="text-[10px] text-muted-foreground capitalize">{row.original.city}</div>
+          <div className="text-[10px] text-muted-foreground capitalize">{row.original.city}, {row.original.country || "Somalia"}</div>
         </div>
       ),
     },
@@ -454,10 +464,55 @@ export default function PropertiesPage() {
                     <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Full Address" />
                   </div>
 
-                  {/* City */}
+                  {/* Searchable Country */}
+                  <div className="space-y-2">
+                    <Label htmlFor="country">Country <span className="text-red-500">*</span></Label>
+                    <ReactSelect
+                      instanceId="reg-country-select"
+                      options={countryOptions}
+                      value={currentCountryObj ? { value: currentCountryObj.isoCode, label: currentCountryObj.name } : { value: "SO", label: "Somalia" }}
+                      onChange={(opt: any) => {
+                        if (opt) {
+                          setSelectedCountry(opt.label);
+                          setSelectedCity(""); 
+                        }
+                      }}
+                      className="text-sm"
+                      placeholder="Search Country..."
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          borderRadius: 'calc(var(--radius) - 2px)',
+                          borderColor: 'rgb(226, 232, 240)',
+                          boxShadow: 'none',
+                          '&:hover': { borderColor: 'rgb(203, 213, 225)' }
+                        })
+                      }}
+                    />
+                  </div>
+
+                  {/* Searchable City */}
                   <div className="space-y-2">
                     <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
-                    <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Mogadishu" />
+                    <ReactSelect
+                      instanceId="reg-city-select"
+                      key={`city-select-${countryIso}`} 
+                      options={cityOptions}
+                      value={selectedCity ? { value: selectedCity, label: selectedCity } : null}
+                      onChange={(opt: any) => setSelectedCity(opt?.value || "")}
+                      className="text-sm"
+                      placeholder="Search City..."
+                      isClearable
+                      styles={{
+                        control: (base) => ({
+                          ...base,
+                          borderRadius: 'calc(var(--radius) - 2px)',
+                          borderColor: 'rgb(226, 232, 240)',
+                          boxShadow: 'none',
+                          '&:hover': { borderColor: 'rgb(203, 213, 225)' }
+                        })
+                      }}
+                    />
                   </div>
 
                   {/* Price */}
@@ -469,8 +524,8 @@ export default function PropertiesPage() {
                   {/* Category / Type */}
                   <div className="space-y-2">
                     <Label htmlFor="propertyTypeId">Property Type <span className="text-red-500">*</span></Label>
-                    <Select 
-                      value={propertyTypeId || ""} 
+                    <Select
+                      value={propertyTypeId || ""}
                       onValueChange={(val) => setPropertyTypeId(val)}
                     >
                       <SelectTrigger id="propertyTypeId">
@@ -487,8 +542,8 @@ export default function PropertiesPage() {
                   {/* Owner */}
                   <div className="space-y-2">
                     <Label htmlFor="ownerId">Owner <span className="text-red-500">*</span></Label>
-                    <Select 
-                      value={ownerId || ""} 
+                    <Select
+                      value={ownerId || ""}
                       onValueChange={(val) => setOwnerId(val)}
                     >
                       <SelectTrigger id="ownerId">
@@ -504,8 +559,8 @@ export default function PropertiesPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="listingType">Listing Type <span className="text-red-500">*</span></Label>
-                    <Select 
-                      value={listingType || "RENT"} 
+                    <Select
+                      value={listingType || "RENT"}
                       onValueChange={(val) => setListingType(val)}
                     >
                       <SelectTrigger id="listingType">
@@ -557,7 +612,7 @@ export default function PropertiesPage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+
                   {/* Reservation Fee */}
                   <div className="space-y-2">
                     <Label htmlFor="reservationFee">Reservation Fee ($)</Label>
@@ -631,10 +686,10 @@ export default function PropertiesPage() {
                         {viewProperty.images.map((img) => {
                           const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
                           const baseUrl = apiUrl.replace("/api", "");
-                          const finalUrl = img.url.startsWith('http') 
-                            ? img.url 
+                          const finalUrl = img.url.startsWith('http')
+                            ? img.url
                             : `${baseUrl}/${img.url.replace(/\\/g, '/').replace(/^\//, '')}`;
-                          
+
                           return (
                             <img
                               key={img.id}
@@ -664,8 +719,8 @@ export default function PropertiesPage() {
                       </div>
 
                       <div>
-                        <span className="font-semibold text-muted-foreground block mb-1">City</span>
-                        <p className="font-medium bg-muted/40 p-2 rounded-md capitalize">{viewProperty.city}</p>
+                        <span className="font-semibold text-muted-foreground block mb-1">City & Country</span>
+                        <p className="font-medium bg-muted/40 p-2 rounded-md capitalize">{viewProperty.city}, {viewProperty.country || "Somalia"}</p>
                       </div>
 
                       <div>
@@ -759,10 +814,10 @@ export default function PropertiesPage() {
             </Dialog>
           </div>
 
-          <DataTable 
-            columns={columns} 
-            data={properties} 
-            isLoading={isLoading} 
+          <DataTable
+            columns={columns}
+            data={properties}
+            isLoading={isLoading}
             filterColumn="title"
             filterPlaceholder="Search properties by title..."
           />

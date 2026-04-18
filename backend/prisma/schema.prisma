@@ -120,6 +120,7 @@ model Property {
   title          String
   description    String?
   location       String
+  country        String?
   city           String
   Rooms          Int             @default(0)
   Bathrooms      Int             @default(0)

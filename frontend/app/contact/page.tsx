@@ -238,6 +238,27 @@ export default function ContactPage() {
         </div>
       </section>
 
+      {/* 3. Map Section */}
+      <section className="pb-24 pt-8">
+        <div className="container mx-auto px-4 lg:px-8 max-w-6xl">
+           <div className="bg-white rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.06)] border border-gray-100 overflow-hidden">
+              <div className="p-2 h-[450px] w-full">
+                  <iframe 
+                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15949.176413289053!2d45.3113972!3d2.036063!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3d07e94bc65f6c8d%3A0x6bba3bc7f677d61c!2sDeero%20Institute!5e0!3m2!1sen!2sso!4v1713430800000!5m2!1sen!2sso"
+                    width="100%" 
+                    height="100%" 
+                    style={{ border: 0 }} 
+                    allowFullScreen={true} 
+                    loading="lazy" 
+                    referrerPolicy="no-referrer-when-downgrade"
+                    title="Office Location"
+                    className="rounded-xl"
+                  ></iframe>
+              </div>
+           </div>
+        </div>
+      </section>
+
       <Footer />
     </main>
   );

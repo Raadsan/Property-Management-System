@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
-import { EyeIcon, EyeOffIcon, Loader2Icon, Mail, Lock, CheckCircle2, AlertCircle } from "lucide-react"
+import { EyeIcon, EyeOffIcon, Loader2Icon, Mail, Lock, CheckCircle2, AlertCircle, User } from "lucide-react"
 import { loginUser as performLogin } from "@/api/userApi"
 
 export default function LoginPage() {
@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = React.useState(false)
   const [showPassword, setShowPassword] = React.useState(false)
   
-  const [email, setEmail] = React.useState("")
+  const [identifier, setIdentifier] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [errorStatus, setErrorStatus] = React.useState<string | null>(null)
   const [successStatus, setSuccessStatus] = React.useState<string | null>(null)
@@ -34,7 +34,7 @@ export default function LoginPage() {
     setSuccessStatus(null)
 
     try {
-      const response = await performLogin(email, password)
+      const response = await performLogin(identifier, password)
       
       sessionStorage.setItem("user", JSON.stringify(response.user))
       setSuccessStatus(response.message || "Signed in successfully")
@@ -62,7 +62,7 @@ export default function LoginPage() {
               Welcome Back
             </CardTitle>
             <CardDescription className="text-[15px] text-gray-400 font-medium">
-              Sign in to your account to continue
+              Please sign in with your email or phone number
             </CardDescription>
           </div>
         </CardHeader>
@@ -82,16 +82,16 @@ export default function LoginPage() {
             )}
             
             <div className="space-y-2">
-              <label className="text-[13px] font-bold text-[#1e293b] ml-1">Email Address</label>
+              <label className="text-[13px] font-bold text-[#1e293b] ml-1">Email or Phone</label>
               <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#214347] transition-colors">
-                  <Mail size={18} />
+                  <User size={18} />
                 </div>
                 <Input
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  type="text"
+                  placeholder="name@example.com or 25261..."
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
                   required
                   className="h-13 pl-12 rounded-xl border-gray-200 bg-gray-50/50 !text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-[#214347] focus-visible:ring-0 transition-all text-sm font-medium"
                 />

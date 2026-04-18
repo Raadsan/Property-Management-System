@@ -5,13 +5,13 @@ import axios from "axios";
 // @route   POST /api/properties
 export const createProperty = async (req, res) => {
   try {
-    console.log("📥 CREATE PROPERTY REQUEST:", { 
-      body: req.body, 
-      filesCount: req.files ? req.files.length : 0 
+    console.log("📥 CREATE PROPERTY REQUEST:", {
+      body: req.body,
+      filesCount: req.files ? req.files.length : 0
     });
 
     const {
-      title, description, location, city, price,
+      title, description, location, city, country, price,
       ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures,
       sizeLabel, area, listingType: bodyListingType, status: bodyStatus,
       Rooms, Bathrooms, ReservationFee
@@ -21,10 +21,10 @@ export const createProperty = async (req, res) => {
     const status = (bodyStatus || "AVAILABLE").trim().toUpperCase();
 
     // Validation
-    if (!title || !location || !city || !price || !ownerId || !propertyTypeId) {
-      return res.status(400).json({ 
+    if (!title || !location || !city || !country || !price || !ownerId || !propertyTypeId) {
+      return res.status(400).json({
         message: "Missing required fields.",
-        received: { title: !!title, location: !!location, city: !!city, price: !!price, ownerId: !!ownerId, propertyTypeId: !!propertyTypeId }
+        received: { title: !!title, location: !!location, city: !!city, country: !!country, price: !!price, ownerId: !!ownerId, propertyTypeId: !!propertyTypeId }
       });
     }
 
@@ -61,7 +61,7 @@ export const createProperty = async (req, res) => {
     const parsedReservationFee = ReservationFee !== undefined ? parseFloat(ReservationFee) : 0.01;
 
     if (isNaN(parsedPrice) || isNaN(parsedOwnerId) || isNaN(parsedPropertyTypeId)) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         message: "Invalid numeric values provided.",
         details: { price, ownerId, propertyTypeId }
       });
@@ -73,6 +73,7 @@ export const createProperty = async (req, res) => {
         description,
         location,
         city,
+        country,
         price: parsedPrice,
         listingType,
         status,
@@ -101,8 +102,8 @@ export const createProperty = async (req, res) => {
     console.error("❌ CREATE PROPERTY ERROR:", error);
     // Ensure we don't send a circular object and provide maximum detail
     const errorDetails = error.message || "Unknown error";
-    return res.status(500).json({ 
-      message: "Server error creating property", 
+    return res.status(500).json({
+      message: "Server error creating property",
       error: errorDetails,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
@@ -113,13 +114,23 @@ export const createProperty = async (req, res) => {
 // @route   GET /api/properties
 export const getProperties = async (req, res) => {
   try {
-    const { city, rooms, minPrice, maxPrice, propertyTypeId } = req.query;
+    const { city, country, rooms, minPrice, maxPrice, propertyTypeId, listingType, keyword } = req.query;
 
     const where = {};
     if (city) where.city = city;
+    if (country) where.country = country;
     if (rooms) where.Rooms = parseInt(rooms);
     if (propertyTypeId) where.propertyTypeId = parseInt(propertyTypeId);
-    
+    if (listingType) where.listingType = listingType.toUpperCase();
+
+    if (keyword) {
+      where.OR = [
+        { title: { contains: keyword, mode: 'insensitive' } },
+        { description: { contains: keyword, mode: 'insensitive' } },
+        { location: { contains: keyword, mode: 'insensitive' } },
+      ];
+    }
+
     if (minPrice || maxPrice) {
       where.price = {};
       if (minPrice) where.price.gte = parseFloat(minPrice);
@@ -138,9 +149,9 @@ export const getProperties = async (req, res) => {
     return res.status(200).json(properties);
   } catch (error) {
     console.error("❌ GET PROPERTIES ERROR:", error);
-    return res.status(500).json({ 
-      message: "Error fetching properties", 
-      error: error.message || "Unknown error" 
+    return res.status(500).json({
+      message: "Error fetching properties",
+      error: error.message || "Unknown error"
     });
   }
 };
@@ -173,9 +184,9 @@ export const getPropertyById = async (req, res) => {
     return res.status(200).json(property);
   } catch (error) {
     console.error("❌ GET PROPERTY BY ID ERROR:", error);
-    return res.status(500).json({ 
-      message: "Error fetching property", 
-      error: error.message || "Unknown error" 
+    return res.status(500).json({
+      message: "Error fetching property",
+      error: error.message || "Unknown error"
     });
   }
 };
@@ -187,10 +198,10 @@ export const updateProperty = async (req, res) => {
     const { id } = req.params;
     const propertyId = parseInt(id);
 
-    console.log("📥 UPDATE PROPERTY REQUEST:", { 
-      id: propertyId, 
-      body: req.body, 
-      filesCount: req.files ? req.files.length : 0 
+    console.log("📥 UPDATE PROPERTY REQUEST:", {
+      id: propertyId,
+      body: req.body,
+      filesCount: req.files ? req.files.length : 0
     });
 
     if (isNaN(propertyId)) {
@@ -205,29 +216,30 @@ export const updateProperty = async (req, res) => {
     if (updateFields.description !== undefined) updateData.description = updateFields.description;
     if (updateFields.location) updateData.location = updateFields.location;
     if (updateFields.city) updateData.city = updateFields.city;
+    if (updateFields.country) updateData.country = updateFields.country;
     if (updateFields.Rooms !== undefined) updateData.Rooms = parseInt(updateFields.Rooms) || 0;
     if (updateFields.Bathrooms !== undefined) updateData.Bathrooms = parseInt(updateFields.Bathrooms) || 0;
     if (updateFields.price) updateData.price = parseFloat(updateFields.price);
     if (updateFields.listingType) updateData.listingType = updateFields.listingType.trim().toUpperCase();
     if (updateFields.status) updateData.status = updateFields.status.trim().toUpperCase();
-    
+
     if (updateFields.ReservationFee !== undefined) {
       const parsedResFee = parseFloat(updateFields.ReservationFee);
       updateData.ReservationFee = isNaN(parsedResFee) ? 0.01 : parsedResFee;
     }
-    
+
     if (updateFields.ownerId) {
       updateData.ownerId = parseInt(updateFields.ownerId);
       if (isNaN(updateData.ownerId)) delete updateData.ownerId;
     }
-    
+
     if (updateFields.propertyTypeId) {
       updateData.propertyTypeId = parseInt(updateFields.propertyTypeId);
       if (isNaN(updateData.propertyTypeId)) delete updateData.propertyTypeId;
     }
 
     if (updateFields.sizeLabel !== undefined) updateData.sizeLabel = updateFields.sizeLabel;
-    
+
     if (updateFields.area !== undefined) {
       const parsedArea = parseFloat(updateFields.area);
       updateData.area = isNaN(parsedArea) ? null : parsedArea;
@@ -277,9 +289,9 @@ export const updateProperty = async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ message: "Property not found" });
     }
-    return res.status(500).json({ 
-      message: "Server error updating property", 
-      error: error.message || "Unknown error" 
+    return res.status(500).json({
+      message: "Server error updating property",
+      error: error.message || "Unknown error"
     });
   }
 };

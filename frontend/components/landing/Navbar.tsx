@@ -33,6 +33,7 @@ export default function Navbar() {
         { name: "Rent Property", href: "/rent", icon: Key }
       ]
     },
+    { name: "Posts", href: "/posts" },
     { name: "Contact Us", href: "/contact" },
   ];
 

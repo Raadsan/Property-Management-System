@@ -18,6 +18,7 @@ export interface Property {
   description?: string;
   location: string;
   city: string;
+  country: string;
   price: number;
   listingType: 'RENT' | 'SALE';
   status: 'AVAILABLE' | 'BOOKED' | 'SOLD' | 'RENTED';

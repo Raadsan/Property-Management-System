@@ -13,7 +13,7 @@ export default function FeaturedProperties() {
     const fetchProperties = async () => {
       try {
         const data = await getProperties();
-        setProperties(data.slice(0, 6)); // Display first 6 properties
+        setProperties(data.slice(0, 3)); // Display first 3 properties
       } catch (error) {
         console.error("Failed to fetch featured properties:", error);
       } finally {

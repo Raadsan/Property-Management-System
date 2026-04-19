@@ -25,7 +25,7 @@ export const createUser = async (req, res) => {
     const user = await prisma.user.create({
       data: {
         name,
-        email,
+        email: email && email.trim() !== "" ? email : null, // Fix: Use null instead of "" for unique field
         phone,
         roleId: parseInt(roleId),
         password: hashedPassword,
@@ -39,6 +39,10 @@ export const createUser = async (req, res) => {
     res.status(201).json({ message: "User created successfully", user: userWithoutPassword });
   } catch (error) {
     if (error.code === 'P2002') {
+      const target = error.meta?.target || "";
+      if (target.includes("phone")) {
+        return res.status(400).json({ message: "Phone number already exists" });
+      }
       return res.status(400).json({ message: "Email already exists" });
     }
     res.status(500).json({ message: "Error creating user", error: error.message });
@@ -105,7 +109,7 @@ export const updateUser = async (req, res) => {
   try {
     const updateData = {};
     if (name) updateData.name = name;
-    if (email) updateData.email = email;
+    if (email !== undefined) updateData.email = email && email.trim() !== "" ? email : null;
     if (phone) updateData.phone = phone;
     if (status) updateData.status = status;
     if (roleId) updateData.roleId = parseInt(roleId);
@@ -132,6 +136,13 @@ export const updateUser = async (req, res) => {
     res.status(200).json({ message: "User updated successfully", user: userWithoutPassword });
   } catch (error) {
     console.error("❌ UPDATE USER ERROR:", error);
+    if (error.code === 'P2002') {
+      const target = error.meta?.target || "";
+      if (target.includes("phone")) {
+        return res.status(400).json({ message: "Phone number already exists" });
+      }
+      return res.status(400).json({ message: "Email already exists" });
+    }
     if (error.code === 'P2025') {
       return res.status(404).json({ message: "User not found" });
     }

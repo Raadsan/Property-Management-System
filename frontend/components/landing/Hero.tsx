@@ -42,13 +42,10 @@ export default function Hero() {
           getPropertyTypes()
         ]);
         
-        // Use library to get all cities for the current country (default SO)
-        const countryIso = Country.getAllCountries().find(c => c.name === selectedCountry)?.isoCode || "SO";
-        const libCities = (City.getCitiesOfCountry(countryIso) || []).map(c => c.name);
-        const apiCities = cityData.map(c => c.name);
-        const combinedCities = Array.from(new Set([...libCities, ...apiCities])).sort();
+        // Filter to only display cities that actually have properties listed in the database
+        const apiCities = cityData.map(c => c.name).sort();
         
-        setCities(combinedCities);
+        setCities(apiCities);
         setTypes(typeData);
       } catch (error) {
         console.error("Hero data fetch error:", error);

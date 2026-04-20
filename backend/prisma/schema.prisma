@@ -137,7 +137,7 @@ model Property {
   favorites      Favorite[]
   features       Feature[]
   bookings       Booking[]
-  owner          User            @relation("OwnerProperties", fields: [ownerId], references: [id])
+  owner          User            @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Cascade)
   propertyType   PropertyType    @relation(fields: [propertyTypeId], references: [id])
   images         PropertyImage[]
 
@@ -168,7 +168,7 @@ model Favorite {
   userId     Int
   propertyId Int
   property   Property @relation(fields: [propertyId], references: [id])
-  user       User     @relation(fields: [userId], references: [id])
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, propertyId])
   @@index([propertyId], map: "Favorite_propertyId_fkey")
@@ -185,7 +185,7 @@ model Booking {
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
   property   Property      @relation(fields: [propertyId], references: [id])
-  user       User          @relation(fields: [userId], references: [id])
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   payments   Payment[]
 
   @@index([propertyId], map: "Booking_propertyId_fkey")
@@ -210,7 +210,7 @@ model Payment {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
   booking   Booking?      @relation(fields: [bookingId], references: [id])
-  user      User          @relation(fields: [userId], references: [id])
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([bookingId], map: "Payment_bookingId_fkey")
   @@index([userId], map: "Payment_userId_fkey")
@@ -249,4 +249,27 @@ model Contact {
   status      String   @default("UNREAD")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+model BlogCategory {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  description String?
+  blogs     Blog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Blog {
+  id          Int          @id @default(autoincrement())
+  title       String
+  content     String       @db.LongText
+  image       String?
+  author      String
+  categoryId  Int
+  category    BlogCategory @relation(fields: [categoryId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([categoryId])
 }

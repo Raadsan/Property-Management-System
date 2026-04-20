@@ -143,74 +143,9 @@ export default function Hero() {
         {/* Main Search Pill */}
         <div className="bg-white rounded-b-[2.5rem] rounded-tr-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.12)] p-3 flex flex-col md:flex-row items-center gap-2 border border-gray-100">
 
-          <div className="flex-[1.5] w-full border-r border-gray-100 relative">
-            <div className="px-8 py-3 hover:bg-gray-50 rounded-2xl transition-all group relative">
-              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-1 block">Keyword</span>
-              <input
-                type="text"
-                placeholder="Search properties..."
-                value={keyword}
-                onChange={(e) => setKeyword(e.target.value)}
-                className="w-full text-sm font-semibold bg-transparent border-none p-0 focus:ring-0 placeholder:text-gray-400 text-gray-900"
-              />
-            </div>
-          </div>
-
           <div className="flex-1 w-full border-r border-gray-100 relative">
             <div className="px-6 py-1 transition-all group relative">
-              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-0.5 block ml-2">Country</span>
-              <ReactSelect
-                instanceId="hero-country-select"
-                options={Country.getAllCountries().map(c => ({ value: c.isoCode, label: c.name }))}
-                value={Country.getAllCountries().find(c => c.name === selectedCountry) ? { value: Country.getAllCountries().find(c => c.name === selectedCountry)?.isoCode, label: selectedCountry } : { value: "SO", label: "Somalia" }}
-                onChange={(opt: any) => {
-                  if (opt) {
-                    setSelectedCountry(opt.label);
-                    setSelectedCity(""); 
-                  }
-                }}
-                placeholder="Search..."
-                className="react-select-container"
-                classNamePrefix="react-select"
-                styles={{
-                  control: (base) => ({
-                    ...base,
-                    border: 'none',
-                    boxShadow: 'none',
-                    background: 'transparent',
-                    minHeight: '32px',
-                    cursor: 'pointer'
-                  }),
-                  valueContainer: (base) => ({ ...base, padding: '0 8px' }),
-                  input: (base) => ({ ...base, margin: 0, padding: 0 }),
-                  placeholder: (base) => ({ ...base, fontSize: '14px', fontWeight: 'bold', color: 'rgb(156 163 175)' }),
-                  singleValue: (base) => ({ ...base, fontSize: '14px', fontWeight: 'bold', color: 'black' }),
-                  menu: (base) => ({
-                    ...base, 
-                    borderRadius: '1.5rem', 
-                    padding: '0.5rem',
-                    boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
-                    border: '1px solid rgb(243 244 246)',
-                    zIndex: 100
-                  }),
-                  option: (base, state) => ({
-                    ...base,
-                    borderRadius: '0.75rem',
-                    margin: '2px 0',
-                    fontSize: '13px',
-                    fontWeight: '600',
-                    backgroundColor: state.isSelected ? '#214347' : state.isFocused ? 'rgb(243 244 246)' : 'transparent',
-                    color: state.isSelected ? 'white' : 'rgb(55 65 81)',
-                    cursor: 'pointer'
-                  })
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="flex-1 w-full border-r border-gray-100 relative">
-            <div className="px-6 py-1 transition-all group relative">
-              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-0.5 block ml-2">City</span>
+              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-0.5 block ml-2">Location</span>
               <ReactSelect
                 instanceId="hero-city-select"
                 options={cities.map(c => ({ value: c, label: c }))}
@@ -261,11 +196,11 @@ export default function Hero() {
               onClick={() => toggleDropdown("type")}
               className="px-6 py-3 hover:bg-gray-50 rounded-2xl transition-all cursor-pointer group relative"
             >
-              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-1 block">Type</span>
+              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-1 block">property type</span>
               <div className="flex items-center justify-between">
                 <span className={`text-sm font-semibold ${selectedType ? "text-gray-900" : "text-gray-400"}`}>
                   {selectedType || "Choose Type"}
-                </span>
+                </span> 
                 <ChevronDown className="h-4 w-4 text-[#214347]" />
               </div>
             </div>

@@ -32,8 +32,8 @@ export default function Navbar() {
         { name: "Buy Property", href: "/buy", icon: HomeIcon },
         { name: "Rent Property", href: "/rent", icon: Key }
       ]
-    },
-    { name: "Posts", href: "/posts" },
+    },  
+    { name: "Blogs", href: "/blogs" },
     { name: "Contact Us", href: "/contact" },
   ];
 

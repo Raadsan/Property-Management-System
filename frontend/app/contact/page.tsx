@@ -187,8 +187,8 @@ export default function ContactPage() {
                     
                     <div className="flex flex-col gap-3 pt-2">
                        <label className="text-[13px] font-bold text-gray-600 uppercase tracking-wide">Inquiry Type</label>
-                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                          {["General", "Renting", "Buying", "Support"].map((subject) => (
+                       <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+                          {["General", "Post Property", "Renting", "Buying", "Support"].map((subject) => (
                              <label key={subject} className="cursor-pointer">
                                 <input 
                                   type="radio" 
@@ -197,7 +197,7 @@ export default function ContactPage() {
                                   checked={formData.inquiryType === subject}
                                   onChange={() => handleInquiryChange(subject)}
                                 />
-                                <div className="text-center px-2 py-2.5 rounded-xl border border-gray-200 text-[14px] font-semibold text-gray-500 peer-checked:bg-[#214347] peer-checked:text-white peer-checked:border-[#214347] hover:bg-gray-50 transition-all font-sans">
+                                <div className="text-center px-2 py-2.5 rounded-xl border border-gray-200 text-[12px] whitespace-nowrap font-semibold text-gray-500 peer-checked:bg-[#214347] peer-checked:text-white peer-checked:border-[#214347] hover:bg-gray-50 transition-all font-sans">
                                    {subject}
                                 </div>
                              </label>

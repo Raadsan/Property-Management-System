@@ -50,13 +50,13 @@ export const createUser = async (req, res) => {
 export const getUsers = async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      include: { 
+      include: {
         role: {
           select: { name: true }
         }
       },
     });
-    
+
     // Remove passwords from response
     const usersWithoutPasswords = users.map(user => {
       const { password, ...u } = user;
@@ -76,11 +76,11 @@ export const getUserById = async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: parseInt(id) },
-      include: { 
+      include: {
         role: {
           select: { name: true }
-        }, 
-        propertiesOwned: true 
+        },
+        propertiesOwned: true
       },
     });
 
@@ -109,14 +109,14 @@ export const updateUser = async (req, res) => {
     if (phone) updateData.phone = phone;
     if (status) updateData.status = status;
     if (roleId) updateData.roleId = parseInt(roleId);
-    
+
     // Handle photo upload
     if (req.file) {
       updateData.photo = req.file.path;
     } else if (photo) {
       updateData.photo = photo;
     }
-    
+
     // If updating password, hash it
     if (password) {
       const salt = await bcrypt.genSalt(10);
@@ -164,13 +164,10 @@ export const loginUser = async (req, res) => {
   }
 
   try {
-    // 1. Find user by email or phone
-    const user = await prisma.user.findFirst({
+    // 1. Find user by email
+    const user = await prisma.user.findUnique({
       where: {
-        OR: [
-          { email: identifier },
-          { phone: identifier }
-        ]
+        email: identifier
       },
       include: {
         role: {
@@ -180,7 +177,7 @@ export const loginUser = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     // 2. Check if user is active

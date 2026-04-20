@@ -4,7 +4,7 @@ import { prisma } from "../lib/prisma.js";
 // @route   GET /api/dashboard/stats
 export const getDashboardStats = async (req, res) => {
   try {
-    const [totalProperties, totalCategories, totalUsers, totalBookings, ownersData, saleCount, rentCount, recentListings] = await Promise.all([
+    const [totalProperties, totalCategories, totalUsers, totalBookings, ownersData, saleCount, rentCount, recentListings, propertyCategories, blogCategories, latestUsers] = await Promise.all([
       prisma.property.count(),
       prisma.propertyType.count(),
       prisma.user.count({ where: { role: { name: 'User' } } }),
@@ -12,10 +12,16 @@ export const getDashboardStats = async (req, res) => {
       prisma.user.findMany({
         where: { role: { name: 'Owner' } },
         select: {
+          id: true,
           name: true,
+          email: true,
+          photo: true,
           propertiesOwned: { select: { id: true } }
         },
-        take: 4
+        orderBy: {
+          propertiesOwned: { _count: 'desc' }
+        },
+        take: 5
       }),
       prisma.property.count({ where: { listingType: 'SALE' } }),
       prisma.property.count({ where: { listingType: 'RENT' } }),
@@ -23,6 +29,36 @@ export const getDashboardStats = async (req, res) => {
         orderBy: { createdAt: 'desc' },
         take: 5,
         include: { images: true }
+      }),
+      prisma.propertyType.findMany({
+        select: {
+          name: true,
+          _count: {
+            select: { properties: true }
+          }
+        }
+      }),
+      prisma.blogCategory.findMany({
+        select: {
+          name: true,
+          _count: {
+            select: { blogs: true }
+          }
+        }
+      }),
+      prisma.user.findMany({
+        where: { role: { name: 'User' } },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          phone: true,
+          photo: true,
+          status: true,
+          createdAt: true
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 5
       })
     ]);
 
@@ -75,20 +111,22 @@ export const getDashboardStats = async (req, res) => {
     });
 
     // Calculate a mock or derived efficiency percentage (e.g. based on properties owned, or a robust random number for demo if needed). Here we'll just assign some descending realistic percentages if they exist, or calculate based on properties.
-    const topOwners = ownersData.map((owner, index) => {
-      const basePct = [89.4, 76.2, 64.8, 52.1];
+    const topUsers = ownersData.map((user, index) => {
       return {
-        name: owner.name,
-        pct: basePct[index] || 45.0 + (owner.propertiesOwned.length * 2)
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        photo: user.photo,
+        propertyCount: user.propertiesOwned.length,
       };
     });
-
+    
     res.status(200).json({
       totalProperties,
       totalCategories,
       totalUsers,
       totalBookings,
-      topOwners,
+      topUsers,
       realTotalRevenue,
       revenueCurrentMonth,
       revenueLastMonth,
@@ -96,6 +134,9 @@ export const getDashboardStats = async (req, res) => {
       saleCount,
       rentCount,
       recentListings,
+      propertyCategories,
+      blogCategories,
+      latestUsers,
     });
   } catch (error) {
     console.error("Dashboard Stats Error:", error);

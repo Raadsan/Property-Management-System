@@ -82,14 +82,14 @@ export default function LoginPage() {
             )}
             
             <div className="space-y-2">
-              <label className="text-[13px] font-bold text-[#1e293b] ml-1">Email or Phone</label>
+              <label className="text-[13px] font-bold text-[#1e293b] ml-1">Email Address</label>
               <div className="relative group">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-[#214347] transition-colors">
-                  <User size={18} />
+                  <Mail size={18} />
                 </div>
                 <Input
-                  type="text"
-                  placeholder="name@example.com or 25261..."
+                  type="email"
+                  placeholder="name@example.com"
                   value={identifier}
                   onChange={(e) => setIdentifier(e.target.value)}
                   required

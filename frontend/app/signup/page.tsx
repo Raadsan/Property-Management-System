@@ -20,7 +20,7 @@ export default function SignupPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(false)
   const [showPassword, setShowPassword] = React.useState(false)
-  
+
   const [name, setName] = React.useState("")
   const [email, setEmail] = React.useState("")
   const [phone, setPhone] = React.useState("")
@@ -43,10 +43,10 @@ export default function SignupPage() {
         roleId: 3,
         status: "ACTIVE"
       })
-      
+
       setSuccessStatus("Account created successfully. Redirecting to sign in...")
       setTimeout(() => router.push("/login"), 1200)
-      
+
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || "Failed to create account. Please try again."
       setErrorStatus(errorMsg)
@@ -87,7 +87,7 @@ export default function SignupPage() {
                 <p className="text-[13px] font-semibold text-emerald-700">{successStatus}</p>
               </div>
             )}
-            
+
             <div className="space-y-1.5">
               <label className="text-[13px] font-bold text-[#1e293b] ml-1">Full Name</label>
               <div className="relative group">
@@ -164,8 +164,8 @@ export default function SignupPage() {
               </div>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading}
               className="w-full h-12 bg-[#214347] hover:bg-[#1a3539] text-white rounded-xl font-bold text-base transition-all shadow-lg hover:shadow-[#214347]/20 mt-2"
             >

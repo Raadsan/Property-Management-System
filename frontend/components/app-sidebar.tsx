@@ -14,6 +14,8 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarTrigger,
+  useSidebar,
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
@@ -30,7 +32,8 @@ const DynamicIcon = ({ name }: { name?: string }) => {
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [navMain, setNavMain] = React.useState<any[]>([])
   const router = useRouter()
-  const { resolvedTheme } = useTheme()
+  const { resolvedTheme, setTheme } = useTheme()
+  const { state } = useSidebar()
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -78,11 +81,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   }, [router])
 
   return (
-    <Sidebar collapsible="offcanvas" {...props}>
-      <SidebarHeader>
-        <div className="flex items-center justify-center py-1 px-4">
+    <Sidebar collapsible="icon" className="bg-sidebar shadow-lg border-r-0 transition-all duration-300" {...props}>
+      <SidebarHeader className="overflow-hidden">
+        <div className={`flex items-center justify-center py-2 px-2 transition-all duration-300 ${state === "collapsed" ? "w-10 h-10" : "w-full"}`}>
           <a href="#" className="flex flex-col items-center">
-            <div className="relative w-[120px] h-[72px]">
+            <div className={`relative transition-all duration-300 ${state === "collapsed" ? "w-8 h-8" : "w-[120px] h-[72px]"}`}>
               {mounted && (
                 <Image 
                   src={resolvedTheme === "dark" ? "/Damal-02.png" : "/logo.png"} 
@@ -105,8 +108,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           </div>
         )}
       </SidebarContent>
-      <SidebarFooter className="border-t p-2">
+      <SidebarFooter className="border-t p-2 overflow-hidden">
         <SidebarMenu>
+
           <SidebarMenuItem>
             <SidebarMenuButton 
               onClick={handleLogout}

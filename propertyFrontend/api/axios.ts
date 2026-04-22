@@ -6,11 +6,11 @@ const getBaseURL = () => {
   }
   
   if (typeof window !== "undefined") {
-    // Dynamically use the current hostname with your backend port (8001)
-    return `${window.location.protocol}//${window.location.hostname}:8001/api`;
+    // Dynamically use the current hostname with your backend port (8002)
+    return `${window.location.protocol}//${window.location.hostname}:8002/api`;
   }
   
-  return "http://localhost:8001/api";
+  return "http://localhost:8002/api";
 };
 
 const api = axios.create({

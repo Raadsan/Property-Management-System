@@ -52,6 +52,10 @@ app.use((req, res, next) => {
 });
 
 // Basic health check route
+app.get('/', (req, res) => {
+  res.send("🚀 Property Management System API is running!");
+});
+
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', message: "Property Management Backend is running!" });
 });

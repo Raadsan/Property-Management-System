@@ -1,7 +1,20 @@
 import axios from "axios";
 
+const getBaseURL = () => {
+  if (process.env.NEXT_PUBLIC_API_URL) {
+    return process.env.NEXT_PUBLIC_API_URL;
+  }
+  
+  if (typeof window !== "undefined") {
+    // Dynamically use the current hostname with your backend port (8001)
+    return `${window.location.protocol}//${window.location.hostname}:8001/api`;
+  }
+  
+  return "http://localhost:8001/api";
+};
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
+  baseURL: getBaseURL(),
   headers: {
     "Content-Type": "application/json",
   },

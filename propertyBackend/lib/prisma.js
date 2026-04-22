@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import { PrismaClient } from '../generated/prisma/client.ts';
+import { PrismaClient } from '@prisma/client';
 
 /**
  * Helper to parse DATABASE_URL since the generated client

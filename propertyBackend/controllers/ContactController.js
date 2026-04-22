@@ -9,7 +9,7 @@ export const sendContactMessage = async (req, res) => {
   }
 
   try {
-    // 1. Save to Database
+    // 1. Save to Database ...
     await prisma.contact.create({
       data: {
         firstName,

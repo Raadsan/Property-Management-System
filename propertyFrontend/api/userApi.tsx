@@ -64,8 +64,8 @@ export interface LoginResponse {
   user: User;
 }
 
-export const loginUser = async (identifier: string, password: string): Promise<LoginResponse> => {
-  const response = await api.post("/users/login", { identifier, password });
+export const loginUser = async (email: string, password: string): Promise<LoginResponse> => {
+  const response = await api.post("/users/login", { email, password });
   return response.data;
 };
 

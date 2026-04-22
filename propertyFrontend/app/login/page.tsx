@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = React.useState(false)
   const [showPassword, setShowPassword] = React.useState(false)
   
-  const [identifier, setIdentifier] = React.useState("")
+  const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [errorStatus, setErrorStatus] = React.useState<string | null>(null)
   const [successStatus, setSuccessStatus] = React.useState<string | null>(null)
@@ -34,7 +34,7 @@ export default function LoginPage() {
     setSuccessStatus(null)
 
     try {
-      const response = await performLogin(identifier, password)
+      const response = await performLogin(email, password)
       
       sessionStorage.setItem("user", JSON.stringify(response.user))
       setSuccessStatus(response.message || "Signed in successfully")
@@ -62,7 +62,7 @@ export default function LoginPage() {
               Welcome Back
             </CardTitle>
             <CardDescription className="text-[15px] text-gray-400 font-medium">
-              Please sign in with your email or phone number
+              Please sign in with your email
             </CardDescription>
           </div>
         </CardHeader>
@@ -90,8 +90,8 @@ export default function LoginPage() {
                 <Input
                   type="email"
                   placeholder="name@example.com"
-                  value={identifier}
-                  onChange={(e) => setIdentifier(e.target.value)}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                   className="h-13 pl-12 rounded-xl border-gray-200 bg-gray-50/50 !text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-[#214347] focus-visible:ring-0 transition-all text-sm font-medium"
                 />

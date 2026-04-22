@@ -168,17 +168,17 @@ export const deleteUser = async (req, res) => {
 // @desc    Login a user
 // @route   POST /api/users/login
 export const loginUser = async (req, res) => {
-  const { identifier, password } = req.body;
+  const { email, password } = req.body;
 
-  if (!identifier || !password) {
-    return res.status(400).json({ message: "Please provide email/phone and password" });
+  if (!email || !password) {
+    return res.status(400).json({ message: "Please provide email and password" });
   }
 
   try {
     // 1. Find user by email
     const user = await prisma.user.findUnique({
       where: {
-        email: identifier
+        email: email
       },
       include: {
         role: {

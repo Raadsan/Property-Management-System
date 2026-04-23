@@ -5,12 +5,8 @@ const getBaseURL = () => {
     return process.env.NEXT_PUBLIC_API_URL;
   }
   
-  if (typeof window !== "undefined") {
-    // Dynamically use the current hostname with your backend port (8002)
-    return `${window.location.protocol}//${window.location.hostname}:8002/api`;
-  }
-  
-  return "http://localhost:8002/api";
+  // Use the live backend IP address directly
+  return "http://178.18.241.5:8002/api";
 };
 
 const api = axios.create({

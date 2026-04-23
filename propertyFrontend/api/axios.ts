@@ -41,7 +41,7 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Handle global errors like 401 or 500.....
+    // Handle global errors like 401 or 500
     if (error.response) {
       console.error("API Error:", error.response.data);
     } else {

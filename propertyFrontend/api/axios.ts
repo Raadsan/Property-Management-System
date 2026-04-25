@@ -1,12 +1,19 @@
 import axios from "axios";
 
 const getBaseURL = () => {
-  if (process.env.NEXT_PUBLIC_API_URL) {
-    return process.env.NEXT_PUBLIC_API_URL;
+  // If we are on the client side (browser) and the site is HTTPS, we must use a relative path
+  // to avoid Mixed Content errors when connecting to an HTTP backend.
+  // Next.js rewrites in next.config.ts will proxy this relative path to the live backend.
+  if (typeof window !== "undefined") {
+    // Check if it's explicitly set to an HTTPS URL, otherwise use the proxy route
+    if (process.env.NEXT_PUBLIC_API_URL?.startsWith("https://")) {
+      return process.env.NEXT_PUBLIC_API_URL;
+    }
+    return "/api";
   }
   
-  // Use the live backend IP address directly
-  return "http://178.18.241.5:8002/api";
+  // On the server side, we can safely use the HTTP IP address directly
+  return process.env.NEXT_PUBLIC_API_URL || "http://178.18.241.5:8002/api";
 };
 
 const api = axios.create({

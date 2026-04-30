@@ -14,6 +14,7 @@ const getBaseURL = () => {
   
   // On the server side, we can safely use the HTTP IP address directly
   return process.env.NEXT_PUBLIC_API_URL || "http://178.18.241.5:8002/api";
+  //  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8002/api";
   
 };
 

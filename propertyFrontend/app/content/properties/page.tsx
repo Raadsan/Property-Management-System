@@ -477,15 +477,44 @@ export default function PropertiesPage() {
                           setSelectedCity(""); 
                         }
                       }}
-                      className="text-sm"
-                      placeholder="Search Country..."
+                      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                       styles={{
                         control: (base) => ({
                           ...base,
                           borderRadius: 'calc(var(--radius) - 2px)',
-                          borderColor: 'rgb(226, 232, 240)',
+                          borderColor: 'var(--border)',
+                          backgroundColor: 'var(--background)',
+                          color: 'var(--foreground)',
                           boxShadow: 'none',
-                          '&:hover': { borderColor: 'rgb(203, 213, 225)' }
+                          '&:hover': { borderColor: 'var(--border)' }
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          backgroundColor: 'var(--background)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--foreground)',
+                          zIndex: 9999
+                        }),
+                        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
+                          color: state.isFocused ? 'var(--accent-foreground)' : 'var(--foreground)',
+                          '&:active': {
+                            backgroundColor: 'var(--accent)',
+                          }
+                        }),
+                        singleValue: (base) => ({
+                          ...base,
+                          color: 'var(--foreground)',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: 'var(--foreground)',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: 'var(--muted-foreground)',
                         })
                       }}
                     />
@@ -500,16 +529,44 @@ export default function PropertiesPage() {
                       options={cityOptions}
                       value={selectedCity ? { value: selectedCity, label: selectedCity } : null}
                       onChange={(opt: any) => setSelectedCity(opt?.value || "")}
-                      className="text-sm"
-                      placeholder="Search City..."
-                      isClearable
+                      menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                       styles={{
                         control: (base) => ({
                           ...base,
                           borderRadius: 'calc(var(--radius) - 2px)',
-                          borderColor: 'rgb(226, 232, 240)',
+                          borderColor: 'var(--border)',
+                          backgroundColor: 'var(--background)',
+                          color: 'var(--foreground)',
                           boxShadow: 'none',
-                          '&:hover': { borderColor: 'rgb(203, 213, 225)' }
+                          '&:hover': { borderColor: 'var(--border)' }
+                        }),
+                        menu: (base) => ({
+                          ...base,
+                          backgroundColor: 'var(--background)',
+                          border: '1px solid var(--border)',
+                          color: 'var(--foreground)',
+                          zIndex: 9999
+                        }),
+                        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                        option: (base, state) => ({
+                          ...base,
+                          backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
+                          color: state.isFocused ? 'var(--accent-foreground)' : 'var(--foreground)',
+                          '&:active': {
+                            backgroundColor: 'var(--accent)',
+                          }
+                        }),
+                        singleValue: (base) => ({
+                          ...base,
+                          color: 'var(--foreground)',
+                        }),
+                        input: (base) => ({
+                          ...base,
+                          color: 'var(--foreground)',
+                        }),
+                        placeholder: (base) => ({
+                          ...base,
+                          color: 'var(--muted-foreground)',
                         })
                       }}
                     />

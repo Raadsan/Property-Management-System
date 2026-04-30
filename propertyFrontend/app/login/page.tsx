@@ -21,7 +21,7 @@ export default function LoginPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(false)
   const [showPassword, setShowPassword] = React.useState(false)
-  
+
   const [email, setEmail] = React.useState("")
   const [password, setPassword] = React.useState("")
   const [errorStatus, setErrorStatus] = React.useState<string | null>(null)
@@ -35,11 +35,11 @@ export default function LoginPage() {
 
     try {
       const response = await performLogin(email, password)
-      
+
       sessionStorage.setItem("user", JSON.stringify(response.user))
       setSuccessStatus(response.message || "Signed in successfully")
       setTimeout(() => router.push("/dashboard"), 800)
-      
+
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || "Invalid email or password"
       setErrorStatus(errorMsg)
@@ -80,7 +80,7 @@ export default function LoginPage() {
                 <p className="text-[13px] font-semibold text-emerald-700">{successStatus}</p>
               </div>
             )}
-            
+
             <div className="space-y-2">
               <label className="text-[13px] font-bold text-[#1e293b] ml-1">Email Address</label>
               <div className="relative group">
@@ -123,7 +123,7 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-            
+
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Checkbox id="remember" className="rounded border-gray-300 data-[state=checked]:bg-[#214347] data-[state=checked]:border-[#214347]" />
@@ -139,8 +139,8 @@ export default function LoginPage() {
               </Link>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isLoading}
               className="w-full h-12 bg-[#214347] hover:bg-[#1a3539] text-white rounded-lg font-bold text-base transition-colors shadow-sm"
             >

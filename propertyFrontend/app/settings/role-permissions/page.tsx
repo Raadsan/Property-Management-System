@@ -13,7 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Loader2Icon, SaveIcon, ShieldAlertIcon } from "lucide-react"
+import { Loader2Icon, SaveIcon, ShieldAlertIcon, CheckSquareIcon, SquareIcon } from "lucide-react"
 
 import { getRoles, Role } from "@/api/rolesApi"
 import { getMenus, Menu as AppMenu } from "@/api/menuApi"
@@ -148,6 +148,40 @@ export default function RolePermissionsPage() {
     }))
   }
 
+  const handleCheckAll = () => {
+    setMatrix(prev => prev.map(m => ({
+      ...m,
+      canView: true,
+      canAdd: true,
+      canEdit: true,
+      canDelete: true,
+      subMenus: m.subMenus?.map(sm => ({
+        ...sm,
+        canView: true,
+        canAdd: true,
+        canEdit: true,
+        canDelete: true,
+      }))
+    })))
+  }
+
+  const handleClearAll = () => {
+    setMatrix(prev => prev.map(m => ({
+      ...m,
+      canView: false,
+      canAdd: false,
+      canEdit: false,
+      canDelete: false,
+      subMenus: m.subMenus?.map(sm => ({
+        ...sm,
+        canView: false,
+        canAdd: false,
+        canEdit: false,
+        canDelete: false,
+      }))
+    })))
+  }
+
   const handleSave = async () => {
     if (!selectedRoleId) return toast.error("Select a role first")
     
@@ -182,8 +216,15 @@ export default function RolePermissionsPage() {
               <p className="text-muted-foreground">Map high-level ACL restrictions for explicit UI actions across the site.</p>
             </div>
             
-            <div className="flex gap-2 items-center w-full md:w-auto">
-              <div className="w-[250px]">
+            <div className="flex gap-2 items-center w-full md:w-auto flex-wrap">
+              <Button disabled={!selectedRoleId || isLoadingDB} onClick={handleCheckAll} variant="outline" size="sm">
+                <CheckSquareIcon className="h-4 w-4 mr-2" /> Select All
+              </Button>
+              <Button disabled={!selectedRoleId || isLoadingDB} onClick={handleClearAll} variant="outline" size="sm">
+                <SquareIcon className="h-4 w-4 mr-2" /> Clear All
+              </Button>
+
+              <div className="w-[200px] ml-2">
                 <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select Target Role..." />

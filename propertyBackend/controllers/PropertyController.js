@@ -173,7 +173,15 @@ export const getPropertyById = async (req, res) => {
         images: { orderBy: { id: 'desc' } },
         features: true,
         propertyType: true,
-        owner: { select: { name: true, email: true, phone: true, photo: true } }
+        owner: { select: { name: true, email: true, phone: true, photo: true } },
+        bookings: {
+          where: {
+            status: { in: ['PAID', 'PENDING'] }
+          },
+          select: {
+            userId: true
+          }
+        }
       }
     });
 
@@ -387,6 +395,18 @@ export const bookNow = async (req, res) => {
         }
       });
 
+      // Create a corresponding Payment record
+      await tx.payment.create({
+        data: {
+          amount: property.ReservationFee || 0.01,
+          method: 'MOBILE_MONEY',
+          status: 'PAID',
+          userId: parseInt(userId),
+          bookingId: newBooking.id,
+          paidAt: now
+        }
+      });
+
       // Update property to BOOKED
       await tx.property.update({
         where: { id: propertyId },
@@ -423,6 +443,52 @@ export const getBookingsByUser = async (req, res) => {
     res.status(200).json(bookings);
   } catch (error) {
     res.status(500).json({ message: "Error fetching user bookings", error: error.message });
+  }
+};
+
+// @desc    Cancel a booking
+// @route   POST /api/properties/:id/cancel
+export const cancelBooking = async (req, res) => {
+  const { id } = req.params;
+  const { userId } = req.body;
+
+  if (!userId) {
+    return res.status(400).json({ message: "Missing required fields: userId" });
+  }
+
+  try {
+    const propertyId = parseInt(id);
+    
+    // Find the active booking for this property and user
+    const booking = await prisma.booking.findFirst({
+      where: {
+        propertyId,
+        userId: parseInt(userId),
+        status: { in: ['PAID', 'PENDING'] }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    if (!booking) {
+      return res.status(404).json({ message: "No active booking found to cancel" });
+    }
+
+    await prisma.$transaction([
+      // Update booking status
+      prisma.booking.update({
+        where: { id: booking.id },
+        data: { status: 'CANCELLED' }
+      }),
+      // Reset property status
+      prisma.property.update({
+        where: { id: propertyId },
+        data: { status: 'AVAILABLE' }
+      })
+    ]);
+
+    res.status(200).json({ message: "Booking cancelled successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "Error cancelling booking", error: error.message });
   }
 };
 

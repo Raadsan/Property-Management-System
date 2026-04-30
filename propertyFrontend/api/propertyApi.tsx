@@ -36,6 +36,7 @@ export interface Property {
   features?: PropertyFeature[];
   propertyType?: { name: string };
   owner?: { name: string; phone: string; email?: string; photo?: string };
+  bookings?: { userId: number }[];
 }
 
 export const getProperties = async (): Promise<Property[]> => {
@@ -50,6 +51,11 @@ export const getPropertyById = async (id: number): Promise<Property> => {
 
 export const bookProperty = async (id: number, data: { userId: number, phone: string }): Promise<any> => {
   const response = await api.post(`/properties/${id}/book`, data);
+  return response.data;
+};
+
+export const cancelBooking = async (id: number, data: { userId: number }): Promise<any> => {
+  const response = await api.post(`/properties/${id}/cancel`, data);
   return response.data;
 };
 

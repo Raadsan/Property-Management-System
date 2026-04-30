@@ -7,7 +7,8 @@ import {
   deleteProperty,
   bookNow,
   getBookingsByUser,
-  getCityStats
+  getCityStats,
+  cancelBooking
 } from '../controllers/PropertyController.js';
 import { upload } from '../lib/upload.js';
 
@@ -21,5 +22,6 @@ router.get('/:id', getPropertyById);
 router.patch('/:id', upload.array('images', 10), updateProperty);
 router.delete('/:id', deleteProperty);
 router.post('/:id/book', bookNow);
+router.post('/:id/cancel', cancelBooking);
 
 export default router;

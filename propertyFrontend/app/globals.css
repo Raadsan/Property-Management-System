@@ -46,13 +46,29 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 
   @keyframes fade-in {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
+
   @keyframes slide-up {
-    from { opacity: 0; transform: translateY(40px); }
-    to { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(40px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
+
   --animate-fade-in: fade-in 0.8s ease-out forwards;
   --animate-slide-up: slide-up 1s ease-out forwards;
 }
@@ -131,6 +147,7 @@
     background-color: #214347 !important;
     color: white !important;
   }
+
   .dark .btn-category {
     background-color: #eae1d2 !important;
     color: #000000 !important;
@@ -148,9 +165,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }
+
   html {
     @apply font-sans scroll-smooth;
   }

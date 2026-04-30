@@ -44,7 +44,7 @@ export default function MenuConfigurationPage() {
   const [isCollapsible, setIsCollapsible] = React.useState(false)
   
   // Dynamic SubMenu State
-  const [subMenus, setSubMenus] = React.useState<{ title: string, url: string }[]>([])
+  const [subMenus, setSubMenus] = React.useState<{ id?: number, title: string, url: string }[]>([])
 
   const loadData = async () => {
     setIsLoading(true)
@@ -82,6 +82,7 @@ export default function MenuConfigurationPage() {
 
     // Filter out completely blank submenus
     const cleanSubMenus = subMenus.filter(sm => sm.title.trim() !== "" || sm.url.trim() !== "")
+      .map(sm => ({ id: sm.id, title: sm.title, url: sm.url }))
 
     try {
       const payload = {
@@ -128,7 +129,7 @@ export default function MenuConfigurationPage() {
     setIsCollapsible(menu.isCollapsible)
     
     if (menu.subMenus && menu.subMenus.length > 0) {
-      setSubMenus(menu.subMenus.map(sm => ({ title: sm.title, url: sm.url })))
+      setSubMenus(menu.subMenus.map(sm => ({ id: sm.id, title: sm.title, url: sm.url })))
     } else {
       setSubMenus([])
     }

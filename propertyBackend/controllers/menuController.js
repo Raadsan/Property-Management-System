@@ -61,11 +61,24 @@ export const updateMenu = async (req, res) => {
         if (url !== undefined) updateData.url = url;
         if (isCollapsible !== undefined) updateData.isCollapsible = isCollapsible;
 
-        // Handle nested submenu updates (replace them entirely for simplicity)
         if (subMenus && Array.isArray(subMenus)) {
+            const existingMenu = await prisma.menu.findUnique({
+                where: { id: parseInt(id) },
+                include: { subMenus: true }
+            });
+
+            const existingSubMenuIds = existingMenu?.subMenus.map(sm => sm.id) || [];
+            const incomingSubMenuIds = subMenus.filter(sm => sm.id).map(sm => sm.id);
+
+            const idsToDelete = existingSubMenuIds.filter(smId => !incomingSubMenuIds.includes(smId));
+
             updateData.subMenus = {
-                deleteMany: {}, // Clean existing
-                create: subMenus.map(sm => ({ title: sm.title, url: sm.url }))
+                deleteMany: { id: { in: idsToDelete } },
+                update: subMenus.filter(sm => sm.id).map(sm => ({
+                    where: { id: sm.id },
+                    data: { title: sm.title, url: sm.url }
+                })),
+                create: subMenus.filter(sm => !sm.id).map(sm => ({ title: sm.title, url: sm.url }))
             };
         }
 
@@ -74,6 +87,33 @@ export const updateMenu = async (req, res) => {
             data: updateData,
             include: { subMenus: true }
         });
+
+        // Automatically assign view permissions for newly created submenus
+        // to roles that already have access to the parent menu
+        if (subMenus && Array.isArray(subMenus)) {
+            const roleMenuAccesses = await prisma.roleMenuAccess.findMany({
+                where: { menuId: parseInt(id) }
+            });
+            
+            for (const rma of roleMenuAccesses) {
+                for (const sm of updatedMenu.subMenus) {
+                    await prisma.roleSubMenuAccess.upsert({
+                        where: {
+                            roleMenuAccessId_subMenuId: {
+                                roleMenuAccessId: rma.id,
+                                subMenuId: sm.id
+                            }
+                        },
+                        update: {},
+                        create: {
+                            roleMenuAccessId: rma.id,
+                            subMenuId: sm.id,
+                            canView: rma.canView
+                        }
+                    });
+                }
+            }
+        }
 
         res.status(200).json({ message: "Menu updated successfully", menu: updatedMenu });
     } catch (error) {

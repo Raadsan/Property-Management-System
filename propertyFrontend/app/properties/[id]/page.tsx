@@ -21,7 +21,9 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Clock
+  Clock,
+  Trash2,
+  Loader2Icon
 } from "lucide-react";
 import { getPropertyById, Property } from "@/api/propertyApi";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -30,7 +32,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, Di
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { bookProperty } from "@/api/propertyApi";
+import { bookProperty, cancelBooking } from "@/api/propertyApi";
 
 export default function PropertyDetailPage() {
   const params = useParams();
@@ -124,6 +126,27 @@ export default function PropertyDetailPage() {
     } catch (error: any) {
       console.error("Booking failed:", error);
       const msg = error.response?.data?.message || "Booking failed. Please try again.";
+      toast.error(msg);
+    } finally {
+      setIsBookingLoading(false);
+    }
+  };
+
+  const handleCancelBooking = async () => {
+    if (!user || !property) return;
+    
+    setIsBookingLoading(true);
+    try {
+      await cancelBooking(property.id, {
+        userId: user.id || user.userId
+      });
+      toast.success("Booking cancelled successfully. Your refund will be processed according to our policy.");
+      // Refresh property status
+      const updated = await getPropertyById(property.id);
+      setProperty(updated);
+    } catch (error: any) {
+      console.error("Cancellation failed:", error);
+      const msg = error.response?.data?.message || "Cancellation failed. Please try again.";
       toast.error(msg);
     } finally {
       setIsBookingLoading(false);
@@ -322,6 +345,20 @@ export default function PropertyDetailPage() {
                     >
                       <Activity className="h-5 w-5" />  Book Now
                     </button>
+                  ) : property.bookings?.some(b => b.userId === (user?.id || user?.userId)) ? (
+                    <button
+                      onClick={handleCancelBooking}
+                      disabled={isBookingLoading}
+                      className="w-full flex items-center justify-center gap-4 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-700 transition-all text-sm uppercase tracking-widest active:scale-[0.98]"
+                    >
+                      {isBookingLoading ? (
+                        <Loader2Icon className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <>
+                          <X className="h-5 w-5" /> Cancel Booking
+                        </>
+                      )}
+                    </button>
                   ) : (
                     <button
                       disabled
@@ -350,9 +387,6 @@ export default function PropertyDetailPage() {
                 >
                   Inquire Now
                 </Link>
-                <div className="mt-4 flex items-center justify-center gap-2 py-3 px-4 bg-gray-50 border border-gray-100 rounded-2xl text-[11px] font-bold text-gray-500 uppercase tracking-widest">
-                  <Clock className="w-4 h-4" /> 24h Free Cancellation
-                </div>
               </div>
             </div>
           </div>
@@ -364,12 +398,12 @@ export default function PropertyDetailPage() {
 
       {/* Booking Modal */}
       <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] bg-white !text-gray-900 border-gray-100 shadow-2xl">
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">Complete Your Booking</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-gray-900">Complete Your Booking</DialogTitle>
             <DialogDescription asChild>
               <div className="space-y-2 pt-2">
-                <p className="text-sm text-muted-foreground">To secure this property, you need to pay a reservation fee of <strong>${property?.ReservationFee ?? 100}</strong> via WafiPay.</p>
+                <p className="text-sm text-gray-600">To secure this property, you need to pay a reservation fee of <strong>${property?.ReservationFee ?? 100}</strong> via WafiPay.</p>
                 <div className="bg-emerald-50 text-emerald-800 p-3 rounded-lg border border-emerald-100/50 text-xs font-medium">
                   <strong>Cancellation Policy:</strong> 24h free cancellation window is active. Please note that a 2% processing fee is non-refundable upon cancellation.
                 </div>
@@ -390,12 +424,13 @@ export default function PropertyDetailPage() {
                 placeholder="e.g. 25261..."
                 value={wafiPhone}
                 onChange={(e) => setWafiPhone(e.target.value)}
-                className="rounded-xl h-12"
+                className="rounded-xl h-12 bg-white border-gray-200 text-gray-900 focus:border-[#214347] focus-visible:ring-0"
+                style={{ WebkitBoxShadow: "0 0 0px 1000px white inset", WebkitTextFillColor: "#111827" }}
                 required
               />
-              <p className="text-[11px] text-gray-400 leading-tight">Enter your Somalia mobile money number linked to WafiPay.</p>
+              <p className="text-[11px] text-gray-500 leading-tight">Enter your Somalia mobile money number linked to WafiPay.</p>
             </div>
-            <DialogFooter>
+            <DialogFooter className="bg-gray-50 border-gray-100">
               <Button
                 type="submit"
                 disabled={isBookingLoading}

@@ -77,7 +77,7 @@ export const getDashboardStats = async (req, res) => {
     let realTotalRevenue = 0;
 
     allBookings.forEach(b => {
-       if (b.status === 'CONFIRMED' || b.status === 'PENDING') {
+       if (b.status === 'PAID' || b.status === 'PENDING') {
           realTotalRevenue += b.price || 0;
        }
        const d = new Date(b.createdAt);

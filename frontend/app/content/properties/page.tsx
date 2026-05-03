@@ -46,6 +46,7 @@ export default function PropertiesPage() {
   const [properties, setProperties] = React.useState<Property[]>([])
   const [categories, setCategories] = React.useState<Category[]>([])
   const [owners, setOwners] = React.useState<User[]>([])
+  const [agents, setAgents] = React.useState<User[]>([])
 
   const [isLoading, setIsLoading] = React.useState(true)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
@@ -65,6 +66,7 @@ export default function PropertiesPage() {
   const [status, setStatus] = React.useState<string>("AVAILABLE")
   const [propertyTypeId, setPropertyTypeId] = React.useState<string>("")
   const [ownerId, setOwnerId] = React.useState<string>("")
+  const [agentId, setAgentId] = React.useState<string>("")
   const [listingType, setListingType] = React.useState<string>("RENT")
   const [sizeLabel, setSizeLabel] = React.useState("")
   const [area, setArea] = React.useState("")
@@ -109,6 +111,10 @@ export default function PropertiesPage() {
       // Filter users to only show those with the 'Owner' role
       const ownersOnly = usersData.filter(user => user.role?.name === "Owner")
       setOwners(ownersOnly)
+
+      // Filter users to only show those with the 'Agent' role
+      const agentsOnly = usersData.filter(user => user.role?.name === "Agent")
+      setAgents(agentsOnly)
     } catch (error) {
       toast.error("Failed to load property data")
     } finally {
@@ -128,7 +134,7 @@ export default function PropertiesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title || !location || !City || !price || !ownerId || !propertyTypeId) {
+    if (!title || !location || !selectedCity || !price || !ownerId || !propertyTypeId || !agentId) {
       return toast.error("Please fill in all strictly required fields.")
     }
 
@@ -143,6 +149,7 @@ export default function PropertiesPage() {
       formData.append("listingType", listingType)
       formData.append("status", status)
       formData.append("ownerId", ownerId)
+      if (agentId) formData.append("agentId", agentId)
       formData.append("propertyTypeId", propertyTypeId)
       if (sizeLabel) formData.append("sizeLabel", sizeLabel)
       if (area) formData.append("area", area)
@@ -238,6 +245,7 @@ export default function PropertiesPage() {
       setListingType(prop.listingType)
       setStatus(prop.status)
       setOwnerId(prop.ownerId.toString())
+      setAgentId(prop.agentId?.toString() || "")
       setPropertyTypeId(prop.propertyTypeId.toString())
       setSizeLabel(prop.sizeLabel || "")
       setArea(prop.area?.toString() || "")
@@ -256,6 +264,7 @@ export default function PropertiesPage() {
       setListingType("RENT")
       setStatus("AVAILABLE")
       setOwnerId("")
+      setAgentId("")
       setPropertyTypeId("")
       setSizeLabel("")
       setArea("")
@@ -285,6 +294,7 @@ export default function PropertiesPage() {
     setStatus("AVAILABLE")
     setPropertyTypeId("")
     setOwnerId("")
+    setAgentId("")
     setListingType("RENT")
     setSizeLabel("")
     setArea("")
@@ -377,6 +387,16 @@ export default function PropertiesPage() {
       ),
     },
     {
+      accessorKey: "agent.name",
+      header: "Agent",
+      cell: ({ row }) => (
+        <div className="text-sm flex flex-col">
+          <span className="font-bold text-blue-700 dark:text-blue-400">{row.original.agent?.name || 'Unassigned'}</span>
+          <span className="text-[10px] text-muted-foreground font-mono">{row.original.agent?.phone}</span>
+        </div>
+      ),
+    },
+    {
       accessorKey: "status",
       header: "Status",
       cell: ({ row }) => (
@@ -446,7 +466,15 @@ export default function PropertiesPage() {
                   Add Property
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+              <DialogContent 
+                className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto"
+                onPointerDownOutside={(e) => {
+                  const target = e.target as Element;
+                  if (target.closest('.react-select__menu')) {
+                    e.preventDefault();
+                  }
+                }}
+              >
                 <DialogHeader>
                   <DialogTitle>{currentProperty ? "Edit Property Parameters" : "Add New Property"}</DialogTitle>
                 </DialogHeader>
@@ -478,6 +506,7 @@ export default function PropertiesPage() {
                         }
                       }}
                       menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                      classNamePrefix="react-select"
                       styles={{
                         control: (base) => ({
                           ...base,
@@ -495,7 +524,7 @@ export default function PropertiesPage() {
                           color: 'var(--foreground)',
                           zIndex: 9999
                         }),
-                        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                        menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
                         option: (base, state) => ({
                           ...base,
                           backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
@@ -530,6 +559,7 @@ export default function PropertiesPage() {
                       value={selectedCity ? { value: selectedCity, label: selectedCity } : null}
                       onChange={(opt: any) => setSelectedCity(opt?.value || "")}
                       menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                      classNamePrefix="react-select"
                       styles={{
                         control: (base) => ({
                           ...base,
@@ -547,7 +577,7 @@ export default function PropertiesPage() {
                           color: 'var(--foreground)',
                           zIndex: 9999
                         }),
-                        menuPortal: (base) => ({ ...base, zIndex: 9999 }),
+                        menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
                         option: (base, state) => ({
                           ...base,
                           backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
@@ -609,6 +639,24 @@ export default function PropertiesPage() {
                       <SelectContent>
                         {owners.map((user) => (
                           <SelectItem key={`owner-${user.id}`} value={user.id.toString()}>{user.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Agent */}
+                  <div className="space-y-2">
+                    <Label htmlFor="agentId">Agent <span className="text-red-500">*</span></Label>
+                    <Select
+                      value={agentId || ""}
+                      onValueChange={(val) => setAgentId(val)}
+                    >
+                      <SelectTrigger id="agentId">
+                        <SelectValue placeholder="Assign an Agent" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {agents.map((user) => (
+                          <SelectItem key={`agent-${user.id}`} value={user.id.toString()}>{user.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -803,6 +851,14 @@ export default function PropertiesPage() {
                         <div className="bg-muted/30 p-2 rounded-md">
                           <p className="font-medium">{viewProperty.owner?.name}</p>
                           <p className="text-xs text-muted-foreground mt-0.5 font-mono">{viewProperty.owner?.phone}</p>
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">Agent Contact</span>
+                        <div className="bg-blue-50 dark:bg-blue-900/20 p-2 rounded-md border border-blue-100 dark:border-blue-800">
+                          <p className="font-medium text-blue-800 dark:text-blue-300">{viewProperty.agent?.name || 'Unassigned'}</p>
+                          <p className="text-xs text-blue-600/80 dark:text-blue-400 mt-0.5 font-mono">{viewProperty.agent?.phone || 'N/A'}</p>
                         </div>
                       </div>
 

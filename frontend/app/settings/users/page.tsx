@@ -242,7 +242,7 @@ export default function UsersPage() {
                 <DialogHeader>
                   <DialogTitle>{currentUser ? "Edit User" : "Add New User"}</DialogTitle>
                 </DialogHeader>
-                <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+                <form onSubmit={handleSubmit} className="grid gap-4 py-4" autoComplete="off">
                   
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="name" className="text-right">Name <span className="text-red-500">*</span></Label>
@@ -251,7 +251,7 @@ export default function UsersPage() {
 
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="email" className="text-right">Email</Label>
-                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" placeholder="Optional email" />
+                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" placeholder="Optional email" autoComplete="off" />
                   </div>
 
                   <div className="grid grid-cols-4 items-center gap-4">
@@ -300,6 +300,7 @@ export default function UsersPage() {
                       className="col-span-3" 
                       placeholder={currentUser ? "Leave blank to keep unchanged" : "Secure Password"} 
                       required={!currentUser}
+                      autoComplete="new-password"
                     />
                   </div>
                   

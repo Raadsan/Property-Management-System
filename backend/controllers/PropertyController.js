@@ -1,4 +1,4 @@
-import { prisma } from "../lib/prisma.js";
+import { prisma } from "../lib/prisma.js"; // Restart nodemon 2
 import axios from "axios";
 
 // @desc    Create a new property
@@ -14,7 +14,7 @@ export const createProperty = async (req, res) => {
       title, description, location, city, country, price,
       ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures,
       sizeLabel, area, listingType: bodyListingType, status: bodyStatus,
-      Rooms, Bathrooms, ReservationFee
+      Rooms, Bathrooms, ReservationFee, agentId
     } = req.body || {};
 
     const listingType = (bodyListingType || "RENT").trim().toUpperCase();
@@ -59,6 +59,7 @@ export const createProperty = async (req, res) => {
     const parsedRooms = Rooms !== undefined ? parseInt(Rooms) : 0;
     const parsedBathrooms = Bathrooms !== undefined ? parseInt(Bathrooms) : 0;
     const parsedReservationFee = ReservationFee !== undefined ? parseFloat(ReservationFee) : 0.01;
+    const parsedAgentId = agentId ? parseInt(agentId) : null;
 
     if (isNaN(parsedPrice) || isNaN(parsedOwnerId) || isNaN(parsedPropertyTypeId)) {
       return res.status(400).json({
@@ -80,6 +81,7 @@ export const createProperty = async (req, res) => {
         Rooms: isNaN(parsedRooms) ? 0 : parsedRooms,
         Bathrooms: isNaN(parsedBathrooms) ? 0 : parsedBathrooms,
         ownerId: parsedOwnerId,
+        agentId: isNaN(parsedAgentId) ? null : parsedAgentId,
         propertyTypeId: parsedPropertyTypeId,
         sizeLabel,
         area: isNaN(parsedArea) ? null : parsedArea,
@@ -143,7 +145,8 @@ export const getProperties = async (req, res) => {
         images: { orderBy: { id: 'desc' } },
         features: true,
         propertyType: { select: { name: true } },
-        owner: { select: { name: true, phone: true } }
+        owner: { select: { name: true, phone: true } },
+        agent: { select: { name: true, phone: true } }
       }
     });
     return res.status(200).json(properties);
@@ -174,6 +177,7 @@ export const getPropertyById = async (req, res) => {
         features: true,
         propertyType: true,
         owner: { select: { name: true, email: true, phone: true, photo: true } },
+        agent: { select: { name: true, email: true, phone: true, photo: true } },
         bookings: {
           where: {
             status: { in: ['PAID', 'PENDING'] }
@@ -239,6 +243,11 @@ export const updateProperty = async (req, res) => {
     if (updateFields.ownerId) {
       updateData.ownerId = parseInt(updateFields.ownerId);
       if (isNaN(updateData.ownerId)) delete updateData.ownerId;
+    }
+
+    if (updateFields.agentId !== undefined) {
+      updateData.agentId = updateFields.agentId ? parseInt(updateFields.agentId) : null;
+      if (isNaN(updateData.agentId) && updateFields.agentId) delete updateData.agentId;
     }
 
     if (updateFields.propertyTypeId) {

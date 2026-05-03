@@ -102,6 +102,7 @@ model User {
   bookings        Booking[]
   payments        Payment[]
   propertiesOwned Property[] @relation("OwnerProperties")
+  propertiesManaged Property[] @relation("AgentProperties")
   role            Role       @relation(fields: [roleId], references: [id])
 
   @@index([roleId], map: "User_roleId_fkey")
@@ -132,16 +133,19 @@ model Property {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
   ownerId        Int
+  agentId        Int?
   propertyTypeId Int
   favorites      Favorite[]
   features       Feature[]
   bookings       Booking[]
   owner          User            @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Cascade)
+  agent          User?           @relation("AgentProperties", fields: [agentId], references: [id])
   propertyType   PropertyType    @relation(fields: [propertyTypeId], references: [id])
   images         PropertyImage[]
 
   @@index([propertyTypeId])
   @@index([ownerId])
+  @@index([agentId])
 }
 
 model PropertyImage {
@@ -237,17 +241,23 @@ enum PaymentStatus {
   LATE
 }
 
+enum ContactStatus {
+  PENDING
+  SOLVED
+}
+
+
 model Contact {
-  id          Int      @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
   firstName   String
   lastName    String
   email       String
   phone       String?
   inquiryType String
-  message     String   @db.Text
-  status      String   @default("UNREAD")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  message     String        @db.Text
+  status      ContactStatus @default(PENDING)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
 }
 
 model BlogCategory {

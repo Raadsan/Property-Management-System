@@ -7,10 +7,16 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { MailOpenIcon, MailIcon, RefreshCcwIcon, PhoneIcon, CalendarIcon } from "lucide-react"
-import { getContactMessages } from "@/api/contactApi"
+import { getContactMessages, updateContactStatus } from "@/api/contactApi"
 import { toast } from "sonner"
 import { format } from "date-fns"
+import { CheckCircle2Icon, ClockIcon, RefreshCcwIcon, PhoneIcon, CalendarIcon, ChevronDownIcon } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 // Define the Message type based on the response
 export type Message = {
@@ -39,6 +45,17 @@ export default function MessagesDashboardPage() {
       toast.error("Network Error: Could not connect to server.")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleStatusChange = async (id: number, newStatus: string) => {
+    try {
+      await updateContactStatus(id, newStatus)
+      setMessages(prev => prev.map(msg => msg.id === id ? { ...msg, status: newStatus } : msg))
+      toast.success(`Marked as ${newStatus}`)
+    } catch (error) {
+      console.error("Update status error:", error)
+      toast.error("Failed to update status")
     }
   }
 
@@ -117,15 +134,48 @@ export default function MessagesDashboardPage() {
     {
       accessorKey: "status",
       header: "Status",
-      cell: ({ row }) => (
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${row.getValue("status") === 'READ' ? 'bg-muted/50' : 'bg-primary/10'}`}>
-           {row.getValue("status") === 'READ' ? (
-                <MailOpenIcon className="w-4 h-4 text-muted-foreground" />
-           ) : (
-                <MailIcon className="w-4 h-4 text-primary" />
-           )}
-        </div>
-      ),
+      cell: ({ row }) => {
+        const status = row.getValue("status") as string
+        const id = row.original.id
+        
+        return (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button 
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-bold uppercase transition-all duration-300 outline-hidden ${
+                  status === 'SOLVED' 
+                    ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' 
+                    : 'bg-amber-500/10 text-amber-500 hover:bg-amber-500/20'
+                }`}
+              >
+                {status === 'SOLVED' ? (
+                  <CheckCircle2Icon className="w-3.5 h-3.5" />
+                ) : (
+                  <ClockIcon className="w-3.5 h-3.5" />
+                )}
+                {status.toLowerCase()}
+                <ChevronDownIcon className="w-3 h-3 ml-0.5 opacity-50" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32 rounded-xl">
+              <DropdownMenuItem 
+                onClick={() => status !== 'PENDING' && handleStatusChange(id, 'PENDING')}
+                className="flex items-center gap-2 font-bold text-xs uppercase text-amber-500"
+              >
+                <ClockIcon className="w-3.5 h-3.5" />
+                Pending
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => status !== 'SOLVED' && handleStatusChange(id, 'SOLVED')}
+                className="flex items-center gap-2 font-bold text-xs uppercase text-green-500"
+              >
+                <CheckCircle2Icon className="w-3.5 h-3.5" />
+                Solved
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )
+      },
     },
   ]
 

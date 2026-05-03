@@ -18,7 +18,7 @@ export const sendContactMessage = async (req, res) => {
         phone,
         inquiryType,
         message,
-        status: 'UNREAD'
+        status: 'PENDING'
       }
     });
 
@@ -84,6 +84,34 @@ export const getContactMessages = async (req, res) => {
     res.status(500).json({
       status: 'ERR',
       message: 'Failed to fetch messages'
+    });
+  }
+};
+
+export const updateContactStatus = async (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!['PENDING', 'SOLVED'].includes(status)) {
+    return res.status(400).json({ status: 'ERR', message: 'Invalid status' });
+  }
+
+  try {
+    const updatedContact = await prisma.contact.update({
+      where: { id: parseInt(id) },
+      data: { status }
+    });
+
+    res.status(200).json({
+      status: 'OK',
+      message: `Status updated to ${status}`,
+      data: updatedContact
+    });
+  } catch (error) {
+    console.error('Update status error:', error);
+    res.status(500).json({
+      status: 'ERR',
+      message: 'Failed to update status'
     });
   }
 };

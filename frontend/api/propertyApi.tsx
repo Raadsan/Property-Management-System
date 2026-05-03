@@ -28,6 +28,7 @@ export interface Property {
   Bathrooms?: number;
   ReservationFee?: number;
   ownerId: number;
+  agentId: number;
   propertyTypeId: number;
   createdAt: string;
   updatedAt: string;
@@ -36,6 +37,7 @@ export interface Property {
   features?: PropertyFeature[];
   propertyType?: { name: string };
   owner?: { name: string; phone: string; email?: string; photo?: string };
+  agent?: { name: string; phone: string; email?: string; photo?: string };
   bookings?: { userId: number }[];
 }
 

@@ -18,3 +18,8 @@ export const getContactMessages = async () => {
   const response = await api.get('/contact');
   return response.data;
 };
+
+export const updateContactStatus = async (id: number, status: string) => {
+  const response = await api.put(`/contact/${id}/status`, { status });
+  return response.data;
+};

@@ -187,6 +187,15 @@ export default function PropertyDetailPage() {
     ? property.images.map(img => img.url.startsWith('http') ? img.url : `${baseUrl}/${img.url.replace(/\\/g, '/').replace(/^\//, '')}`)
     : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"];
 
+  // Determine WhatsApp number (Agent > Owner > Default)
+  const rawPhone = property.agent?.phone || property.owner?.phone || "252613052542";
+  let waNumber = rawPhone.replace(/\D/g, ''); // Extract only digits
+  if (waNumber.startsWith('0')) waNumber = waNumber.substring(1); // Remove leading zero if present
+  if (waNumber.length <= 10 && !waNumber.startsWith('252')) {
+    waNumber = `252${waNumber}`; // Prepend country code if missing
+  }
+  const waLink = `https://wa.me/${waNumber}`;
+
   const openGallery = (index: number) => {
     setSelectedImgIndex(index);
     setIsGalleryOpen(true);
@@ -338,6 +347,7 @@ export default function PropertyDetailPage() {
               <div>
                 <h4 className="text-2xl font-bold text-gray-900 mb-8">Secure Booking</h4>
                 <div className="space-y-4">
+                  {/* 
                   {property.status === 'AVAILABLE' ? (
                     <button
                       onClick={handleAction}
@@ -367,10 +377,10 @@ export default function PropertyDetailPage() {
                       Out of Market
                     </button>
                   )}
+                  */}
                   <a
-                    href={`https://wa.me/252613052542`}
+                    href={waLink}
                     target="_blank"
-                    onClick={handleAction}
                     className="w-full flex items-center justify-center gap-4 bg-[#26ce61] text-white py-3 rounded-2xl font-bold hover:bg-[#20b453] transition-all text-sm uppercase tracking-widest active:scale-[0.98]"
                   >
                     <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

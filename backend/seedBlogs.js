@@ -7,11 +7,11 @@ async function main() {
 
   // 1. Create Categories
   const categories = [
-    "Buying Guide", 
-    "Investment", 
-    "Interior Design", 
-    "Legal", 
-    "Sustainability", 
+    "Buying Guide",
+    "Investment",
+    "Interior Design",
+    "Legal",
+    "Sustainability",
     "Selling Guide"
   ];
 

@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma.js";
 import bcrypt from "bcrypt";
 import nodemailer from "nodemailer";
+import { verifyFirebaseToken } from "../lib/firebase.js";
 
 // @desc    Create a new user
 // @route   POST /api/users
@@ -319,3 +320,64 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ message: "Error resetting password", error: error.message });
   }
 };
+
+// @desc    Social Login (Google/Facebook)
+// @route   POST /api/users/social-login
+export const socialLogin = async (req, res) => {
+  const { idToken } = req.body;
+
+  if (!idToken) {
+    return res.status(400).json({ message: "No ID token provided" });
+  }
+
+  try {
+    const decodedToken = await verifyFirebaseToken(idToken);
+    const { email, name, picture, uid } = decodedToken;
+
+    if (!email) {
+      return res.status(400).json({ message: "Email not found in social token" });
+    }
+
+    // 1. Check if user exists
+    let user = await prisma.user.findUnique({
+      where: { email: email },
+      include: {
+        role: { select: { name: true } }
+      }
+    });
+
+    // 2. If user doesn't exist, create a new one
+    if (!user) {
+      // We might want to use a default password or mark it as social login
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash(uid + Math.random(), salt); // Random password for social users
+
+      user = await prisma.user.create({
+        data: {
+          name: name || "Social User",
+          email: email,
+          phone: "000000000", // Default phone for social login if required
+          roleId: 3, // Default role
+          password: hashedPassword,
+          photo: picture || null,
+          status: "ACTIVE",
+        },
+        include: {
+          role: { select: { name: true } }
+        }
+      });
+    }
+
+    // 3. Return user
+    const { password: _, ...userWithoutPassword } = user;
+    res.status(200).json({
+      message: "Social login successful",
+      user: userWithoutPassword
+    });
+
+  } catch (error) {
+    console.error("Social Login Error:", error);
+    res.status(500).json({ message: "Error during social login", error: error.message });
+  }
+};
+

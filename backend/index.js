@@ -38,11 +38,11 @@ app.use((req, res, next) => {
       if (Array.isArray(obj)) return obj.map(addAlias);
       const newObj = { ...obj };
       if (newObj.id && !newObj._id) newObj._id = String(newObj.id);
-      
+
       for (const key in newObj) {
         newObj[key] = addAlias(newObj[key]);
         if (typeof key === 'string' && key.toLowerCase().endsWith('id') && newObj[key] !== null && newObj[key] !== undefined && typeof newObj[key] !== 'object') {
-             newObj[key] = String(newObj[key]);
+          newObj[key] = String(newObj[key]);
         }
       }
       return newObj;

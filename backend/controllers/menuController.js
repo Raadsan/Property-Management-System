@@ -68,14 +68,14 @@ export const updateMenu = async (req, res) => {
             });
 
             const existingSubMenuIds = existingMenu?.subMenus.map(sm => sm.id) || [];
-            const incomingSubMenuIds = subMenus.filter(sm => sm.id).map(sm => sm.id);
+            const incomingSubMenuIds = subMenus.filter(sm => sm.id).map(sm => parseInt(sm.id));
 
             const idsToDelete = existingSubMenuIds.filter(smId => !incomingSubMenuIds.includes(smId));
 
             updateData.subMenus = {
                 deleteMany: { id: { in: idsToDelete } },
                 update: subMenus.filter(sm => sm.id).map(sm => ({
-                    where: { id: sm.id },
+                    where: { id: parseInt(sm.id) },
                     data: { title: sm.title, url: sm.url }
                 })),
                 create: subMenus.filter(sm => !sm.id).map(sm => ({ title: sm.title, url: sm.url }))
@@ -94,7 +94,7 @@ export const updateMenu = async (req, res) => {
             const roleMenuAccesses = await prisma.roleMenuAccess.findMany({
                 where: { menuId: parseInt(id) }
             });
-            
+
             for (const rma of roleMenuAccesses) {
                 for (const sm of updatedMenu.subMenus) {
                     await prisma.roleSubMenuAccess.upsert({
@@ -139,7 +139,7 @@ export const getPermissionMenusByRole = async (req, res) => {
     const { roleId } = req.params;
     try {
         const id = parseInt(roleId);
-        
+
         if (isNaN(id)) {
             console.error("Invalid Role ID received:", roleId);
             return res.status(400).json({ message: "Invalid Role ID" });

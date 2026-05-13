@@ -18,6 +18,7 @@ import contactRoute from "./Routes/contactRoute.js";
 import blogRoute from "./Routes/blogRoute.js";
 import blogCategoryRoute from "./Routes/blogCategoryRoute.js";
 import reportRoute from "./Routes/reportRoute.js";
+import videoRoute from "./Routes/videoRoute.js";
 
 import multerErrorHandler from "./middlewares/multerErrorHandler.js";
 
@@ -75,6 +76,7 @@ app.use('/api/contact', contactRoute);
 app.use('/api/blogs', blogRoute);
 app.use('/api/blog-categories', blogCategoryRoute);
 app.use('/api/reports', reportRoute);
+app.use('/api/videos', videoRoute);
 
 // Error Handling Middleware
 app.use(multerErrorHandler);

@@ -1,7 +1,7 @@
 import express from 'express';
 import { 
   createUser, getUsers, getUserById, updateUser, deleteUser, loginUser,
-  forgotPassword, verifyCode, resetPassword 
+  forgotPassword, verifyCode, resetPassword, socialLogin 
 } from '../controllers/userController.js';
 import { upload } from '../lib/upload.js';
 

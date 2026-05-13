@@ -103,6 +103,9 @@ model User {
   payments        Payment[]
   propertiesOwned Property[] @relation("OwnerProperties")
   propertiesManaged Property[] @relation("AgentProperties")
+  videosOwned     Video[]    @relation("OwnerVideos")
+  videosManaged   Video[]    @relation("AgentVideos")
+  videoLikes      VideoLike[]
   role            Role       @relation(fields: [roleId], references: [id])
 
   @@index([roleId], map: "User_roleId_fkey")
@@ -113,6 +116,7 @@ model PropertyType {
   name       String     @unique
   createdAt  DateTime   @default(now())
   properties Property[]
+  videos     Video[]
 }
 
 model Property {
@@ -146,6 +150,51 @@ model Property {
   @@index([propertyTypeId])
   @@index([ownerId])
   @@index([agentId])
+}
+
+model Video {
+  id             Int             @id @default(autoincrement())
+  title          String
+  description    String?         @db.Text
+  location       String
+  country        String?
+  city           String
+  Rooms          Int             @default(0)
+  Bathrooms      Int             @default(0)
+  price          Float
+  ReservationFee Float           @default(0.01)
+  listingType    ListingType     @default(RENT)
+  status         PropertyStatus  @default(AVAILABLE)
+  sizeLabel      String?   // e.g. "20x20"
+  area           Float?    // e.g. 400 (for filtering)
+  videoUrl       String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  ownerId        Int
+  agentId        Int?
+  propertyTypeId Int
+  
+  videoLikes     VideoLike[]
+  owner          User            @relation("OwnerVideos", fields: [ownerId], references: [id], onDelete: Cascade)
+  agent          User?           @relation("AgentVideos", fields: [agentId], references: [id])
+  propertyType   PropertyType    @relation(fields: [propertyTypeId], references: [id])
+
+  @@index([propertyTypeId])
+  @@index([ownerId])
+  @@index([agentId])
+}
+
+model VideoLike {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  videoId   Int
+  createdAt DateTime @default(now())
+  video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([videoId])
+  @@index([userId])
 }
 
 model PropertyImage {
@@ -282,3 +331,5 @@ model Blog {
 
   @@index([categoryId])
 }
+
+

@@ -5,8 +5,8 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://178.18.241.5:8002/api/:path*',
-        //  destination: 'http://localhost:8002/api/:path*',
+        // destination: 'http://178.18.241.5:8002/api/:path*',
+         destination: 'http://localhost:8002/api/:path*',
       },
     ];
   },

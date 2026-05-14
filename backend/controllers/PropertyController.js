@@ -116,7 +116,7 @@ export const createProperty = async (req, res) => {
 // @route   GET /api/properties
 export const getProperties = async (req, res) => {
   try {
-    const { city, country, rooms, minPrice, maxPrice, propertyTypeId, listingType, keyword } = req.query;
+    const { city, country, rooms, minPrice, maxPrice, propertyTypeId, listingType, keyword, agentId } = req.query;
 
     const where = {};
     if (city) where.city = city;
@@ -124,6 +124,7 @@ export const getProperties = async (req, res) => {
     if (rooms) where.Rooms = parseInt(rooms);
     if (propertyTypeId) where.propertyTypeId = parseInt(propertyTypeId);
     if (listingType) where.listingType = listingType.toUpperCase();
+    if (agentId) where.agentId = parseInt(agentId);
 
     if (keyword) {
       where.OR = [

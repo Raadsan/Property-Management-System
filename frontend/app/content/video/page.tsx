@@ -93,8 +93,13 @@ export default function VedioPage() {
   const loadData = async () => {
     setIsLoading(true)
     try {
+      // Get the logged in user from session to check role
+      const userStr = sessionStorage.getItem("user")
+      const loggedInUser = userStr ? JSON.parse(userStr) : null
+      const isAgent = loggedInUser?.role?.name?.toLowerCase() === "agent"
+
       const [vidsData, catsData, usersData] = await Promise.all([
-        getVideos(),
+        getVideos(isAgent && loggedInUser ? { agentId: loggedInUser.id } : {}),
         getPropertyTypes(),
         getUsers()
       ])
@@ -104,8 +109,19 @@ export default function VedioPage() {
       const ownersOnly = usersData.filter(user => user.role?.name === "Owner" || user.roleId === 2)
       setOwners(ownersOnly)
 
-      const agentsOnly = usersData.filter(user => user.role?.name === "Agent" || user.roleId === 4)
-      setAgents(agentsOnly)
+      let agentsList = usersData.filter(user => user.role?.name === "Agent" || user.roleId === 4)
+      
+      // 🛡️ Filter Logic: If the user is an agent, they only see themselves
+      if (isAgent && loggedInUser) {
+        agentsList = agentsList.filter(u => u.id === loggedInUser.id)
+        
+        // Auto-select the agent if creating a new video
+        if (!currentVideo && agentsList.length > 0) {
+          setAgentId(agentsList[0].id.toString())
+        }
+      }
+
+      setAgents(agentsList)
     } catch (error) {
       toast.error("Failed to load video data")
     } finally {
@@ -211,6 +227,11 @@ export default function VedioPage() {
   }
 
   const resetForm = () => {
+    // Check if current user is an agent to preserve ID
+    const userStr = sessionStorage.getItem("user")
+    const loggedInUser = userStr ? JSON.parse(userStr) : null
+    const isAgent = loggedInUser?.role?.name?.toLowerCase() === "agent"
+
     setCurrentVideo(null)
     setTitle("")
     setDescription("")
@@ -221,7 +242,14 @@ export default function VedioPage() {
     setStatus("AVAILABLE")
     setPropertyTypeId("")
     setOwnerId("")
-    setAgentId("")
+    
+    // 🛡️ Preserve Agent ID if user is an agent
+    if (isAgent && loggedInUser) {
+      setAgentId(loggedInUser.id.toString())
+    } else {
+      setAgentId("")
+    }
+
     setListingType("RENT")
     setSizeLabel("")
     setArea("")

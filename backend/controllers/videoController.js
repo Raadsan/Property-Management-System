@@ -52,7 +52,7 @@ export const createVideo = async (req, res) => {
 // @desc    Get all videos
 export const getVideos = async (req, res) => {
   try {
-    const { userId } = req.query; // Optional: to check if user liked the video
+    const { userId, agentId } = req.query; // Optional: to check if user liked the video or filter by agent
 
     const include = {
       propertyType: { select: { name: true } },
@@ -69,7 +69,11 @@ export const getVideos = async (req, res) => {
       };
     }
 
+    const where = {};
+    if (agentId) where.agentId = parseInt(agentId);
+
     const videos = await prisma.video.findMany({
+      where,
       include,
       orderBy: { createdAt: "desc" },
     });

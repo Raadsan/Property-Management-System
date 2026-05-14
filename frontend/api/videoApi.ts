@@ -26,8 +26,8 @@ export interface Video {
   agent?: { name: string, phone: string };
 }
 
-export const getVideos = async (): Promise<Video[]> => {
-  const response = await api.get("/videos");
+export const getVideos = async (params?: { agentId?: number, userId?: number }): Promise<Video[]> => {
+  const response = await api.get("/videos", { params });
   return response.data;
 };
 

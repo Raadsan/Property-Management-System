@@ -40,8 +40,8 @@ export interface Property {
   bookings?: { userId: number }[];
 }
 
-export const getProperties = async (): Promise<Property[]> => {
-  const response = await api.get("/properties");
+export const getProperties = async (params?: { agentId?: number }): Promise<Property[]> => {
+  const response = await api.get("/properties", { params });
   return response.data;
 };
 

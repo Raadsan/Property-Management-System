@@ -15,7 +15,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { EyeIcon, EyeOffIcon, Loader2Icon, Mail, Lock, CheckCircle2, AlertCircle, User } from "lucide-react"
-import { loginUser as performLogin } from "@/api/userApi"
+import { loginUser as performLogin, socialLogin } from "@/api/userApi"
+import { auth, googleProvider, facebookProvider } from "@/lib/firebase"
+import { signInWithPopup } from "firebase/auth"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -42,6 +44,32 @@ export default function LoginPage() {
 
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || "Invalid email or password"
+      setErrorStatus(errorMsg)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleSocialLogin = async (provider: any) => {
+    setIsLoading(true)
+    setErrorStatus(null)
+    setSuccessStatus(null)
+    try {
+      const result = await signInWithPopup(auth, provider)
+      const idToken = await result.user.getIdToken()
+      
+      const response = await socialLogin(idToken)
+      
+      sessionStorage.setItem("user", JSON.stringify(response.user))
+      setSuccessStatus(response.message || "Social Sign-in successful")
+      setTimeout(() => router.push("/dashboard"), 800)
+    } catch (error: any) {
+      // Silently ignore if user just closed the popup
+      if (error?.code === "auth/popup-closed-by-user" || error?.code === "auth/cancelled-popup-request") {
+        return;
+      }
+      console.error("Social login error:", error)
+      const errorMsg = error.response?.data?.message || error.message || "Social login failed"
       setErrorStatus(errorMsg)
     } finally {
       setIsLoading(false)
@@ -164,6 +192,8 @@ export default function LoginPage() {
               <Button
                 type="button"
                 variant="outline"
+                onClick={() => handleSocialLogin(googleProvider)}
+                disabled={isLoading}
                 className="h-11 rounded-xl border-gray-100 hover:bg-gray-50 hover:border-gray-200 transition-all group"
               >
                 <svg className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" viewBox="0 0 24 24">
@@ -189,6 +219,8 @@ export default function LoginPage() {
               <Button
                 type="button"
                 variant="outline"
+                onClick={() => handleSocialLogin(facebookProvider)}
+                disabled={isLoading}
                 className="h-11 rounded-xl border-gray-100 hover:bg-gray-50 hover:border-gray-200 transition-all group"
               >
                 <svg className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" fill="#1877F2" viewBox="0 0 24 24">

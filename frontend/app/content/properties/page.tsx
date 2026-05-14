@@ -116,8 +116,14 @@ export default function PropertiesPage() {
   const loadData = async () => {
     setIsLoading(true)
     try {
+      // Get the logged in user from session to check role
+      const userStr = sessionStorage.getItem("user")
+      const loggedInUser = userStr ? JSON.parse(userStr) : null
+      const isAdmin = loggedInUser?.role?.name?.toLowerCase() === "admin"
+      const isAgent = loggedInUser?.role?.name?.toLowerCase() === "agent"
+
       const [propsData, catsData, usersData, agentsData] = await Promise.all([
-        getProperties(),
+        getProperties(isAgent && loggedInUser ? { agentId: loggedInUser.id } : {}),
         getPropertyTypes(),
         getUsers(),
         getAgents()
@@ -130,7 +136,19 @@ export default function PropertiesPage() {
       setOwners(ownersOnly)
 
       // Set agents from the agents table
-      setAgents(agentsData.data || agentsData)
+      let allAgents = agentsData.data || agentsData
+
+      // 🛡️ Filter Logic: If the user is an agent, they only see themselves in the dropdown
+      if (isAgent && loggedInUser) {
+        allAgents = allAgents.filter((a: any) => a.id === loggedInUser.id)
+        
+        // Auto-select the agent if creating a new property
+        if (!currentProperty && allAgents.length > 0) {
+          setAgentId(allAgents[0].id.toString())
+        }
+      }
+
+      setAgents(allAgents)
     } catch (error) {
       toast.error("Failed to load property data")
     } finally {
@@ -345,6 +363,11 @@ export default function PropertiesPage() {
   }
 
   const resetForm = () => {
+    // Check if the current user is an agent to preserve their ID
+    const userStr = sessionStorage.getItem("user")
+    const loggedInUser = userStr ? JSON.parse(userStr) : null
+    const isAgent = loggedInUser?.role?.name?.toLowerCase() === "agent"
+
     setCurrentProperty(null)
     setTitle("")
     setDescription("")
@@ -355,7 +378,14 @@ export default function PropertiesPage() {
     setStatus("CREATED")
     setPropertyTypeId("")
     setOwnerId("")
-    setAgentId("")
+    
+    // 🛡️ Preserve Agent ID if user is an agent
+    if (isAgent && loggedInUser) {
+      setAgentId(loggedInUser.id.toString())
+    } else {
+      setAgentId("")
+    }
+
     setListingType("RENT")
     setSizeLabel("")
     setArea("")

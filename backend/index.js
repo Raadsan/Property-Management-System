@@ -1,4 +1,4 @@
-import 'dotenv/config'; // Backend restart triggered
+import 'dotenv/config'; // Backend restart triggered - Schema Cleaned
 import express from 'express';
 import cors from 'cors';
 import path from 'path';

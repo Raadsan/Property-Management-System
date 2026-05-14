@@ -85,3 +85,8 @@ export const resetPassword = async (email: string, code: string, newPassword: st
   const response = await api.post("/users/reset-password", { email, code, newPassword });
   return response.data;
 };
+
+export const socialLogin = async (idToken: string): Promise<LoginResponse> => {
+  const response = await api.post("/users/social-login", { idToken });
+  return response.data;
+};

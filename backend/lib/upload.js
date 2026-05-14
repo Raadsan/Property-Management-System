@@ -33,12 +33,24 @@ const fileFilter = (req, file, cb) => {
   const allowedMimeTypes = [
     'application/pdf',
     'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'video/mp4',
+    'video/mpeg',
+    'video/ogg',
+    'video/quicktime',
+    'video/webm',
+    'video/x-msvideo',
+    'video/x-matroska'
   ];
-  const allowedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.doc', '.docx'];
+  const allowedExtensions = [
+    '.jpg', '.jpeg', '.png', '.gif', '.webp', 
+    '.pdf', '.doc', '.docx',
+    '.mp4', '.mov', '.avi', '.mkv', '.webm'
+  ];
   
   const fileExtension = path.extname(file.originalname).toLowerCase();
   const isImage = file.mimetype.startsWith('image/');
+  const isVideo = file.mimetype.startsWith('video/');
   const isAllowedMime = allowedMimeTypes.includes(file.mimetype);
   const isAllowedExt = allowedExtensions.includes(fileExtension);
 
@@ -47,15 +59,16 @@ const fileFilter = (req, file, cb) => {
     originalname: file.originalname,
     extension: fileExtension,
     isImage,
+    isVideo,
     isAllowedMime,
     isAllowedExt
   });
 
-  if (isImage || isAllowedMime || isAllowedExt) {
+  if (isImage || isVideo || isAllowedMime || isAllowedExt) {
     cb(null, true);
   } else {
     console.error("❌ Rejected file type:", file.mimetype, fileExtension);
-    cb(new Error('Only images, PDFs, and Word documents are allowed!'), false);
+    cb(new Error('Only images, videos, PDFs, and Word documents are allowed!'), false);
   }
 };
 

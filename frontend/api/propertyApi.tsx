@@ -21,14 +21,13 @@ export interface Property {
   country: string;
   price: number;
   listingType: 'RENT' | 'SALE';
-  status: 'AVAILABLE' | 'BOOKED' | 'SOLD' | 'RENTED';
+  status: 'CREATED' | 'AVAILABLE' | 'BOOKED' | 'SOLD' | 'RENTED';
   sizeLabel?: string;
   area?: number;
   Rooms?: number;
   Bathrooms?: number;
-  ReservationFee?: number;
-  ownerId: number;
-  agentId: number;
+  ownerId?: number;
+  agentId?: number;
   propertyTypeId: number;
   createdAt: string;
   updatedAt: string;
@@ -37,7 +36,7 @@ export interface Property {
   features?: PropertyFeature[];
   propertyType?: { name: string };
   owner?: { name: string; phone: string; email?: string; photo?: string };
-  agent?: { name: string; phone: string; email?: string; photo?: string };
+  agent?: { fullName: string; primaryPhone: string; secondaryPhone?: string; email?: string; photo?: string };
   bookings?: { userId: number }[];
 }
 
@@ -58,6 +57,11 @@ export const bookProperty = async (id: number, data: { userId: number, phone: st
 
 export const cancelBooking = async (id: number, data: { userId: number }): Promise<any> => {
   const response = await api.post(`/properties/${id}/cancel`, data);
+  return response.data;
+};
+
+export const approveProperty = async (id: number): Promise<any> => {
+  const response = await api.patch(`/properties/${id}/approve`);
   return response.data;
 };
 

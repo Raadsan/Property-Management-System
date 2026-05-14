@@ -188,7 +188,35 @@ export const loginUser = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(401).json({ message: "Invalid email or password" });
+      // 1b. If not found in User, check Agent table
+      const agent = await prisma.agent.findUnique({
+        where: { email },
+        include: {
+          role: { select: { name: true } }
+        }
+      });
+
+      if (!agent) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      // Check agent status
+      if (agent.status !== "ACTIVE") {
+        return res.status(403).json({ message: "Your agent account is currently disabled." });
+      }
+
+      // Compare agent password
+      const isAgentMatch = await bcrypt.compare(password, agent.password);
+      if (!isAgentMatch) {
+        return res.status(401).json({ message: "Invalid credentials" });
+      }
+
+      // Return agent success
+      const { password: _, ...agentWithoutPassword } = agent;
+      return res.status(200).json({
+        message: "Login successful (Agent)",
+        user: { ...agentWithoutPassword, name: agentWithoutPassword.fullName } // Map fullName to name for compatibility
+      });
     }
 
     // 2. Check if user is active

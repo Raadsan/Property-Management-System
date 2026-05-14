@@ -32,8 +32,6 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, Di
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { bookProperty, cancelBooking } from "@/api/propertyApi";
-
 export default function PropertyDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -43,9 +41,6 @@ export default function PropertyDetailPage() {
   const [isGalleryOpen, setIsGalleryOpen] = useState(false);
   const [selectedImgIndex, setSelectedImgIndex] = useState(0);
   const [user, setUser] = useState<any>(null);
-  const [isBookingOpen, setIsBookingOpen] = useState(false);
-  const [wafiPhone, setWafiPhone] = useState("252");
-  const [isBookingLoading, setIsBookingLoading] = useState(false);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,75 +79,6 @@ export default function PropertyDetailPage() {
     fetchProperty();
   }, [id]);
 
-  const handleAction = (e: React.MouseEvent) => {
-    e.preventDefault();
-    console.log("🖱️ handleAction triggered. User:", user);
-
-    if (!user) {
-      console.log("❌ No user found, redirecting to login.");
-      toast.error("Please login to proceed with booking");
-      router.push("/login");
-      return;
-    }
-
-    // Restriction: Only users with the 'User' role can make bookings
-    if (user.role?.name !== "User") {
-      console.log(`❌ Role restriction: "${user.role?.name}" is not allowed to book.`);
-      toast.error(`Access Denied: As an ${user.role?.name || "Administrator"}, you are not allowed to make bookings. Please use a standard client account.`);
-      return;
-    }
-
-    console.log("✅ Opening booking modal.");
-    setIsBookingOpen(true);
-  };
-
-  const handleBookingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user || !property) return;
-
-    setIsBookingLoading(true);
-    try {
-      await bookProperty(property.id, {
-        userId: user.id || user.userId,
-        phone: wafiPhone
-      });
-      toast.success(`Booking fee of $${property.ReservationFee ?? 100} processed via WafiPay! Reminder: 24h free cancellation window active (less 2% fee).`, {
-        duration: 5000,
-      });
-      setIsBookingOpen(false);
-      // Optional: Refresh property status
-      const updated = await getPropertyById(property.id);
-      setProperty(updated);
-    } catch (error: any) {
-      console.error("Booking failed:", error);
-      const msg = error.response?.data?.message || "Booking failed. Please try again.";
-      toast.error(msg);
-    } finally {
-      setIsBookingLoading(false);
-    }
-  };
-
-  const handleCancelBooking = async () => {
-    if (!user || !property) return;
-    
-    setIsBookingLoading(true);
-    try {
-      await cancelBooking(property.id, {
-        userId: user.id || user.userId
-      });
-      toast.success("Booking cancelled successfully. Your refund will be processed according to our policy.");
-      // Refresh property status
-      const updated = await getPropertyById(property.id);
-      setProperty(updated);
-    } catch (error: any) {
-      console.error("Cancellation failed:", error);
-      const msg = error.response?.data?.message || "Cancellation failed. Please try again.";
-      toast.error(msg);
-    } finally {
-      setIsBookingLoading(false);
-    }
-  };
-
   if (isLoading) {
     return (
       <main className="light min-h-screen bg-white" style={{ colorScheme: 'light' }}>
@@ -188,7 +114,7 @@ export default function PropertyDetailPage() {
     : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"];
 
   // Determine WhatsApp number (Agent > Owner > Default)
-  const rawPhone = property.agent?.phone || property.owner?.phone || "252613052542";
+  const rawPhone = property.agent?.primaryPhone || property.agent?.secondaryPhone || "252613052542";
   let waNumber = rawPhone.replace(/\D/g, ''); // Extract only digits
   if (waNumber.startsWith('0')) waNumber = waNumber.substring(1); // Remove leading zero if present
   if (waNumber.length <= 10 && !waNumber.startsWith('252')) {
@@ -276,15 +202,11 @@ export default function PropertyDetailPage() {
           </div>
           
 
-          {/* Price & Reservation Fee Row */}
+          {/* Price Row */}
           <div className="flex flex-row gap-16 mb-8 border-b border-gray-50 pb-8">
             <div className="space-y-2">
               <h4 className="text-[15px] font-bold text-gray-900 mb-3">Price:</h4>
               <span className="text-2xl md:text-3xl font-bold text-gray-900 tracking-tighter">${property.price.toLocaleString()}</span>
-            </div>
-            <div className="space-y-2">
-              <h4 className="text-[15px] font-bold text-gray-900 mb-3">Reservation Fee:</h4>
-              <p className="font-bold text-orange-600 text-lg">${(property.ReservationFee ?? 0.01).toLocaleString()}</p>
             </div>
           </div>
           
@@ -347,37 +269,7 @@ export default function PropertyDetailPage() {
               <div>
                 <h4 className="text-2xl font-bold text-gray-900 mb-8">Secure Booking</h4>
                 <div className="space-y-4">
-                  {/* 
-                  {property.status === 'AVAILABLE' ? (
-                    <button
-                      onClick={handleAction}
-                      className="w-full flex items-center justify-center gap-4 bg-[#214347] text-white py-3 rounded-2xl font-bold hover:bg-[#1a3539] transition-all text-sm uppercase tracking-widest active:scale-[0.98]"
-                    >
-                      <Activity className="h-5 w-5" />  Book Now
-                    </button>
-                  ) : property.bookings?.some(b => b.userId === (user?.id || user?.userId)) ? (
-                    <button
-                      onClick={handleCancelBooking}
-                      disabled={isBookingLoading}
-                      className="w-full flex items-center justify-center gap-4 bg-red-600 text-white py-3 rounded-2xl font-bold hover:bg-red-700 transition-all text-sm uppercase tracking-widest active:scale-[0.98]"
-                    >
-                      {isBookingLoading ? (
-                        <Loader2Icon className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <>
-                          <X className="h-5 w-5" /> Cancel Booking
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      disabled
-                      className="w-full flex items-center justify-center gap-4 bg-gray-300 text-white py-3 rounded-2xl font-bold text-sm uppercase tracking-widest cursor-not-allowed"
-                    >
-                      Out of Market
-                    </button>
-                  )}
-                  */}
+                  {/* Direct WhatsApp and Inquire Actions */}
                   <a
                     href={waLink}
                     target="_blank"
@@ -405,53 +297,6 @@ export default function PropertyDetailPage() {
       </div>
 
       <Footer />
-
-      {/* Booking Modal */}
-      <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
-        <DialogContent className="sm:max-w-[425px] bg-white !text-gray-900 border-gray-100 shadow-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold text-gray-900">Complete Your Booking</DialogTitle>
-            <DialogDescription asChild>
-              <div className="space-y-2 pt-2">
-                <p className="text-sm text-gray-600">To secure this property, you need to pay a reservation fee of <strong>${property?.ReservationFee ?? 100}</strong> via WafiPay.</p>
-                <div className="bg-emerald-50 text-emerald-800 p-3 rounded-lg border border-emerald-100/50 text-xs font-medium">
-                  <strong>Cancellation Policy:</strong> 24h free cancellation window is active. Please note that a 2% processing fee is non-refundable upon cancellation.
-                </div>
-              </div>
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleBookingSubmit} className="space-y-6 py-4">
-            {property && (
-              <div className="bg-gray-50 p-4 rounded-xl border border-gray-100 mb-2">
-                <p className="text-sm font-semibold text-gray-600 mb-1 leading-none">Property</p>
-                <p className="text-lg font-bold text-[#214347] truncate">{property.title}</p>
-              </div>
-            )}
-            <div className="space-y-3">
-              <Label htmlFor="wafiPhone" className="text-sm font-bold text-gray-700">Wafi Mobile Account Number</Label>
-              <Input
-                id="wafiPhone"
-                placeholder="e.g. 25261..."
-                value={wafiPhone}
-                onChange={(e) => setWafiPhone(e.target.value)}
-                className="rounded-xl h-12 bg-white border-gray-200 text-gray-900 focus:border-[#214347] focus-visible:ring-0"
-                style={{ WebkitBoxShadow: "0 0 0px 1000px white inset", WebkitTextFillColor: "#111827" }}
-                required
-              />
-              <p className="text-[11px] text-gray-500 leading-tight">Enter your Somalia mobile money number linked to WafiPay.</p>
-            </div>
-            <DialogFooter className="bg-gray-50 border-gray-100">
-              <Button
-                type="submit"
-                disabled={isBookingLoading}
-                className="w-full bg-[#16a34a] hover:bg-[#15803d] text-white py-6 rounded-xl font-bold text-lg shadow-lg active:scale-95 transition-all outline-none!"
-              >
-                {isBookingLoading ? "Processing Payment..." : `Confirm & Pay $${property?.ReservationFee ?? 100}`}
-              </Button>
-            </DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
 
       {/* Lightbox / Gallery Modal */}
       <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>

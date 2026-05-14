@@ -5,26 +5,26 @@ import axios from "axios";
 // @route   POST /api/properties
 export const createProperty = async (req, res) => {
   try {
-    console.log("📥 CREATE PROPERTY REQUEST:", {
-      body: req.body,
-      filesCount: req.files ? req.files.length : 0
-    });
-
+    console.log("📥 CREATE PROPERTY REQUEST RECEIVED");
+    
     const {
       title, description, location, city, country, price,
       ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures,
       sizeLabel, area, listingType: bodyListingType, status: bodyStatus,
-      Rooms, Bathrooms, ReservationFee, agentId
+      Rooms, Bathrooms, agentId
     } = req.body || {};
 
+    console.log("Parsed fields:", { title, city, country, price, propertyTypeId, status: bodyStatus, agentId });
+
     const listingType = (bodyListingType || "RENT").trim().toUpperCase();
-    const status = (bodyStatus || "AVAILABLE").trim().toUpperCase();
+    const status = (bodyStatus || "CREATED").trim().toUpperCase();
 
     // Validation
-    if (!title || !location || !city || !country || !price || !ownerId || !propertyTypeId) {
+    if (!title || !location || !city || !country || !price || !propertyTypeId) {
+      console.warn("⚠️ Validation failed: Missing required fields");
       return res.status(400).json({
         message: "Missing required fields.",
-        received: { title: !!title, location: !!location, city: !!city, country: !!country, price: !!price, ownerId: !!ownerId, propertyTypeId: !!propertyTypeId }
+        received: { title: !!title, location: !!location, city: !!city, country: !!country, price: !!price, propertyTypeId: !!propertyTypeId }
       });
     }
 
@@ -53,20 +53,22 @@ export const createProperty = async (req, res) => {
 
     // Safe parsing
     const parsedPrice = parseFloat(price);
-    const parsedOwnerId = parseInt(ownerId);
+    const parsedOwnerId = ownerId ? parseInt(ownerId) : null;
     const parsedPropertyTypeId = parseInt(propertyTypeId);
     const parsedArea = area ? parseFloat(area) : null;
     const parsedRooms = Rooms !== undefined ? parseInt(Rooms) : 0;
     const parsedBathrooms = Bathrooms !== undefined ? parseInt(Bathrooms) : 0;
-    const parsedReservationFee = ReservationFee !== undefined ? parseFloat(ReservationFee) : 0.01;
     const parsedAgentId = agentId ? parseInt(agentId) : null;
 
-    if (isNaN(parsedPrice) || isNaN(parsedOwnerId) || isNaN(parsedPropertyTypeId)) {
+    if (isNaN(parsedPrice) || isNaN(parsedPropertyTypeId) || (ownerId && isNaN(parsedOwnerId))) {
+      console.warn("⚠️ Validation failed: Invalid numeric values");
       return res.status(400).json({
         message: "Invalid numeric values provided.",
         details: { price, ownerId, propertyTypeId }
       });
     }
+
+    console.log("🚀 Attempting to create property in Prisma with status:", status);
 
     const property = await prisma.property.create({
       data: {
@@ -80,12 +82,11 @@ export const createProperty = async (req, res) => {
         status,
         Rooms: isNaN(parsedRooms) ? 0 : parsedRooms,
         Bathrooms: isNaN(parsedBathrooms) ? 0 : parsedBathrooms,
-        ownerId: parsedOwnerId,
+        ownerId: isNaN(parsedOwnerId) ? null : parsedOwnerId,
         agentId: isNaN(parsedAgentId) ? null : parsedAgentId,
         propertyTypeId: parsedPropertyTypeId,
         sizeLabel,
         area: isNaN(parsedArea) ? null : parsedArea,
-        ReservationFee: isNaN(parsedReservationFee) ? 0.01 : parsedReservationFee,
         images: images && images.length > 0 ? {
           create: images.map(url => ({ url }))
         } : undefined,
@@ -99,15 +100,14 @@ export const createProperty = async (req, res) => {
       }
     });
 
+    console.log("✅ Property created successfully:", property.id);
     return res.status(201).json({ message: "Property created successfully", property });
   } catch (error) {
     console.error("❌ CREATE PROPERTY ERROR:", error);
-    // Ensure we don't send a circular object and provide maximum detail
-    const errorDetails = error.message || "Unknown error";
     return res.status(500).json({
       message: "Server error creating property",
-      error: errorDetails,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error.message || "Unknown error",
+      details: error.code || undefined
     });
   }
 };
@@ -146,7 +146,7 @@ export const getProperties = async (req, res) => {
         features: true,
         propertyType: { select: { name: true } },
         owner: { select: { name: true, phone: true } },
-        agent: { select: { name: true, phone: true } }
+        agent: { select: { fullName: true, primaryPhone: true, secondaryPhone: true } }
       }
     });
     return res.status(200).json(properties);
@@ -177,7 +177,7 @@ export const getPropertyById = async (req, res) => {
         features: true,
         propertyType: true,
         owner: { select: { name: true, email: true, phone: true, photo: true } },
-        agent: { select: { name: true, email: true, phone: true, photo: true } },
+        agent: { select: { fullName: true, email: true, primaryPhone: true, secondaryPhone: true } },
         bookings: {
           where: {
             status: { in: ['PAID', 'PENDING'] }
@@ -234,11 +234,6 @@ export const updateProperty = async (req, res) => {
     if (updateFields.price) updateData.price = parseFloat(updateFields.price);
     if (updateFields.listingType) updateData.listingType = updateFields.listingType.trim().toUpperCase();
     if (updateFields.status) updateData.status = updateFields.status.trim().toUpperCase();
-
-    if (updateFields.ReservationFee !== undefined) {
-      const parsedResFee = parseFloat(updateFields.ReservationFee);
-      updateData.ReservationFee = isNaN(parsedResFee) ? 0.01 : parsedResFee;
-    }
 
     if (updateFields.ownerId) {
       updateData.ownerId = parseInt(updateFields.ownerId);
@@ -313,6 +308,35 @@ export const updateProperty = async (req, res) => {
   }
 };
 
+// @desc    Approve a property (Set status to AVAILABLE)
+// @route   PATCH /api/properties/:id/approve
+export const approveProperty = async (req, res) => {
+  const { id } = req.params;
+  const propertyId = parseInt(id);
+
+  if (isNaN(propertyId)) {
+    return res.status(400).json({ message: "Invalid property ID provided." });
+  }
+
+  try {
+    const updatedProperty = await prisma.property.update({
+      where: { id: propertyId },
+      data: { status: 'AVAILABLE' }
+    });
+
+    return res.status(200).json({ message: "Property approved successfully", property: updatedProperty });
+  } catch (error) {
+    console.error("❌ APPROVE PROPERTY ERROR:", error);
+    if (error.code === 'P2025') {
+      return res.status(404).json({ message: "Property not found" });
+    }
+    return res.status(500).json({
+      message: "Server error approving property",
+      error: error.message || "Unknown error"
+    });
+  }
+};
+
 // @desc    Delete a property
 // @route   DELETE /api/properties/:id
 export const deleteProperty = async (req, res) => {
@@ -371,7 +395,7 @@ export const bookNow = async (req, res) => {
         transactionInfo: {
           referenceId: "BOOK-" + Date.now(),
           invoiceId: "INV-" + Date.now(),
-          amount: (property.ReservationFee || 0.01).toString(),
+          amount: "100", // Fixed Booking Fee
           currency: "USD",
           description: `Booking Fee for Property ${property.title}`
         }
@@ -400,14 +424,14 @@ export const bookNow = async (req, res) => {
           userId: parseInt(userId),
           startDate: now,
           endDate: futureDate,
-          price: property.ReservationFee || 0.01
+          price: 100
         }
       });
 
       // Create a corresponding Payment record
       await tx.payment.create({
         data: {
-          amount: property.ReservationFee || 0.01,
+          amount: 100,
           method: 'MOBILE_MONEY',
           status: 'PAID',
           userId: parseInt(userId),

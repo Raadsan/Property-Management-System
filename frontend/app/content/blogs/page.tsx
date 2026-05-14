@@ -17,6 +17,7 @@ import {
   Blog, 
   BlogCategory 
 } from "@/api/blogApi"
+import { getRolePermissionsById } from "@/api/rolePermissionsApi"
 import { 
   Dialog, 
   DialogContent, 
@@ -35,9 +36,19 @@ export default function BlogsRegistrationPage() {
   const [blogs, setBlogs] = React.useState<Blog[]>([])
   const [categories, setCategories] = React.useState<BlogCategory[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
-  
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentBlog, setCurrentBlog] = React.useState<Blog | null>(null)
+  
+  // Permissions State
+  const [permissions, setPermissions] = React.useState({
+    canAdd: false,
+    canEdit: false,
+    canDelete: false,
+    isLoaded: false
+  })
+  
+  // Filtering State
+  const [filterCategory, setFilterCategory] = React.useState<string>("all")
   
   // Form State
   const [title, setTitle] = React.useState("")
@@ -65,8 +76,43 @@ export default function BlogsRegistrationPage() {
     }
   }
 
+  const checkPermissions = async () => {
+    try {
+      const userStr = sessionStorage.getItem("user")
+      if (!userStr) return
+      const user = JSON.parse(userStr)
+      if (!user.roleId) return
+
+      const permsData = await getRolePermissionsById(user.roleId)
+      
+      // Find the Content Management menu and Blogs submenu
+      const contentMenu = permsData.menus.find(m => m.menu?.title === "Content Management")
+      const blogSubMenu = contentMenu?.subMenus?.find(sm => sm.subMenu?.title === "Blogs")
+
+      if (blogSubMenu) {
+        setPermissions({
+          canAdd: blogSubMenu.canAdd,
+          canEdit: blogSubMenu.canEdit,
+          canDelete: blogSubMenu.canDelete,
+          isLoaded: true
+        })
+      } else {
+        // Fallback for Admin
+        setPermissions({
+          canAdd: true,
+          canEdit: true,
+          canDelete: true,
+          isLoaded: true
+        })
+      }
+    } catch (error) {
+      console.error("Error checking permissions:", error)
+    }
+  }
+
   React.useEffect(() => {
     fetchData()
+    checkPermissions()
   }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,6 +194,14 @@ export default function BlogsRegistrationPage() {
     }
   }
 
+  // Filtered Data
+  const filteredBlogs = React.useMemo(() => {
+    return blogs.filter(blog => {
+      const matchCategory = filterCategory === "all" || blog.categoryId.toString() === filterCategory
+      return matchCategory
+    })
+  }, [blogs, filterCategory])
+
   const getImageUrl = (imagePath?: string) => {
     if (!imagePath) return "";
     if (imagePath.startsWith("http")) return imagePath;
@@ -206,22 +260,26 @@ export default function BlogsRegistrationPage() {
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => openEditModal(row.original)}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-          >
-            <PencilIcon className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => handleDelete(row.original.id)}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <TrashIcon className="h-4 w-4" />
-          </Button>
+          {permissions.canEdit && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => openEditModal(row.original)}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <PencilIcon className="h-4 w-4" />
+            </Button>
+          )}
+          {permissions.canDelete && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => handleDelete(row.original.id)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -238,22 +296,23 @@ export default function BlogsRegistrationPage() {
       <SidebarInset className="mt-0! mr-0!">
         <SiteHeader />
         <div className="flex flex-1 flex-col p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Blogs</h1>
-              <p className="text-muted-foreground">Manage your blog articles and publications.</p>
+              <p className="text-muted-foreground">Manage your blog articles and content.</p>
             </div>
-            <Dialog open={isModalOpen} onOpenChange={(open) => {
-              if (!open) resetForm();
-              setIsModalOpen(open);
-            }}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateModal} className="bg-[#214347] hover:bg-[#1a3539] shrink-0">
-                  <PlusIcon className="mr-2 h-4 w-4" />
-                  Add Blog Post
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+            {permissions.canAdd && (
+              <Dialog open={isModalOpen} onOpenChange={(open) => {
+                if (!open) resetForm();
+                setIsModalOpen(open);
+              }}>
+                <DialogTrigger asChild>
+                  <Button onClick={openCreateModal} className="btn-category">
+                    <PlusIcon className="mr-2 h-4 w-4" />
+                    New Article
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>{currentBlog ? "Edit Blog Post" : "Add New Blog Post"}</DialogTitle>
                 </DialogHeader>
@@ -327,11 +386,39 @@ export default function BlogsRegistrationPage() {
                 </form>
               </DialogContent>
             </Dialog>
+          )}
+        </div>
+
+          {/* Filter Bar */}
+          <div className="flex flex-wrap gap-4 mb-6 items-end bg-card p-4 rounded-2xl border border-border/50">
+            <div className="flex flex-col gap-1.5 min-w-[150px]">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Category Filter</Label>
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                  <SelectValue placeholder="All Categories" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat.id} value={cat.id.toString()}>{cat.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => setFilterCategory("all")}
+              className="text-xs font-bold text-muted-foreground h-9 hover:bg-muted"
+            >
+              Reset
+            </Button>
           </div>
 
           <DataTable 
             columns={columns} 
-            data={blogs} 
+            data={filteredBlogs} 
             isLoading={isLoading} 
             filterColumn="title"
             filterPlaceholder="Search blogs by title..."

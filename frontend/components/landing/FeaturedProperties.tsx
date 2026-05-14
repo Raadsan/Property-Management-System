@@ -13,7 +13,8 @@ export default function FeaturedProperties() {
     const fetchProperties = async () => {
       try {
         const data = await getProperties();
-        setProperties(data.slice(0, 3)); // Display first 3 properties
+        const approvedProperties = data.filter((p: Property) => p.status !== "CREATED");
+        setProperties(approvedProperties.slice(0, 3)); // Display first 3 approved properties
       } catch (error) {
         console.error("Failed to fetch featured properties:", error);
       } finally {

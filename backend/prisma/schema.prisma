@@ -14,6 +14,7 @@ model Role {
   updatedAt       DateTime         @updatedAt
   rolePermissions RolePermissions?
   users           User[]
+  agents          Agent[]
 }
 
 model Menu {
@@ -86,26 +87,48 @@ model RoleSubMenuAccess {
 }
 
 model User {
-  id              Int        @id @default(autoincrement())
-  email           String?    @unique
-  name            String
-  createdAt       DateTime   @default(now())
-  phone           String
-  roleId          Int
-  status          String     @default("ACTIVE")
-  updatedAt       DateTime   @updatedAt
-  password        String
-  photo           String?
-  resetCode       String?
-  resetCodeExpires DateTime?
-  favorites       Favorite[]
-  bookings        Booking[]
-  payments        Payment[]
-  propertiesOwned Property[] @relation("OwnerProperties")
-  propertiesManaged Property[] @relation("AgentProperties")
-  role            Role       @relation(fields: [roleId], references: [id])
+  id                        Int         @id @default(autoincrement())
+  email                     String?     @unique
+  name                      String
+  createdAt                 DateTime    @default(now())
+  phone                     String
+  roleId                    Int
+  status                    String      @default("ACTIVE")
+  updatedAt                 DateTime    @updatedAt
+  password                  String
+  photo                     String?
+  resetCode                 String?
+  resetCodeExpires          DateTime?
+  bookings                  Booking[]
+  favorites                 Favorite[]
+  payments                  Payment[]
+  propertiesOwned           Property[]  @relation("OwnerProperties")
+  role                      Role        @relation(fields: [roleId], references: [id])
+  Video_Video_agentIdToUser Video[]     @relation("Video_agentIdToUser")
+  Video_Video_ownerIdToUser Video[]     @relation("Video_ownerIdToUser")
+  VideoLike                 VideoLike[]
 
   @@index([roleId], map: "User_roleId_fkey")
+}
+
+
+model Agent {
+  id               Int      @id @default(autoincrement())
+  fullName         String
+  email            String   @unique
+  primaryPhone     String
+  secondaryPhone   String?
+  address          String?
+  city             String?
+  password         String
+  resetCode        String?
+  resetCodeExpires DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  roleId           Int
+  status           String   @default("ACTIVE")
+  role             Role     @relation(fields: [roleId], references: [id])
+  properties       Property[]
 }
 
 model PropertyType {
@@ -113,6 +136,7 @@ model PropertyType {
   name       String     @unique
   createdAt  DateTime   @default(now())
   properties Property[]
+  Video      Video[]
 }
 
 model Property {
@@ -120,26 +144,25 @@ model Property {
   title          String
   description    String?
   location       String
-  country        String?
-  city           String
-  Rooms          Int             @default(0)
-  Bathrooms      Int             @default(0)
   price          Float
-  ReservationFee Float           @default(0.01)
   listingType    ListingType     @default(RENT)
-  status         PropertyStatus  @default(AVAILABLE)
-  sizeLabel      String?   // e.g. "20x20"
-  area           Float?    // e.g. 400 (for filtering)
+  status         PropertyStatus  @default(CREATED)
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
-  ownerId        Int
-  agentId        Int?
+  ownerId        Int?
   propertyTypeId Int
+  area           Float?
+  city           String
+  sizeLabel      String?
+  Bathrooms      Int             @default(0)
+  Rooms          Int             @default(0)
+  country        String?
+  agentId        Int?
+  bookings       Booking[]
   favorites      Favorite[]
   features       Feature[]
-  bookings       Booking[]
-  owner          User            @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Cascade)
-  agent          User?           @relation("AgentProperties", fields: [agentId], references: [id])
+  agent          Agent?          @relation(fields: [agentId], references: [id])
+  owner          User?           @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Cascade)
   propertyType   PropertyType    @relation(fields: [propertyTypeId], references: [id])
   images         PropertyImage[]
 
@@ -183,7 +206,7 @@ model Booking {
   userId     Int
   startDate  DateTime
   endDate    DateTime
-  price      Float         
+  price      Float
   status     BookingStatus @default(PAID)
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
@@ -195,23 +218,17 @@ model Booking {
   @@index([userId], map: "Booking_userId_fkey")
 }
 
-enum BookingStatus {
-  PENDING
-  PAID
-  CANCELLED
-}
-
 model Payment {
   id        Int           @id @default(autoincrement())
   amount    Float
   method    PaymentMethod
   status    PaymentStatus @default(PENDING)
-  bookingId Int?
   userId    Int
   dueDate   DateTime?
   paidAt    DateTime?
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
+  bookingId Int?
   booking   Booking?      @relation(fields: [bookingId], references: [id])
   user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -219,7 +236,97 @@ model Payment {
   @@index([userId], map: "Payment_userId_fkey")
 }
 
+model Contact {
+  id          Int            @id @default(autoincrement())
+  firstName   String
+  lastName    String
+  email       String
+  phone       String?
+  inquiryType String
+  message     String         @db.Text
+  status      Contact_status @default(NEW)
+  priority    Contact_priority @default(UNKNOWN)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+}
+
+model BlogCategory {
+  id          Int      @id @default(autoincrement())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  blogs       Blog[]
+}
+
+model Blog {
+  id         Int          @id @default(autoincrement())
+  title      String
+  content    String       @db.LongText
+  image      String?
+  author     String
+  categoryId Int
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  category   BlogCategory @relation(fields: [categoryId], references: [id])
+
+  @@index([categoryId])
+}
+
+
+
+model Video {
+  id                       Int               @id @default(autoincrement())
+  title                    String
+  description              String?           @db.Text
+  location                 String
+  country                  String?
+  city                     String
+  Rooms                    Int               @default(0)
+  Bathrooms                Int               @default(0)
+  price                    Float
+  ReservationFee           Float             @default(0.01)
+  listingType              Video_listingType @default(RENT)
+  status                   Video_status      @default(AVAILABLE)
+  sizeLabel                String?
+  area                     Float?
+  videoUrl                 String
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime
+  ownerId                  Int
+  agentId                  Int?
+  propertyTypeId           Int
+  User_Video_agentIdToUser User?             @relation("Video_agentIdToUser", fields: [agentId], references: [id])
+  User_Video_ownerIdToUser User              @relation("Video_ownerIdToUser", fields: [ownerId], references: [id], onDelete: Cascade)
+  PropertyType             PropertyType      @relation(fields: [propertyTypeId], references: [id])
+  VideoLike                VideoLike[]
+
+  @@index([agentId])
+  @@index([ownerId])
+  @@index([propertyTypeId])
+}
+
+model VideoLike {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  videoId   Int
+  createdAt DateTime @default(now())
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Video     Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, videoId])
+  @@index([userId])
+  @@index([videoId])
+}
+
+enum BookingStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
 enum PropertyStatus {
+  CREATED
   AVAILABLE
   BOOKED
 }
@@ -241,44 +348,27 @@ enum PaymentStatus {
   LATE
 }
 
-enum ContactStatus {
-  PENDING
-  SOLVED
+enum Contact_priority {
+  UNKNOWN
+  LOW
+  MEDIUM
+  HIGH
 }
 
-
-model Contact {
-  id          Int           @id @default(autoincrement())
-  firstName   String
-  lastName    String
-  email       String
-  phone       String?
-  inquiryType String
-  message     String        @db.Text
-  status      ContactStatus @default(PENDING)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+enum Contact_status {
+  NEW
+  FOLLOW_UP
+  IN_PROGRESS
+  CONVERTED
+  LOST
 }
 
-model BlogCategory {
-  id        Int      @id @default(autoincrement())
-  name      String   @unique
-  description String?
-  blogs     Blog[]
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+enum Video_listingType {
+  RENT
+  SALE
 }
 
-model Blog {
-  id          Int          @id @default(autoincrement())
-  title       String
-  content     String       @db.LongText
-  image       String?
-  author      String
-  categoryId  Int
-  category    BlogCategory @relation(fields: [categoryId], references: [id])
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-
-  @@index([categoryId])
+enum Video_status {
+  AVAILABLE
+  BOOKED
 }

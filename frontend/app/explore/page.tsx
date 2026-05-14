@@ -50,7 +50,9 @@ function ExploreContent() {
     if (initialMinPrice !== null && p.price < initialMinPrice) matchesPrice = false;
     if (initialMaxPrice !== null && p.price > initialMaxPrice) matchesPrice = false;
 
-    return matchesCity && matchesSearch && matchesType && matchesListingType && matchesPrice;
+    const isApproved = p.status !== "CREATED";
+
+    return matchesCity && matchesSearch && matchesType && matchesListingType && matchesPrice && isApproved;
   });
 
   // Get unique cities for the filter dropdown/pills

@@ -1,4 +1,4 @@
-import 'dotenv/config';
+import 'dotenv/config'; // Backend restart triggered
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
@@ -18,6 +18,7 @@ import contactRoute from "./Routes/contactRoute.js";
 import blogRoute from "./Routes/blogRoute.js";
 import blogCategoryRoute from "./Routes/blogCategoryRoute.js";
 import reportRoute from "./Routes/reportRoute.js";
+import agentRoute from "./Routes/agentRoute.js";
 
 import multerErrorHandler from "./middlewares/multerErrorHandler.js";
 
@@ -75,6 +76,7 @@ app.use('/api/contact', contactRoute);
 app.use('/api/blogs', blogRoute);
 app.use('/api/blog-categories', blogCategoryRoute);
 app.use('/api/reports', reportRoute);
+app.use('/api/agents', agentRoute);
 
 // Error Handling Middleware
 app.use(multerErrorHandler);

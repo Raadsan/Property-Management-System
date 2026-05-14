@@ -15,6 +15,7 @@ import {
   deletePropertyType,
   Category 
 } from "@/api/propertyTypeApi"
+import { getRolePermissionsById } from "@/api/rolePermissionsApi"
 import { 
   Dialog, 
   DialogContent, 
@@ -34,6 +35,14 @@ export default function CategoriesPage() {
   const [currentCategory, setCurrentCategory] = React.useState<Category | null>(null)
   const [newName, setNewName] = React.useState("")
 
+  // Permissions State
+  const [permissions, setPermissions] = React.useState({
+    canAdd: false,
+    canEdit: false,
+    canDelete: false,
+    isLoaded: false
+  })
+
   const fetchCategories = async () => {
     setIsLoading(true)
     try {
@@ -46,8 +55,43 @@ export default function CategoriesPage() {
     }
   }
 
+  const checkPermissions = async () => {
+    try {
+      const userStr = sessionStorage.getItem("user")
+      if (!userStr) return
+      const user = JSON.parse(userStr)
+      if (!user.roleId) return
+
+      const permsData = await getRolePermissionsById(user.roleId)
+      
+      // Find the Content Management menu and Categories submenu
+      const contentMenu = permsData.menus.find(m => m.menu?.title === "Content Management")
+      const catSubMenu = contentMenu?.subMenus?.find(sm => sm.subMenu?.title === "Categories")
+
+      if (catSubMenu) {
+        setPermissions({
+          canAdd: catSubMenu.canAdd,
+          canEdit: catSubMenu.canEdit,
+          canDelete: catSubMenu.canDelete,
+          isLoaded: true
+        })
+      } else {
+        // Fallback for Admin
+        setPermissions({
+          canAdd: true,
+          canEdit: true,
+          canDelete: true,
+          isLoaded: true
+        })
+      }
+    } catch (error) {
+      console.error("Error checking permissions:", error)
+    }
+  }
+
   React.useEffect(() => {
     fetchCategories()
+    checkPermissions()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -121,22 +165,26 @@ export default function CategoriesPage() {
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => openEditModal(row.original)}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-          >
-            <PencilIcon className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => handleDelete(row.original.id)}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <TrashIcon className="h-4 w-4" />
-          </Button>
+          {permissions.canEdit && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => openEditModal(row.original)}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <PencilIcon className="h-4 w-4" />
+            </Button>
+          )}
+          {permissions.canDelete && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => handleDelete(row.original.id)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -156,39 +204,41 @@ export default function CategoriesPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Categories</h1>
-              <p className="text-muted-foreground">Manage your property types and categories.</p>
+              <p className="text-muted-foreground">Manage property categories and classifications.</p>
             </div>
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateModal} className="btn-category">
-                  <PlusIcon className="mr-2 h-4 w-4" />
-                  Add Category
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>{currentCategory ? "Edit Category" : "Add New Category"}</DialogTitle>
-                </DialogHeader>
-                <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">Name</Label>
-                    <Input 
-                      id="name" 
-                      value={newName} 
-                      onChange={(e) => setNewName(e.target.value)} 
-                      className="col-span-3" 
-                      placeholder="e.g. Apartments"
-                      required
-                    />
-                  </div>
-                  <DialogFooter>
-                    <Button type="submit" className="btn-category">
-                      {currentCategory ? "Update" : "Save"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
+            {permissions.canAdd && (
+              <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                <DialogTrigger asChild>
+                  <Button onClick={openCreateModal} className="btn-category">
+                    <PlusIcon className="mr-2 h-4 w-4" />
+                    New Category
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
+                  <DialogHeader>
+                    <DialogTitle>{currentCategory ? "Edit Category" : "Add New Category"}</DialogTitle>
+                  </DialogHeader>
+                  <form onSubmit={handleSubmit} className="grid gap-4 py-4">
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="name" className="text-right">Name</Label>
+                      <Input 
+                        id="name" 
+                        value={newName} 
+                        onChange={(e) => setNewName(e.target.value)} 
+                        className="col-span-3" 
+                        placeholder="e.g. Apartments"
+                        required
+                      />
+                    </div>
+                    <DialogFooter>
+                      <Button type="submit" className="btn-category mt-4">
+                        {currentCategory ? "Update Category" : "Save Category"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
+            )}
           </div>
 
           <DataTable 

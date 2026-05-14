@@ -23,3 +23,13 @@ export const updateContactStatus = async (id: number, status: string) => {
   const response = await api.put(`/contact/${id}/status`, { status });
   return response.data;
 };
+
+export const updateContactPriority = async (id: number, priority: string) => {
+  const response = await api.put(`/contact/${id}/priority`, { priority });
+  return response.data;
+};
+
+export const deleteContact = async (id: number) => {
+  const response = await api.delete(`/contact/${id}`);
+  return response.data;
+};

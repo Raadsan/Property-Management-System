@@ -18,7 +18,8 @@ export const sendContactMessage = async (req, res) => {
         phone,
         inquiryType,
         message,
-        status: 'PENDING'
+        status: 'NEW',
+        priority: 'UNKNOWN'
       }
     });
 
@@ -92,7 +93,8 @@ export const updateContactStatus = async (req, res) => {
   const { id } = req.params;
   const { status } = req.body;
 
-  if (!['PENDING', 'SOLVED'].includes(status)) {
+  const validStatuses = ['NEW', 'FOLLOW_UP', 'IN_PROGRESS', 'CONVERTED', 'LOST'];
+  if (!validStatuses.includes(status)) {
     return res.status(400).json({ status: 'ERR', message: 'Invalid status' });
   }
 
@@ -112,6 +114,56 @@ export const updateContactStatus = async (req, res) => {
     res.status(500).json({
       status: 'ERR',
       message: 'Failed to update status'
+    });
+  }
+};
+
+export const updateContactPriority = async (req, res) => {
+  const { id } = req.params;
+  const { priority } = req.body;
+
+  const validPriorities = ['UNKNOWN', 'LOW', 'MEDIUM', 'HIGH'];
+  if (!validPriorities.includes(priority)) {
+    return res.status(400).json({ status: 'ERR', message: 'Invalid priority' });
+  }
+
+  try {
+    const updatedContact = await prisma.contact.update({
+      where: { id: parseInt(id) },
+      data: { priority }
+    });
+
+    res.status(200).json({
+      status: 'OK',
+      message: `Priority updated to ${priority}`,
+      data: updatedContact
+    });
+  } catch (error) {
+    console.error('Update priority error:', error);
+    res.status(500).json({
+      status: 'ERR',
+      message: 'Failed to update priority'
+    });
+  }
+};
+
+export const deleteContact = async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await prisma.contact.delete({
+      where: { id: parseInt(id) }
+    });
+
+    res.status(200).json({
+      status: 'OK',
+      message: 'Contact deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete contact error:', error);
+    res.status(500).json({
+      status: 'ERR',
+      message: 'Failed to delete contact'
     });
   }
 };

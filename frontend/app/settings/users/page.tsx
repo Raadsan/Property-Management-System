@@ -16,6 +16,7 @@ import {
   User 
 } from "@/api/userApi"
 import { getRoles, Role } from "@/api/rolesApi"
+import { getRolePermissionsById } from "@/api/rolePermissionsApi"
 import { 
   Dialog, 
   DialogContent, 
@@ -42,6 +43,18 @@ export default function UsersPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentUser, setCurrentUser] = React.useState<User | null>(null)
   
+  // Permissions State
+  const [permissions, setPermissions] = React.useState({
+    canAdd: false,
+    canEdit: false,
+    canDelete: false,
+    isLoaded: false
+  })
+  
+  // Filtering State
+  const [filterStatus, setFilterStatus] = React.useState<string>("all")
+  const [filterRole, setFilterRole] = React.useState<string>("all")
+  
   // Form State
   const [name, setName] = React.useState("")
   const [email, setEmail] = React.useState("")
@@ -66,8 +79,43 @@ export default function UsersPage() {
     }
   }
 
+  const checkPermissions = async () => {
+    try {
+      const userStr = sessionStorage.getItem("user")
+      if (!userStr) return
+      const user = JSON.parse(userStr)
+      if (!user.roleId) return
+
+      const permsData = await getRolePermissionsById(user.roleId)
+      
+      // Find the System Settings menu and Users submenu
+      const settingsMenu = permsData.menus.find(m => m.menu?.title === "System Settings")
+      const userSubMenu = settingsMenu?.subMenus?.find(sm => sm.subMenu?.title === "Users")
+
+      if (userSubMenu) {
+        setPermissions({
+          canAdd: userSubMenu.canAdd,
+          canEdit: userSubMenu.canEdit,
+          canDelete: userSubMenu.canDelete,
+          isLoaded: true
+        })
+      } else {
+        // Fallback for Admin
+        setPermissions({
+          canAdd: true,
+          canEdit: true,
+          canDelete: true,
+          isLoaded: true
+        })
+      }
+    } catch (error) {
+      console.error("Error checking permissions:", error)
+    }
+  }
+
   React.useEffect(() => {
     loadData()
+    checkPermissions()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -146,6 +194,15 @@ export default function UsersPage() {
     setPassword("")
   }
 
+  // Filtered Data
+  const filteredUsers = React.useMemo(() => {
+    return users.filter(user => {
+      const matchStatus = filterStatus === "all" || user.status === filterStatus
+      const matchRole = filterRole === "all" || user.roleId.toString() === filterRole
+      return matchStatus && matchRole
+    })
+  }, [users, filterStatus, filterRole])
+
   // Define columns for DataTable
   const columns: ColumnDef<User>[] = [
     {
@@ -191,22 +248,26 @@ export default function UsersPage() {
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => openEditModal(row.original)}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-          >
-            <PencilIcon className="h-4 w-4" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => handleDelete(row.original.id)}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-          >
-            <TrashIcon className="h-4 w-4" />
-          </Button>
+          {permissions.canEdit && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => openEditModal(row.original)}
+              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            >
+              <PencilIcon className="h-4 w-4" />
+            </Button>
+          )}
+          {permissions.canDelete && (
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => handleDelete(row.original.id)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <TrashIcon className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       ),
     },
@@ -228,17 +289,18 @@ export default function UsersPage() {
               <h1 className="text-2xl font-bold tracking-tight">Users</h1>
               <p className="text-muted-foreground">Manage administrative accounts and their roles.</p>
             </div>
-            <Dialog open={isModalOpen} onOpenChange={(open) => {
-              if (!open) resetForm();
-              setIsModalOpen(open);
-            }}>
-              <DialogTrigger asChild>
-                <Button onClick={openCreateModal} className="btn-category">
-                  <PlusIcon className="mr-2 h-4 w-4" />
-                  Add User
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="sm:max-w-[425px]">
+            {permissions.canAdd && (
+              <Dialog open={isModalOpen} onOpenChange={(open) => {
+                if (!open) resetForm();
+                setIsModalOpen(open);
+              }}>
+                <DialogTrigger asChild>
+                  <Button onClick={openCreateModal} className="btn-category">
+                    <PlusIcon className="mr-2 h-4 w-4" />
+                    Add User
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>{currentUser ? "Edit User" : "Add New User"}</DialogTitle>
                 </DialogHeader>
@@ -312,11 +374,53 @@ export default function UsersPage() {
                 </form>
               </DialogContent>
             </Dialog>
+          )}
+        </div>
+
+          {/* Filter Bar */}
+          <div className="flex flex-wrap gap-4 mb-6 items-end">
+            <div className="flex flex-col gap-1.5 min-w-[150px]">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Status Filter</Label>
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="h-9 border-border bg-card">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="ACTIVE">Active</SelectItem>
+                  <SelectItem value="INACTIVE">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5 min-w-[150px]">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Role Filter</Label>
+              <Select value={filterRole} onValueChange={setFilterRole}>
+                <SelectTrigger className="h-9 border-border bg-card">
+                  <SelectValue placeholder="All Roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  {roles.map(role => (
+                    <SelectItem key={role.id} value={role.id.toString()}>{role.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button 
+              variant="ghost" 
+              size="sm" 
+              onClick={() => { setFilterStatus("all"); setFilterRole("all"); }}
+              className="text-xs font-bold text-muted-foreground h-9"
+            >
+              Reset Filters
+            </Button>
           </div>
 
           <DataTable 
             columns={columns} 
-            data={users} 
+            data={filteredUsers} 
             isLoading={isLoading} 
             filterColumn="name"
             filterPlaceholder="Search users by name..."

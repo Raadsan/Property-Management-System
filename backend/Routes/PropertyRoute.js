@@ -8,7 +8,8 @@ import {
   bookNow,
   getBookingsByUser,
   getCityStats,
-  cancelBooking
+  cancelBooking,
+  approveProperty
 } from '../controllers/PropertyController.js';
 import { upload } from '../lib/upload.js';
 
@@ -20,6 +21,7 @@ router.get('/stats/cities', getCityStats);
 router.get('/user/:userId/bookings', getBookingsByUser);
 router.get('/:id', getPropertyById);
 router.patch('/:id', upload.array('images', 10), updateProperty);
+router.patch('/:id/approve', approveProperty);
 router.delete('/:id', deleteProperty);
 router.post('/:id/book', bookNow);
 router.post('/:id/cancel', cancelBooking);

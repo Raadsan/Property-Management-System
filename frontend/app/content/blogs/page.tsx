@@ -379,7 +379,7 @@ export default function BlogsRegistrationPage() {
                   </div>
 
                   <DialogFooter className="md:col-span-2 mt-4">
-                    <Button type="submit" className="bg-[#214347] hover:bg-[#1a3539] w-full md:w-auto">
+                    <Button type="submit" className="btn-category w-full md:w-auto">
                       {currentBlog ? "Update Post" : "Publish Post"}
                     </Button>
                   </DialogFooter>

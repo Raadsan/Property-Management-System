@@ -24,8 +24,8 @@ export default function BuyPage() {
           getProperties(),
           getPropertyTypes(),
         ]);
-        // Only SALE listings
-        setProperties(propsData.filter((p) => p.listingType === "SALE"));
+        // Only SALE listings and not CREATED status
+        setProperties(propsData.filter((p) => p.listingType === "SALE" && p.status !== "CREATED"));
         setCategories(catsData);
       } catch (err) {
         console.error("Failed to load buy page data:", err);

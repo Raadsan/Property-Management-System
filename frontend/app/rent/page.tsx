@@ -24,8 +24,8 @@ export default function RentPage() {
           getProperties(),
           getPropertyTypes(),
         ]);
-        // Only RENT listings
-        setProperties(propsData.filter((p) => p.listingType === "RENT"));
+        // Only RENT listings and not CREATED status
+        setProperties(propsData.filter((p) => p.listingType === "RENT" && p.status !== "CREATED"));
         setCategories(catsData);
       } catch (err) {
         console.error("Failed to load rent page data:", err);

@@ -38,9 +38,20 @@ export default function LoginPage() {
     try {
       const response = await performLogin(email, password)
 
-      sessionStorage.setItem("user", JSON.stringify(response.user))
+      const user = response.user
+      const isRegularUser = 
+        user.role?.name?.toLowerCase() === "user" || 
+        user.role?.name?.toLowerCase() === "client" || 
+        user.roleId === 3
+
+      sessionStorage.setItem("user", JSON.stringify(user))
       setSuccessStatus(response.message || "Signed in successfully")
-      setTimeout(() => router.push("/dashboard"), 800)
+      
+      if (isRegularUser) {
+        setTimeout(() => router.push("/"), 800)
+      } else {
+        setTimeout(() => router.push("/dashboard"), 800)
+      }
 
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || "Invalid email or password"
@@ -60,9 +71,20 @@ export default function LoginPage() {
       
       const response = await socialLogin(idToken)
       
-      sessionStorage.setItem("user", JSON.stringify(response.user))
+      const user = response.user
+      const isRegularUser = 
+        user.role?.name?.toLowerCase() === "user" || 
+        user.role?.name?.toLowerCase() === "client" || 
+        user.roleId === 3
+
+      sessionStorage.setItem("user", JSON.stringify(user))
       setSuccessStatus(response.message || "Social Sign-in successful")
-      setTimeout(() => router.push("/dashboard"), 800)
+      
+      if (isRegularUser) {
+        setTimeout(() => router.push("/"), 800)
+      } else {
+        setTimeout(() => router.push("/dashboard"), 800)
+      }
     } catch (error: any) {
       // Silently ignore if user just closed the popup
       if (error?.code === "auth/popup-closed-by-user" || error?.code === "auth/cancelled-popup-request") {

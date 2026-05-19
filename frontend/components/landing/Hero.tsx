@@ -26,7 +26,14 @@ export default function Hero() {
   const [selectedCountry, setSelectedCountry] = useState("Somalia");
 
   // Data States
-  const [cities, setCities] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([
+    "Mogadishu",
+    "Hargeisa",
+    "Galkacayo",
+    "Garowe",
+    "Kismayo",
+    "Bosaso"  
+  ]);
   const [types, setTypes] = useState<{ id: number; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -37,15 +44,7 @@ export default function Hero() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [cityData, typeData] = await Promise.all([
-          getCityStats(),
-          getPropertyTypes()
-        ]);
-        
-        // Filter to only display cities that actually have properties listed in the database
-        const apiCities = cityData.map(c => c.name).sort();
-        
-        setCities(apiCities);
+        const typeData = await getPropertyTypes();
         setTypes(typeData);
       } catch (error) {
         console.error("Hero data fetch error:", error);
@@ -110,7 +109,7 @@ export default function Hero() {
         <div className="text-center max-w-4xl">
           <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-[1.1] mb-6 drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
             Find Your Perfect <br />
-            Home in Mogadisho
+            Home in Somalia
           </h1>
           <p className="text-white/95 text-lg md:text-xl font-medium max-w-2xl mx-auto drop-shadow-md">
             Browse hundreds of verified properties — apartments, villas &amp; commercial spaces tailored to your lifestyle and budget.

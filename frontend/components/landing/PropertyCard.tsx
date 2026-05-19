@@ -43,11 +43,23 @@ export default function PropertyCard({ prop }: PropertyCardProps) {
     ? (prop.images[0].url.startsWith('http') ? prop.images[0].url : `${baseUrl}/${prop.images[0].url.replace(/\\/g, '/').replace(/^\//, '')}`)
     : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
 
+  const slugify = (text: string) => {
+    return text
+      .toString()
+      .toLowerCase()
+      .trim()
+      .replace(/\s+/g, '-')          // Replace spaces with -
+      .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+      .replace(/\-\-+/g, '-');        // Replace multiple - with single -
+  };
+
+  const propertyUrl = `/properties/${slugify(prop.title)}`;
+
   return (
     <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 group border border-gray-100">
       {/* Image Section */}
       <div className="relative aspect-[4/3] overflow-hidden">
-        <Link href={`/properties/${prop.id}`} className="block w-full h-full">
+        <Link href={propertyUrl} className="block w-full h-full">
           <img
             src={imageUrl}
             alt={prop.title}
@@ -85,13 +97,13 @@ export default function PropertyCard({ prop }: PropertyCardProps) {
           </div>
         </div>
       </div>
- 
+  
       {/* Content Section */}
       <div className="p-6">
         <div className="text-[#214347] text-xs font-bold uppercase tracking-widest mb-2">
           {prop.propertyType?.name || "Property"}
         </div>
-        <Link href={`/properties/${prop.id}`}>
+        <Link href={propertyUrl}>
           <h3 className="text-xl font-bold text-[#444] mb-3 hover:text-[#214347] cursor-pointer transition-colors capitalize line-clamp-1">
             {prop.title}
           </h3>

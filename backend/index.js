@@ -20,6 +20,7 @@ import blogCategoryRoute from "./Routes/blogCategoryRoute.js";
 import reportRoute from "./Routes/reportRoute.js";
 import agentRoute from "./Routes/agentRoute.js";
 import videoRoute from "./Routes/videoRoute.js";
+import propertyInquiryRoute from "./Routes/propertyInquiryRoutes.js";
 
 import multerErrorHandler from "./middlewares/multerErrorHandler.js";
 
@@ -79,6 +80,7 @@ app.use('/api/blog-categories', blogCategoryRoute);
 app.use('/api/reports', reportRoute);
 app.use('/api/agents', agentRoute);
 app.use('/api/videos', videoRoute);
+app.use('/api/property-inquiries', propertyInquiryRoute);
 
 // Error Handling Middleware
 app.use(multerErrorHandler);

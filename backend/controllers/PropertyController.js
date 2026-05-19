@@ -8,7 +8,7 @@ export const createProperty = async (req, res) => {
     console.log("📥 CREATE PROPERTY REQUEST RECEIVED");
     
     const {
-      title, description, location, city, country, price,
+      title, description, location, city, district, country, price,
       ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures,
       sizeLabel, area, listingType: bodyListingType, status: bodyStatus,
       Rooms, Bathrooms, agentId
@@ -76,6 +76,7 @@ export const createProperty = async (req, res) => {
         description,
         location,
         city,
+        district,
         country,
         price: parsedPrice,
         listingType,
@@ -119,7 +120,13 @@ export const getProperties = async (req, res) => {
     const { city, country, rooms, minPrice, maxPrice, propertyTypeId, listingType, keyword, agentId } = req.query;
 
     const where = {};
-    if (city) where.city = city;
+    if (city) {
+      if (city === "Muqdisho" || city === "Mogadishu") {
+        where.city = { in: ["Muqdisho", "Mogadishu"] };
+      } else {
+        where.city = city;
+      }
+    }
     if (country) where.country = country;
     if (rooms) where.Rooms = parseInt(rooms);
     if (propertyTypeId) where.propertyTypeId = parseInt(propertyTypeId);
@@ -229,6 +236,7 @@ export const updateProperty = async (req, res) => {
     if (updateFields.description !== undefined) updateData.description = updateFields.description;
     if (updateFields.location) updateData.location = updateFields.location;
     if (updateFields.city) updateData.city = updateFields.city;
+    if (updateFields.district !== undefined) updateData.district = updateFields.district;
     if (updateFields.country) updateData.country = updateFields.country;
     if (updateFields.Rooms !== undefined) updateData.Rooms = parseInt(updateFields.Rooms) || 0;
     if (updateFields.Bathrooms !== undefined) updateData.Bathrooms = parseInt(updateFields.Bathrooms) || 0;
@@ -537,12 +545,25 @@ export const getCityStats = async (req, res) => {
       },
     });
 
-    const result = stats.map(s => ({
-      name: s.city,
-      listings: s._count.id
-    }));
+    const result = stats.map(s => {
+      let name = s.city;
+      if (name === "Mogadishu") name = "Muqdisho";
+      return {
+        name,
+        listings: s._count.id
+      };
+    });
 
-    return res.status(200).json(result);
+    const merged = {};
+    result.forEach(item => {
+      if (merged[item.name]) {
+        merged[item.name].listings += item.listings;
+      } else {
+        merged[item.name] = { ...item };
+      }
+    });
+
+    return res.status(200).json(Object.values(merged));
   } catch (error) {
     console.error("❌ ERROR FETCHING CITY STATS:", error);
     return res.status(500).json({ error: "Failed to fetch city statistics" });

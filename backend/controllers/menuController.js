@@ -1,16 +1,26 @@
-import { prisma } from "../lib/prisma.js";
+import { prisma } from "../lib/prisma.js"; // Trigger nodemon reload
 
 export const createMenu = async (req, res) => {
-    const { title, icon, url, isCollapsible, subMenus } = req.body;
+    const { title, icon, url, isCollapsible, order, subMenus } = req.body;
     if (!title) return res.status(400).json({ message: "Title is required" });
 
     try {
-        const data = { title, icon, url, isCollapsible };
+        const data = { 
+            title, 
+            icon, 
+            url, 
+            isCollapsible, 
+            order: order !== undefined ? parseInt(order) : 0 
+        };
 
         // Automatically nest submenu creation if provided
         if (subMenus && Array.isArray(subMenus)) {
             data.subMenus = {
-                create: subMenus.map(sm => ({ title: sm.title, url: sm.url }))
+                create: subMenus.map(sm => ({ 
+                    title: sm.title, 
+                    url: sm.url,
+                    order: sm.order !== undefined ? parseInt(sm.order) : 0
+                }))
             };
         }
 
@@ -28,7 +38,12 @@ export const createMenu = async (req, res) => {
 export const getMenus = async (req, res) => {
     try {
         const menus = await prisma.menu.findMany({
-            include: { subMenus: true }
+            orderBy: { order: "asc" },
+            include: { 
+                subMenus: {
+                    orderBy: { order: "asc" }
+                } 
+            }
         });
         res.status(200).json(menus);
     } catch (error) {
@@ -41,7 +56,11 @@ export const getMenuById = async (req, res) => {
     try {
         const menu = await prisma.menu.findUnique({
             where: { id: parseInt(id) },
-            include: { subMenus: true }
+            include: { 
+                subMenus: {
+                    orderBy: { order: "asc" }
+                } 
+            }
         });
         if (!menu) return res.status(404).json({ message: "Menu not found" });
         res.status(200).json(menu);
@@ -52,7 +71,7 @@ export const getMenuById = async (req, res) => {
 
 export const updateMenu = async (req, res) => {
     const { id } = req.params;
-    const { title, icon, url, isCollapsible, subMenus } = req.body;
+    const { title, icon, url, isCollapsible, order, subMenus } = req.body;
 
     try {
         const updateData = {};
@@ -60,6 +79,7 @@ export const updateMenu = async (req, res) => {
         if (icon !== undefined) updateData.icon = icon;
         if (url !== undefined) updateData.url = url;
         if (isCollapsible !== undefined) updateData.isCollapsible = isCollapsible;
+        if (order !== undefined) updateData.order = parseInt(order);
 
         if (subMenus && Array.isArray(subMenus)) {
             const existingMenu = await prisma.menu.findUnique({
@@ -76,9 +96,17 @@ export const updateMenu = async (req, res) => {
                 deleteMany: { id: { in: idsToDelete } },
                 update: subMenus.filter(sm => sm.id).map(sm => ({
                     where: { id: parseInt(sm.id) },
-                    data: { title: sm.title, url: sm.url }
+                    data: { 
+                        title: sm.title, 
+                        url: sm.url,
+                        order: sm.order !== undefined ? parseInt(sm.order) : 0
+                    }
                 })),
-                create: subMenus.filter(sm => !sm.id).map(sm => ({ title: sm.title, url: sm.url }))
+                create: subMenus.filter(sm => !sm.id).map(sm => ({ 
+                    title: sm.title, 
+                    url: sm.url,
+                    order: sm.order !== undefined ? parseInt(sm.order) : 0
+                }))
             };
         }
 
@@ -156,11 +184,13 @@ export const getPermissionMenusByRole = async (req, res) => {
 
         // 2. Get all menus and include their specific role permissions
         const menus = await prisma.menu.findMany({
+            orderBy: { order: "asc" },
             include: {
                 roleMenus: {
                     where: { rolePermissionsId: rolePerms.id }
                 },
                 subMenus: {
+                    orderBy: { order: "asc" },
                     include: {
                         roleSubMenus: {
                             where: { roleMenuAccess: { rolePermissionsId: rolePerms.id } }

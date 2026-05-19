@@ -18,6 +18,7 @@ export interface Property {
   description?: string;
   location: string;
   city: string;
+  district?: string;
   country: string;
   price: number;
   listingType: 'RENT' | 'SALE';

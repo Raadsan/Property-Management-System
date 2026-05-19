@@ -45,6 +45,87 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 
+const somaliCities = [
+  { value: "Mogadishu", label: "Mogadishu" },
+  { value: "Hargeisa", label: "Hargeisa" },
+  { value: "Galkacyo", label: "Galkacyo" },
+  { value: "Garowe", label: "Garowe" },
+  { value: "Kismayo", label: "Kismayo" },
+  { value: "Bosaso", label: "Bosaso" }
+]
+
+const mogadishuDistricts = [
+  { value: "Cabdi Casiis", label: "Cabdi Casiis" },
+  { value: "Boondheere", label: "Boondheere" },
+  { value: "Dayniile", label: "Dayniile" },
+  { value: "Dharkeenley", label: "Dharkeenley" },
+  { value: "Gubadley", label: "Gubadley" },
+  { value: "Heliwaa", label: "Heliwaa" },
+  { value: "Hodan", label: "Hodan" },
+  { value: "Howlwadaag", label: "Howlwadaag" },
+  { value: "Kaaraan", label: "Kaaraan" },
+  { value: "Kaxda", label: "Kaxda" },
+  { value: "Shangaani", label: "Shangaani" },
+  { value: "Shibis", label: "Shibis" },
+  { value: "Waaberi", label: "Waaberi" },
+  { value: "Wadajir", label: "Wadajir" },
+  { value: "Wardhiigley", label: "Wardhiigley" },
+  { value: "Xamar Jajab", label: "Xamar Jajab" },
+  { value: "Xamar Weyne", label: "Xamar Weyne" },
+  { value: "Yaaqshiid", label: "Yaaqshiid" }
+]
+
+const hargeisaDistricts = [
+  { value: "26 June", label: "26 June" },
+  { value: "Ahmed Dhagax", label: "Ahmed Dhagax" },
+  { value: "Gacan Libaax", label: "Gacan Libaax" },
+  { value: "Ibraahim Koodbuur", label: "Ibraahim Koodbuur" },
+  { value: "Maxamuud Haybe", label: "Maxamuud Haybe" },
+  { value: "Mohamed Mooge", label: "Mohamed Mooge" }
+]
+
+const garoweDistricts = [
+  { value: "1da Agoosto", label: "1da Agoosto" },
+  { value: "Hantiwadaag", label: "Hantiwadaag" },
+  { value: "Horseed", label: "Horseed" },
+  { value: "Waaberi", label: "Waaberi" },
+  { value: "Wadajir", label: "Wadajir" }
+]
+
+const kismayoDistricts = [
+  { value: "Calanley", label: "Calanley" },
+  { value: "Farjano", label: "Farjano" },
+  { value: "Faanoole", label: "Faanoole" },
+  { value: "Shaqaalaha", label: "Shaqaalaha" },
+  { value: "Siinaay", label: "Siinaay" }
+]
+
+const galkacayoDistricts = [
+  { value: "Garsoor", label: "Garsoor" },
+  { value: "Horumar", label: "Horumar" },
+  { value: "Israac", label: "Israac" },
+  { value: "Wadajir", label: "Wadajir" }
+]
+
+const bosasoDistricts = [
+  { value: "1st July", label: "1st July" },
+  { value: "Hawlwadag", label: "Hawlwadag" },
+  { value: "Grible", label: "Grible" },
+  { value: "Ubah", label: "Ubah" },
+  { value: "Karin", label: "Karin" },
+  { value: "Dayaha", label: "Dayaha" }
+]
+
+const getDistrictOptions = (city: string) => {
+  if (city === "Mogadishu") return mogadishuDistricts
+  if (city === "Hargeisa") return hargeisaDistricts
+  if (city === "Galkacyo" || city === "Galkacayo") return galkacayoDistricts
+  if (city === "Garowe") return garoweDistricts
+  if (city === "Kismayo") return kismayoDistricts
+  if (city === "Bosaso") return bosasoDistricts
+  return []
+}
+
 export default function PropertiesPage() {
   const [properties, setProperties] = React.useState<Property[]>([])
   const [categories, setCategories] = React.useState<Category[]>([])
@@ -90,15 +171,19 @@ export default function PropertiesPage() {
   const [rooms, setRooms] = React.useState("")
   const [bathrooms, setBathrooms] = React.useState("")
   const [featuresInput, setFeaturesInput] = React.useState("")
+  const [selectedDistrict, setSelectedDistrict] = React.useState("")
+  const [addressDetails, setAddressDetails] = React.useState("")
 
   // 🌍 Derived Location Data for Searchable Selects
   const countryData = React.useMemo(() => Country.getAllCountries(), []);
   const currentCountryObj = countryData.find(c => c.name === selectedCountry);
   const countryIso = currentCountryObj?.isoCode || "SO";
-  const cityOptions = React.useMemo(() => 
-    (City.getCitiesOfCountry(countryIso) || []).map(c => ({ value: c.name, label: c.name })),
-    [countryIso]
-  );
+  const cityOptions = React.useMemo(() => {
+    if (selectedCountry === "Somalia") {
+      return somaliCities;
+    }
+    return (City.getCitiesOfCountry(countryIso) || []).map(c => ({ value: c.name, label: c.name }));
+  }, [selectedCountry, countryIso]);
   const countryOptions = React.useMemo(() => 
     countryData.map(c => ({ value: c.isoCode, label: c.name })),
     [countryData]
@@ -204,8 +289,13 @@ export default function PropertiesPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+
     if (!title || !location || !selectedCity || !price || !propertyTypeId || !agentId) {
       return toast.error("Please fill in all strictly required fields.")
+    }
+
+    if (["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) && !selectedDistrict) {
+      return toast.error(`Please select a District / Degmo for ${selectedCity}.`)
     }
 
     try {
@@ -214,6 +304,7 @@ export default function PropertiesPage() {
       formData.append("description", description)
       formData.append("location", location)
       formData.append("city", selectedCity)
+      formData.append("district", ["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) ? selectedDistrict : "")
       formData.append("country", selectedCountry)
       formData.append("price", price)
       formData.append("listingType", listingType)
@@ -321,6 +412,7 @@ export default function PropertiesPage() {
       setDescription(prop.description || "")
       setLocation(prop.location)
       setSelectedCity(prop.city)
+      setSelectedDistrict(prop.district || "")
       setSelectedCountry(prop.country || "Somalia")
       setPrice(prop.price.toString())
       setListingType(prop.listingType)
@@ -372,6 +464,7 @@ export default function PropertiesPage() {
     setTitle("")
     setDescription("")
     setLocation("")
+    setSelectedDistrict("")
     setSelectedCity("")
     setSelectedCountry("Somalia")
     setPrice("")
@@ -409,13 +502,17 @@ export default function PropertiesPage() {
       const matchStatus = filterStatus === "all" || prop.status === filterStatus
       const matchType = filterType === "all" || prop.propertyTypeId.toString() === filterType
       const matchListing = filterListing === "all" || prop.listingType === filterListing
-      const matchCity = filterCity === "all" || prop.city === filterCity
+      const matchCity = filterCity === "all" || 
+        prop.city === filterCity || 
+        (filterCity === "Muqdisho" && prop.city === "Mogadishu") ||
+        (filterCity === "Mogadishu" && prop.city === "Muqdisho")
       return matchStatus && matchType && matchListing && matchCity
     })
   }, [properties, filterStatus, filterType, filterListing, filterCity])
 
   const citiesList = React.useMemo(() => {
-    const uniqueCities = new Set(properties.map(p => p.city).filter(Boolean))
+    const normalized = properties.map(p => p.city === "Muqdisho" ? "Mogadishu" : p.city).filter(Boolean)
+    const uniqueCities = new Set(normalized)
     return Array.from(uniqueCities)
   }, [properties])
 
@@ -465,13 +562,30 @@ export default function PropertiesPage() {
       ),
     },
     {
+      accessorKey: "city",
+      header: "City",
+      cell: ({ row }) => (
+        <span className="text-sm font-semibold opacity-85">
+          {row.original.city}
+        </span>
+      ),
+    },
+    {
+      accessorKey: "district",
+      header: "District",
+      cell: ({ row }) => (
+        <span className="text-sm font-semibold opacity-85">
+          {row.original.district || "-"}
+        </span>
+      ),
+    },
+    {
       accessorKey: "location",
       header: "Location",
       cell: ({ row }) => (
-        <div className="max-w-[200px] text-sm">
-          <div className="truncate font-medium">{row.getValue("location")}</div>
-          <div className="text-[10px] text-muted-foreground capitalize">{row.original.city}, {row.original.country || "Somalia"}</div>
-        </div>
+        <span className="text-sm font-semibold opacity-85">
+          {row.getValue("location")}
+        </span>
       ),
     },
     {
@@ -596,18 +710,12 @@ export default function PropertiesPage() {
 
                     {/* Title */}
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="title">Headline / Title <span className="text-red-500">*</span></Label>
+                      <Label htmlFor="title"> Title <span className="text-red-500">*</span></Label>
                       <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Luxurious Downtown Apartment" required />
                     </div>
 
-                    {/* Location Area */}
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Address / Location <span className="text-red-500">*</span></Label>
-                      <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Full Address" />
-                    </div>
-
                     {/* Searchable Country */}
-                    <div className="space-y-2">
+                    <div className="space-y-2 md:col-span-2">
                       <Label htmlFor="country">Country <span className="text-red-500">*</span></Label>
                       <ReactSelect
                         instanceId="reg-country-select"
@@ -671,7 +779,10 @@ export default function PropertiesPage() {
                         key={`city-select-${countryIso}`} 
                         options={cityOptions}
                         value={selectedCity ? { value: selectedCity, label: selectedCity } : null}
-                        onChange={(opt: any) => setSelectedCity(opt?.value || "")}
+                        onChange={(opt: any) => {
+                          setSelectedCity(opt?.value || "");
+                          setSelectedDistrict("");
+                        }}
                         menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
                         classNamePrefix="react-select"
                         styles={{
@@ -714,6 +825,67 @@ export default function PropertiesPage() {
                           })
                         }}
                       />
+                    </div>
+
+                    {/* Searchable District / Degmo */}
+                    <div className="space-y-2">
+                      <Label htmlFor="district">District / Degmo {["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) && <span className="text-red-500">*</span>}</Label>
+                      <ReactSelect
+                        instanceId="reg-district-select"
+                        options={getDistrictOptions(selectedCity)}
+                        value={selectedDistrict ? { value: selectedDistrict, label: selectedDistrict } : null}
+                        onChange={(opt: any) => setSelectedDistrict(opt?.value || "")}
+                        isDisabled={!["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity)}
+                        placeholder={["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) ? "Select District..." : "N/A (Somali Cities Only)"}
+                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                        classNamePrefix="react-select"
+                        styles={{
+                          control: (base, state) => ({
+                            ...base,
+                            borderRadius: 'calc(var(--radius) - 2px)',
+                            borderColor: 'var(--border)',
+                            backgroundColor: state.isDisabled ? 'rgba(var(--muted), 0.1)' : 'var(--background)',
+                            color: 'var(--foreground)',
+                            opacity: state.isDisabled ? 0.65 : 1,
+                            boxShadow: 'none',
+                            '&:hover': { borderColor: 'var(--border)' }
+                          }),
+                          menu: (base) => ({
+                            ...base,
+                            backgroundColor: 'var(--background)',
+                            border: '1px solid var(--border)',
+                            color: 'var(--foreground)',
+                            zIndex: 9999
+                          }),
+                          menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
+                          option: (base, state) => ({
+                            ...base,
+                            backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
+                            color: state.isFocused ? 'var(--accent-foreground)' : 'var(--foreground)',
+                            '&:active': {
+                              backgroundColor: 'var(--accent)',
+                            }
+                          }),
+                          singleValue: (base) => ({
+                            ...base,
+                            color: 'var(--foreground)',
+                          }),
+                          input: (base) => ({
+                            ...base,
+                            color: 'var(--foreground)',
+                          }),
+                          placeholder: (base) => ({
+                            ...base,
+                            color: 'var(--muted-foreground)',
+                          })
+                        }}
+                      />
+                    </div>
+
+                    {/* Location Area */}
+                    <div className="space-y-2">
+                      <Label htmlFor="location"> Location <span className="text-red-500">*</span></Label>
+                      <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder=" Location" required />
                     </div>
 
                     {/* Price */}
@@ -778,6 +950,7 @@ export default function PropertiesPage() {
                       </Select>
                     </div>
 
+                    {/* Listing Type */}
                     <div className="space-y-2">
                       <Label htmlFor="listingType">Listing Type <span className="text-red-500">*</span></Label>
                       <Select
@@ -940,6 +1113,13 @@ export default function PropertiesPage() {
                         <span className="font-semibold text-muted-foreground block mb-1">City & Country</span>
                         <p className="font-medium bg-muted/40 p-2 rounded-md capitalize">{viewProperty.city}, {viewProperty.country || "Somalia"}</p>
                       </div>
+
+                      {viewProperty.district && (
+                        <div>
+                          <span className="font-semibold text-muted-foreground block mb-1">District / Degmo</span>
+                          <p className="font-medium bg-muted/40 p-2 rounded-md capitalize">{viewProperty.district}</p>
+                        </div>
+                      )}
 
                       <div>
                         <span className="font-semibold text-muted-foreground block mb-1">Location / Address</span>

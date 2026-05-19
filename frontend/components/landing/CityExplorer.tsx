@@ -36,38 +36,49 @@ export default function CityExplorer() {
       try {
         const properties = await getProperties();
         
-        const cityMap: Record<string, { listings: number; image?: string }> = {};
+        const cityMap: Record<string, { listings: number; image?: string }> = {
+          "Mogadishu": { listings: 0, image: undefined },
+          "Hargeisa": { listings: 0, image: undefined },
+          "Galkacyo": { listings: 0, image: undefined },
+          "Garowe": { listings: 0, image: undefined },
+          "Kismayo": { listings: 0, image: undefined },
+          "Bosaso": { listings: 0, image: undefined }
+        };
         
         properties.forEach(prop => {
-          const cityName = prop.city?.trim();
+          if (prop.status === "CREATED") return; // Skip unapproved/draft properties
+          
+          let cityName = prop.city?.trim();
           if (!cityName) return;
           
-          if (!cityMap[cityName]) {
-            cityMap[cityName] = { listings: 0, image: undefined };
-          }
+          if (cityName === "Muqdisho") cityName = "Mogadishu";
+          if (cityName === "Galkacayo") cityName = "Galkacyo";
           
-          cityMap[cityName].listings += 1;
-          
-          if (!cityMap[cityName].image && prop.images && prop.images.length > 0) {
-            const rawUrl = prop.images[0].url;
-            if (rawUrl.startsWith('http')) {
-              cityMap[cityName].image = rawUrl;
-            } else {
-              const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
-              const baseUrl = apiUrl.replace("/api", "");
-              cityMap[cityName].image = `${baseUrl}/${rawUrl.replace(/\\/g, '/').replace(/^\//, '')}`;
+          if (cityMap[cityName] !== undefined) {
+            cityMap[cityName].listings += 1;
+            
+            if (!cityMap[cityName].image && prop.images && prop.images.length > 0) {
+              const rawUrl = prop.images[0].url;
+              if (rawUrl.startsWith('http')) {
+                cityMap[cityName].image = rawUrl;
+              } else {
+                const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
+                const baseUrl = apiUrl.replace("/api", "");
+                cityMap[cityName].image = `${baseUrl}/${rawUrl.replace(/\\/g, '/').replace(/^\//, '')}`;
+              }
             }
           }
         });
         
-        const data = Object.keys(cityMap).map(cityName => ({
+        const cityOrder = ["Mogadishu", "Hargeisa", "Galkacyo", "Garowe", "Kismayo", "Bosaso"];
+        const data = cityOrder.map(cityName => ({
           name: cityName,
           listings: cityMap[cityName].listings,
-          displayName: cityName === 'Mogadishu' ? 'Mugadishu' : cityName,
+          displayName: cityName,
           imageUrl: cityMap[cityName].image
-        }));
+        })).filter(c => c.listings > 0);
         
-        setCities(data.sort((a, b) => b.listings - a.listings).slice(0, 6));
+        setCities(data);
       } catch (error) {
         console.error("Failed to fetch city data:", error);
       } finally {

@@ -37,9 +37,23 @@ function ExploreContent() {
     fetchProps();
   }, []);
 
+  const somaliCities = [
+    "Mogadishu",
+    "Hargeisa",
+    "Galkacyo",
+    "Garowe",
+    "Kismayo",
+    "Bosaso"
+  ];
+
   // Filter Logic
   const filteredProperties = properties.filter((p) => {
-    const matchesCity = !selectedCity || p.city.toLowerCase() === selectedCity.toLowerCase();
+    const matchesCity = !selectedCity || 
+      p.city.toLowerCase() === selectedCity.toLowerCase() ||
+      (selectedCity === "Mogadishu" && p.city.toLowerCase() === "muqdisho") ||
+      (selectedCity === "Muqdisho" && p.city.toLowerCase() === "mogadishu") ||
+      (selectedCity === "Galkacyo" && p.city.toLowerCase() === "galkacayo") ||
+      (selectedCity === "Galkacayo" && p.city.toLowerCase() === "galkacyo");
     const matchesSearch = !searchTerm || 
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       p.location.toLowerCase().includes(searchTerm.toLowerCase());
@@ -54,9 +68,6 @@ function ExploreContent() {
 
     return matchesCity && matchesSearch && matchesType && matchesListingType && matchesPrice && isApproved;
   });
-
-  // Get unique cities for the filter dropdown/pills
-  const uniqueCities = Array.from(new Set(properties.map(p => p.city))).filter(Boolean);
 
   return (
     <main className="min-h-screen bg-white">
@@ -120,7 +131,7 @@ function ExploreContent() {
               >
                 All Cities
               </button>
-              {uniqueCities.map(city => (
+              {somaliCities.map(city => (
                 <button 
                   key={city}
                   onClick={() => setSelectedCity(city)}

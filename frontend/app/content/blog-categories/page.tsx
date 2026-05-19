@@ -171,7 +171,7 @@ export default function BlogCategoriesPage() {
             </div>
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
               <DialogTrigger asChild>
-                <Button onClick={openCreateModal} className="bg-[#214347] hover:bg-[#1a3539]">
+                <Button onClick={openCreateModal} className="btn-category">
                   <PlusIcon className="mr-2 h-4 w-4" />
                   Add Category
                 </Button>
@@ -202,7 +202,7 @@ export default function BlogCategoriesPage() {
                     />
                   </div>
                   <DialogFooter>
-                    <Button type="submit" className="bg-[#214347] hover:bg-[#1a3539]">
+                    <Button type="submit" className="btn-category">
                       {currentCategory ? "Update" : "Save"}
                     </Button>
                   </DialogFooter>

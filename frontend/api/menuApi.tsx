@@ -4,6 +4,7 @@ export interface SubMenu {
   id?: number;
   title: string;
   url: string;
+  order?: number;
   menuId?: number;
 }
 
@@ -13,6 +14,7 @@ export interface Menu {
   icon?: string;
   url?: string;
   isCollapsible: boolean;
+  order?: number;
   subMenus?: SubMenu[];
 }
 

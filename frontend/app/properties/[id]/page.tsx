@@ -26,12 +26,14 @@ import {
   Loader2Icon
 } from "lucide-react";
 import { getPropertyById, Property } from "@/api/propertyApi";
+import { sendPropertyInquiry } from "@/api/propertyInquiryApi";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, DialogHeader } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+
 export default function PropertyDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -42,6 +44,58 @@ export default function PropertyDetailPage() {
   const [selectedImgIndex, setSelectedImgIndex] = useState(0);
   const [user, setUser] = useState<any>(null);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+
+  // Custom Property Inquiry States
+  const [isInquireOpen, setIsInquireOpen] = useState(false);
+  const [inquiryLoading, setInquiryLoading] = useState(false);
+  const [inquiryForm, setInquiryForm] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    message: ""
+  });
+
+  const handleOpenInquire = () => {
+    if (!property) return;
+    setIsInquireOpen(true);
+    setInquiryForm({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      message: ""
+    });
+  };
+
+  const handleInquirySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!property) return;
+    if (!inquiryForm.firstName || !inquiryForm.lastName || !inquiryForm.email || !inquiryForm.phone || !inquiryForm.message) {
+      toast.error("Please fill in all fields.");
+      return;
+    }
+
+    setInquiryLoading(true);
+    try {
+      await sendPropertyInquiry({
+        fullName: `${inquiryForm.firstName.trim()} ${inquiryForm.lastName.trim()}`,
+        email: inquiryForm.email,
+        phone: inquiryForm.phone,
+        message: inquiryForm.message,
+        propertyId: property.id
+      });
+
+      toast.success("Inquiry submitted successfully!");
+      setIsInquireOpen(false);
+      setInquiryForm({ firstName: "", lastName: "", email: "", phone: "", message: "" });
+    } catch (err: any) {
+      console.error(err);
+      toast.error("Failed to submit inquiry. Please try again later.");
+    } finally {
+      setInquiryLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (isGalleryOpen && scrollContainerRef.current) {
@@ -66,7 +120,43 @@ export default function PropertyDetailPage() {
 
     const fetchProperty = async () => {
       try {
-        const data = await getPropertyById(parseInt(id));
+        let numericId = parseInt(id);
+        
+        // If ID is not a pure integer, it's a slugified title
+        if (isNaN(numericId)) {
+          const slugify = (text: string) => {
+            return text
+              .toString()
+              .toLowerCase()
+              .trim()
+              .replace(/\s+/g, '-')          // Replace spaces with -
+              .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+              .replace(/\-\-+/g, '-');        // Replace multiple - with single -
+          };
+          
+          const { getProperties } = await import("@/api/propertyApi");
+          const allProps = await getProperties();
+          
+          // Match by pure slugified title
+          const found = allProps.find(p => slugify(p.title) === id.toLowerCase() || slugify(p.title) === slugify(id));
+          if (found) {
+            numericId = found.id;
+          } else {
+            // Fallback: Check if the last segment is the ID
+            const parts = id.split("-");
+            const lastPart = parts[parts.length - 1];
+            const parsedLastPart = parseInt(lastPart);
+            if (!isNaN(parsedLastPart)) {
+              numericId = parsedLastPart;
+            }
+          }
+        }
+
+        if (isNaN(numericId)) {
+          throw new Error("Invalid property slug or ID");
+        }
+
+        const data = await getPropertyById(numericId);
         setProperty(data);
       } catch (error) {
         console.error("Failed to fetch property details:", error);
@@ -283,12 +373,12 @@ export default function PropertyDetailPage() {
               </div>
 
               <div className="mt-6 text-center">
-                <Link 
-                  href="/contact"
+                <button 
+                  onClick={handleOpenInquire}
                   className="w-full inline-flex items-center justify-center py-3 bg-[#eae1d2] text-[#214347] rounded-2xl text-[12px] font-bold uppercase tracking-widest hover:bg-[#dfd5c3] transition-colors active:scale-[0.98]"
                 >
                   Inquire Now
-                </Link>
+                </button>
               </div>
             </div>
           </div>
@@ -297,6 +387,106 @@ export default function PropertyDetailPage() {
       </div>
 
       <Footer />
+
+      {/* Dedicated Property Inquiry Modal */}
+      <Dialog open={isInquireOpen} onOpenChange={setIsInquireOpen}>
+        <DialogContent className="sm:max-w-[650px] w-[95vw] bg-white rounded-3xl p-10 border border-gray-100 shadow-2xl">
+          <DialogHeader className="mb-4">
+            <DialogTitle className="text-2xl font-black text-[#214347] tracking-tight">Property Inquiry</DialogTitle>
+            <DialogDescription className="text-gray-500 text-sm mt-1">
+              Interested in <span className="font-bold text-[#214347]">{property.title}</span>? Fill out the form below and we will get back to you.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form onSubmit={handleInquirySubmit} className="flex flex-col gap-6 text-gray-800">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-[13px] font-extrabold text-[#214347] uppercase tracking-wider">First Name</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="John"
+                  value={inquiryForm.firstName}
+                  onChange={(e) => setInquiryForm({ ...inquiryForm, firstName: e.target.value })}
+                  className="bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#214347]/20 focus:border-[#214347] transition-all text-[15px] text-gray-800"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-[13px] font-extrabold text-[#214347] uppercase tracking-wider">Last Name</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Doe"
+                  value={inquiryForm.lastName}
+                  onChange={(e) => setInquiryForm({ ...inquiryForm, lastName: e.target.value })}
+                  className="bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#214347]/20 focus:border-[#214347] transition-all text-[15px] text-gray-800"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="flex flex-col gap-2">
+                <label className="text-[13px] font-extrabold text-[#214347] uppercase tracking-wider">Email</label>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="john@example.com"
+                  value={inquiryForm.email}
+                  onChange={(e) => setInquiryForm({ ...inquiryForm, email: e.target.value })}
+                  className="bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#214347]/20 focus:border-[#214347] transition-all text-[15px] text-gray-800"
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-[13px] font-extrabold text-[#214347] uppercase tracking-wider">Phone</label>
+                <input 
+                  type="tel" 
+                  required
+                  placeholder="+252 61..."
+                  value={inquiryForm.phone}
+                  onChange={(e) => setInquiryForm({ ...inquiryForm, phone: e.target.value })}
+                  className="bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#214347]/20 focus:border-[#214347] transition-all text-[15px] text-gray-800"
+                />
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label className="text-[13px] font-extrabold text-[#214347] uppercase tracking-wider">Message</label>
+              <textarea 
+                required
+                rows={5} 
+                placeholder="How can we help you?"
+                value={inquiryForm.message}
+                onChange={(e) => setInquiryForm({ ...inquiryForm, message: e.target.value })}
+                className="bg-gray-50/50 border border-gray-200 rounded-xl px-4 py-3.5 focus:outline-none focus:ring-2 focus:ring-[#214347]/20 focus:border-[#214347] transition-all resize-none text-[15px] text-gray-800 font-sans leading-relaxed"
+              />
+            </div>
+
+            <div className="pt-4 flex justify-end gap-3 border-t border-gray-50">
+              <button
+                type="button"
+                onClick={() => setIsInquireOpen(false)}
+                className="px-6 py-3 border border-gray-200 rounded-xl text-gray-500 font-extrabold text-[14px] hover:bg-gray-50 active:scale-95 transition-all uppercase tracking-wider"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                disabled={inquiryLoading}
+                className="bg-[#214347] text-white px-8 py-3.5 rounded-xl font-bold text-[15px] tracking-wide hover:bg-[#0d2326] transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed"
+              >
+                {inquiryLoading ? "Sending..." : (
+                  <>
+                    Send Message
+                    <svg className="w-4 h-4 transform rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Lightbox / Gallery Modal */}
       <Dialog open={isGalleryOpen} onOpenChange={setIsGalleryOpen}>

@@ -16,6 +16,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import Link from "next/link"
+import { usePathname } from "next/navigation"
 import { ChevronRightIcon } from "lucide-react"
 
 export function NavMain({
@@ -31,14 +32,21 @@ export function NavMain({
     }[]
   }[]
 }) {
+  const pathname = usePathname()
+
   return (
     <SidebarGroup>
       <SidebarGroupContent>
         <SidebarMenu>
-          {items.map((item) => (
-            <SidebarMenuItem key={item.title}>
-              {item.items ? (
-                <Collapsible className="group/menu-item">
+          {items.map((item) => {
+            const isSubActive = item.items?.some(
+              (subItem) => pathname === subItem.url || (subItem.url !== "/" && pathname.startsWith(subItem.url))
+            )
+
+            return (
+              <SidebarMenuItem key={item.title}>
+                {item.items ? (
+                  <Collapsible className="group/menu-item" defaultOpen={isSubActive}>
                   <CollapsibleTrigger asChild>
                     <SidebarMenuButton tooltip={item.title}>
                       {item.icon}
@@ -69,7 +77,7 @@ export function NavMain({
                 </SidebarMenuButton>
               )}
             </SidebarMenuItem>
-          ))}
+          )})}
         </SidebarMenu>
       </SidebarGroupContent>
     </SidebarGroup>

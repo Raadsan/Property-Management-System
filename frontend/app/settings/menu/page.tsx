@@ -42,9 +42,10 @@ export default function MenuConfigurationPage() {
   const [icon, setIcon] = React.useState("")
   const [url, setUrl] = React.useState("")
   const [isCollapsible, setIsCollapsible] = React.useState(false)
+  const [order, setOrder] = React.useState<number>(0)
   
   // Dynamic SubMenu State
-  const [subMenus, setSubMenus] = React.useState<{ id?: number, title: string, url: string }[]>([])
+  const [subMenus, setSubMenus] = React.useState<{ id?: number, title: string, url: string, order: number }[]>([])
 
   const loadData = async () => {
     setIsLoading(true)
@@ -63,12 +64,16 @@ export default function MenuConfigurationPage() {
   }, [])
 
   const handleAddSubMenu = () => {
-    setSubMenus([...subMenus, { title: "", url: "" }])
+    setSubMenus([...subMenus, { title: "", url: "", order: 0 }])
   }
 
-  const handleSubMenuChange = (index: number, field: 'title' | 'url', value: string) => {
+  const handleSubMenuChange = (index: number, field: 'title' | 'url' | 'order', value: any) => {
     const updated = [...subMenus]
-    updated[index][field] = value
+    if (field === 'order') {
+      updated[index][field] = parseInt(value) || 0
+    } else {
+      updated[index][field] = value
+    }
     setSubMenus(updated)
   }
 
@@ -82,7 +87,7 @@ export default function MenuConfigurationPage() {
 
     // Filter out completely blank submenus
     const cleanSubMenus = subMenus.filter(sm => sm.title.trim() !== "" || sm.url.trim() !== "")
-      .map(sm => ({ id: sm.id, title: sm.title, url: sm.url }))
+      .map(sm => ({ id: sm.id, title: sm.title, url: sm.url, order: sm.order }))
 
     try {
       const payload = {
@@ -90,6 +95,7 @@ export default function MenuConfigurationPage() {
         icon: icon || undefined,
         url: url || undefined,
         isCollapsible,
+        order,
         subMenus: cleanSubMenus
       }
 
@@ -127,9 +133,10 @@ export default function MenuConfigurationPage() {
     setIcon(menu.icon || "")
     setUrl(menu.url || "")
     setIsCollapsible(menu.isCollapsible)
+    setOrder(menu.order || 0)
     
     if (menu.subMenus && menu.subMenus.length > 0) {
-      setSubMenus(menu.subMenus.map(sm => ({ id: sm.id, title: sm.title, url: sm.url })))
+      setSubMenus(menu.subMenus.map(sm => ({ id: sm.id, title: sm.title, url: sm.url, order: sm.order || 0 })))
     } else {
       setSubMenus([])
     }
@@ -148,6 +155,7 @@ export default function MenuConfigurationPage() {
     setIcon("")
     setUrl("")
     setIsCollapsible(false)
+    setOrder(0)
     setSubMenus([])
   }
 
@@ -196,6 +204,11 @@ export default function MenuConfigurationPage() {
                       <Input id="icon" value={icon} onChange={(e) => setIcon(e.target.value)} placeholder="e.g. Settings2Icon" />
                     </div>
 
+                    <div className="space-y-2 col-span-2 md:col-span-1">
+                      <Label htmlFor="order">Menu Order</Label>
+                      <Input id="order" type="number" value={order} onChange={(e) => setOrder(parseInt(e.target.value) || 0)} placeholder="e.g. 0" />
+                    </div>
+
                     <div className="space-y-2 col-span-2">
                       <Label htmlFor="url">Primary URL Route</Label>
                       <Input id="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="e.g. /dashboard/settings (optional if collapsible)" />
@@ -228,6 +241,7 @@ export default function MenuConfigurationPage() {
                              <div className="flex-1 space-y-1">
                                <Input placeholder="SubMenu Title (e.g. Users)" value={sm.title} onChange={e => handleSubMenuChange(index, 'title', e.target.value)} className="h-8" />
                                <Input placeholder="Route (e.g. /dashboard/users)" value={sm.url} onChange={e => handleSubMenuChange(index, 'url', e.target.value)} className="h-8" />
+                               <Input placeholder="Order (e.g. 1)" type="number" value={sm.order || 0} onChange={e => handleSubMenuChange(index, 'order', e.target.value)} className="h-8" />
                              </div>
                              <Button type="button" variant="ghost" size="icon" className="text-red-500 hover:text-red-700 hover:bg-red-50 h-8 w-8" onClick={() => handleRemoveSubMenu(index)}>
                                <TrashIcon className="h-4 w-4" />
@@ -253,6 +267,7 @@ export default function MenuConfigurationPage() {
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-[60px]">id</TableHead>
+                  <TableHead className="w-[80px]">order</TableHead>
                   <TableHead>title</TableHead>
                   <TableHead>icon</TableHead>
                   <TableHead>url</TableHead>
@@ -288,6 +303,10 @@ export default function MenuConfigurationPage() {
                         {menu.id}
                       </TableCell>
 
+                      <TableCell className="font-semibold text-xs text-muted-foreground">
+                        {menu.order ?? 0}
+                      </TableCell>
+
                       <TableCell className="font-bold text-sm">
                         {menu.title}
                       </TableCell>
@@ -310,7 +329,7 @@ export default function MenuConfigurationPage() {
                         <div className="flex flex-wrap gap-1">
                           {menu.subMenus && menu.subMenus.length > 0 ? (
                             menu.subMenus.map(sm => (
-                              <span key={sm.id} className="bg-muted border text-muted-foreground px-1.5 py-0.5 rounded text-[10px]">{sm.title}</span>
+                              <span key={sm.id} className="bg-muted border text-muted-foreground px-1.5 py-0.5 rounded text-[10px]">{sm.title} ({sm.order ?? 0})</span>
                             ))
                           ) : <span className="text-xs text-muted-foreground opacity-50">—</span>}
                         </div>

@@ -9,7 +9,23 @@ export interface ContactData {
   message: string;
 }
 
+export interface AdminContactData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  inquiryType?: string;
+  message: string;
+  status?: string;
+  priority?: string;
+}
+
 export const sendContactMessage = async (contactData: ContactData) => {
+  const response = await api.post('/contact', contactData);
+  return response.data;
+};
+
+export const createContactAdmin = async (contactData: AdminContactData) => {
   const response = await api.post('/contact', contactData);
   return response.data;
 };

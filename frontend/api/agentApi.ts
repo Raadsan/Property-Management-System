@@ -8,6 +8,7 @@ export interface AgentData {
   secondaryPhone?: string;
   address?: string;
   city?: string;
+  district?: string;
   roleId: number;
   status: string;
   password?: string;

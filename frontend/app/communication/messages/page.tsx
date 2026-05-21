@@ -7,10 +7,10 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { getContactMessages, updateContactStatus, updateContactPriority, deleteContact } from "@/api/contactApi"
+import { getContactMessages, updateContactStatus, updateContactPriority, deleteContact, createContactAdmin } from "@/api/contactApi"
 import { toast } from "sonner"
 import { format } from "date-fns"
-import { CheckCircle2Icon, ClockIcon, RefreshCcwIcon, PhoneIcon, CalendarIcon, ChevronDownIcon, Trash2Icon, AlertCircleIcon, ArrowRightIcon, MessageSquareIcon, UserMinusIcon, FilterIcon } from "lucide-react"
+import { CheckCircle2Icon, ClockIcon, RefreshCcwIcon, PhoneIcon, CalendarIcon, ChevronDownIcon, Trash2Icon, AlertCircleIcon, ArrowRightIcon, MessageSquareIcon, UserMinusIcon, FilterIcon, PlusIcon } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -25,6 +25,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 
 // Define the Message type based on the response
 export type Message = {
@@ -43,6 +46,54 @@ export type Message = {
 export default function MessagesDashboardPage() {
   const [messages, setMessages] = React.useState<Message[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+
+  // Add Lead Modal State
+  const [isAddOpen, setIsAddOpen] = React.useState(false)
+  const [formData, setFormData] = React.useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    inquiryType: "Renting",
+    message: "",
+    status: "NEW",
+    priority: "UNKNOWN"
+  })
+  const [isSubmitting, setIsSubmitting] = React.useState(false)
+
+  const handleAddLead = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.message) {
+      toast.error("Please fill in all required fields.")
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      const response = await createContactAdmin(formData)
+      if (response.status === 'OK') {
+        toast.success("Lead created successfully!")
+        setIsAddOpen(false)
+        setFormData({
+          firstName: "",
+          lastName: "",
+          email: "",
+          phone: "",
+          inquiryType: "Renting",
+          message: "",
+          status: "NEW",
+          priority: "UNKNOWN"
+        })
+        fetchMessages()
+      } else {
+        toast.error(response.message || "Failed to create lead.")
+      }
+    } catch (error: any) {
+      console.error("Create lead error:", error)
+      toast.error(error.response?.data?.message || "Failed to create lead.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   // Filtering State
   const [filterStatus, setFilterStatus] = React.useState<string>("all")
@@ -308,6 +359,13 @@ export default function MessagesDashboardPage() {
             </div>
             <div className="flex items-center gap-3">
               <Button
+                onClick={() => setIsAddOpen(true)}
+                className="bg-[#214347] dark:bg-emerald-600 text-white hover:bg-[#163033] dark:hover:bg-emerald-500 rounded-xl font-bold text-xs uppercase tracking-wider h-10 px-4 flex items-center gap-2"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Add Lead
+              </Button>
+              <Button
                 variant="outline"
                 onClick={fetchMessages}
                 disabled={isLoading}
@@ -388,6 +446,181 @@ export default function MessagesDashboardPage() {
             filterPlaceholder="Search by name or email..."
           />
         </div>
+
+        {/* Add Lead Modal */}
+        <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+          <DialogContent className="sm:max-w-[600px] w-[95vw] bg-white dark:bg-[#0c1425] rounded-3xl p-8 border border-gray-100 dark:border-gray-800 shadow-2xl transition-colors duration-300">
+            <DialogHeader className="mb-4">
+              <DialogTitle className="text-2xl font-black text-[#214347] dark:text-emerald-400 tracking-tight flex items-center gap-2">
+                <PlusIcon className="w-6 h-6" />
+                Add New Lead
+              </DialogTitle>
+              <DialogDescription className="text-gray-500 dark:text-gray-400 text-xs mt-1">
+                Create a new lead manually in the property management system.
+              </DialogDescription>
+            </DialogHeader>
+
+            <form onSubmit={handleAddLead} className="space-y-6">
+              {/* Row 1: First Name & Last Name */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="firstName" className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider ml-1">
+                    First Name <span className="text-rose-500">*</span>
+                  </Label>
+                  <Input
+                    id="firstName"
+                    placeholder="John"
+                    required
+                    value={formData.firstName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                    className="rounded-xl border-border bg-transparent text-sm h-10 font-medium"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="lastName" className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider ml-1">
+                    Last Name <span className="text-rose-500">*</span>
+                  </Label>
+                  <Input
+                    id="lastName"
+                    placeholder="Doe"
+                    required
+                    value={formData.lastName}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lastName: e.target.value }))}
+                    className="rounded-xl border-border bg-transparent text-sm h-10 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Row 2: Email & Phone */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="email" className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider ml-1">
+                    Email Address <span className="text-rose-500">*</span>
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="john.doe@example.com"
+                    required
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="rounded-xl border-border bg-transparent text-sm h-10 font-medium"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="phone" className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider ml-1">
+                    Phone Number
+                  </Label>
+                  <Input
+                    id="phone"
+                    placeholder="+25261..."
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    className="rounded-xl border-border bg-transparent text-sm h-10 font-medium"
+                  />
+                </div>
+              </div>
+
+              {/* Row 3: Inquiry Type, Status & Priority */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="inquiryType" className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider ml-1">
+                    Inquiry Type
+                  </Label>
+                  <Select
+                    value={formData.inquiryType}
+                    onValueChange={(val) => setFormData(prev => ({ ...prev, inquiryType: val }))}
+                  >
+                    <SelectTrigger className="rounded-xl border-border bg-transparent text-sm h-10 font-medium">
+                      <SelectValue placeholder="Renting" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Renting">Renting</SelectItem>
+                      <SelectItem value="Buying">Buying</SelectItem>
+                      <SelectItem value="Support">Support</SelectItem>
+                      <SelectItem value="Inquiry">General Inquiry</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="status" className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider ml-1">
+                    Status
+                  </Label>
+                  <Select
+                    value={formData.status}
+                    onValueChange={(val) => setFormData(prev => ({ ...prev, status: val }))}
+                  >
+                    <SelectTrigger className="rounded-xl border-border bg-transparent text-sm h-10 font-medium">
+                      <SelectValue placeholder="New" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="NEW">New</SelectItem>
+                      <SelectItem value="FOLLOW_UP">Follow Up</SelectItem>
+                      <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
+                      <SelectItem value="CONVERTED">Converted</SelectItem>
+                      <SelectItem value="LOST">Lost</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <Label htmlFor="priority" className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider ml-1">
+                    Priority
+                  </Label>
+                  <Select
+                    value={formData.priority}
+                    onValueChange={(val) => setFormData(prev => ({ ...prev, priority: val }))}
+                  >
+                    <SelectTrigger className="rounded-xl border-border bg-transparent text-sm h-10 font-medium">
+                      <SelectValue placeholder="Unknown" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="UNKNOWN">Unknown</SelectItem>
+                      <SelectItem value="LOW">Low</SelectItem>
+                      <SelectItem value="MEDIUM">Medium</SelectItem>
+                      <SelectItem value="HIGH">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Row 4: Message */}
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="message" className="text-[11px] font-bold uppercase text-muted-foreground tracking-wider ml-1">
+                  Lead Notes / Message <span className="text-rose-500">*</span>
+                </Label>
+                <Textarea
+                  id="message"
+                  placeholder="What is this lead interested in or what did they request?"
+                  required
+                  rows={4}
+                  value={formData.message}
+                  onChange={(e) => setFormData(prev => ({ ...prev, message: e.target.value }))}
+                  className="rounded-xl border-border bg-transparent text-sm font-medium resize-none"
+                />
+              </div>
+
+              <DialogFooter className="flex justify-end gap-3 pt-4 border-t border-gray-50 dark:border-gray-800">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setIsAddOpen(false)}
+                  className="rounded-xl font-bold uppercase tracking-wider px-6 h-10 text-xs"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-[#214347] dark:bg-emerald-600 text-white hover:bg-[#163033] dark:hover:bg-emerald-500 rounded-xl font-bold uppercase tracking-wider px-6 h-10 text-xs"
+                >
+                  {isSubmitting ? "Creating..." : "Save Lead"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
       </SidebarInset>
     </SidebarProvider>
   )

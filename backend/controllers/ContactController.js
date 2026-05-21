@@ -1,6 +1,38 @@
 import nodemailer from 'nodemailer';
 import { prisma } from '../lib/prisma.js';
 
+export const createContactAdmin = async (req, res) => {
+  const { firstName, lastName, email, phone, inquiryType, message, status, priority } = req.body;
+
+  if (!firstName || !lastName || !email || !message) {
+    return res.status(400).json({ status: 'ERR', message: 'Missing required fields' });
+  }
+
+  try {
+    const newContact = await prisma.contact.create({
+      data: {
+        firstName,
+        lastName,
+        email,
+        phone,
+        inquiryType: inquiryType || 'Support',
+        message,
+        status: status || 'NEW',
+        priority: priority || 'UNKNOWN'
+      }
+    });
+
+    res.status(201).json({
+      status: 'OK',
+      message: 'Lead created successfully by admin',
+      data: newContact
+    });
+  } catch (error) {
+    console.error('Create lead by admin error:', error);
+    res.status(500).json({ status: 'ERR', message: 'Failed to create lead: ' + error.message });
+  }
+};
+
 export const sendContactMessage = async (req, res) => {
   const { firstName, lastName, email, phone, inquiryType, message } = req.body;
 

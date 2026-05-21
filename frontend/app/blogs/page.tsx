@@ -181,42 +181,27 @@ export default function BlogsPage() {
                       </span>
                     </div>
 
-                    <h3 
-                      className="text-xl font-bold text-gray-900 mb-4 leading-snug cursor-pointer hover:text-[#214347] transition-colors"
-                      onClick={() => toggleExpand(post.id)}
-                    >
-                      {post.title}
-                    </h3>
+                    <Link href={`/blogs/${post.id}`}>
+                      <h3 className="text-xl font-bold text-gray-900 mb-4 leading-snug cursor-pointer hover:text-[#214347] transition-colors">
+                        {post.title}
+                      </h3>
+                    </Link>
 
-                    {expandedBlogIds.has(post.id) ? (
-                      <div className="text-gray-500 text-[15px] leading-relaxed mb-8 flex-1 font-light whitespace-pre-wrap animate-in fade-in slide-in-from-top-2 duration-300">
-                        {post.content}
-                      </div>
-                    ) : (
-                      <p className="text-gray-500 text-[15px] leading-relaxed mb-8 flex-1 font-light line-clamp-3">
-                        {post.content.replace(/<[^>]*>/g, '').substring(0, 160)}...
-                      </p>
-                    )}
+                    <p className="text-gray-500 text-[15px] leading-relaxed mb-8 flex-1 font-light line-clamp-3">
+                      {post.content.replace(/<[^>]*>/g, '').substring(0, 160)}...
+                    </p>
 
-                    <button 
-                      onClick={() => toggleExpand(post.id)}
-                      className={`inline-flex items-center justify-between w-full p-1 pl-4 rounded-xl border border-gray-100 transition-all duration-300 group/btn ${
-                        expandedBlogIds.has(post.id) 
-                          ? "bg-[#214347] text-white" 
-                          : "bg-gray-50/50 hover:bg-[#214347] hover:text-white"
-                      }`}
+                    <Link 
+                      href={`/blogs/${post.id}`}
+                      className="inline-flex items-center justify-between w-full p-1 pl-4 rounded-xl border border-gray-100 transition-all duration-300 group/btn bg-gray-50/50 hover:bg-[#214347] hover:text-white"
                     >
                       <span className="text-sm font-bold tracking-tight">
-                        {expandedBlogIds.has(post.id) ? "Read Less" : "Read Full Story"}
+                        Read Full Story
                       </span>
-                      <div className={`w-10 h-10 rounded-[10px] flex items-center justify-center shadow-sm transition-all ${
-                        expandedBlogIds.has(post.id)
-                          ? "bg-teal-400 text-white"
-                          : "bg-white text-[#214347] group-hover/btn:bg-teal-400 group-hover/btn:text-white"
-                      }`}>
-                        <ArrowRight className={`w-4 h-4 transition-transform ${expandedBlogIds.has(post.id) ? "rotate-90" : "group-hover/btn:translate-x-1"}`} />
+                      <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shadow-sm transition-all bg-white text-[#214347] group-hover/btn:bg-teal-400 group-hover/btn:text-white">
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
                       </div>
-                    </button>
+                    </Link>
                   </div>
                 </article>
               ))}

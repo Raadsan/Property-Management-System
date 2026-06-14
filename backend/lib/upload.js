@@ -1,33 +1,42 @@
 import multer from 'multer';
 import path from 'path';
-import { v2 as cloudinary } from 'cloudinary';
-import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import multerS3 from 'multer-s3';
+import { isS3Configured, s3Client, s3Bucket, s3UploadPrefix } from './s3.js';
 import 'dotenv/config';
 
-// Configure Cloudinary
-if (process.env.CLOUDINARY_URL) {
-  // If CLOUDINARY_URL is present, the SDK handles config automatically
-  console.log("☁️ Cloudinary configured using CLOUDINARY_URL");
-} else {
-  cloudinary.config({
-    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-    api_key: process.env.CLOUDINARY_API_KEY,
-    api_secret: process.env.CLOUDINARY_API_SECRET
-  });
-  console.log("☁️ Cloudinary configured using individual keys");
+if (!isS3Configured) {
+  throw new Error(
+    'AWS S3 is required for uploads. Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, and AWS_BUCKET_NAME in .env'
+  );
 }
 
-const storage = new CloudinaryStorage({
-  cloudinary: cloudinary,
-  params: async (req, file) => {
-    // Return parameters for Cloudinary
-    return {
-      folder: 'property-management',
-      resource_type: 'auto',
-      public_id: `${Date.now()}-${file.originalname.replace(/\.[^/.]+$/, "").replace(/\s+/g, '-')}`
-    };
-  },
-});
+/** Returns the public S3 URL from a multer-s3 file object. */
+export const getFileUrl = (file) => file?.location || null;
+
+/** Detects Cloudinary or local upload paths that should no longer be stored. */
+export const isLegacyUploadUrl = (url) =>
+  typeof url === 'string' && (
+    url.includes('res.cloudinary.com') ||
+    url.includes('/uploads/') ||
+    url.startsWith('uploads/')
+  );
+
+/** Returns true when a legacy URL was rejected and a response was sent. */
+export const rejectLegacyUploadUrl = (url, res, fieldName = 'file') => {
+  if (url && isLegacyUploadUrl(url)) {
+    res.status(400).json({
+      message: `Legacy upload URL in ${fieldName} is not accepted. Please upload the file again.`,
+    });
+    return true;
+  }
+  return false;
+};
+
+const buildObjectKey = (originalname) => {
+  const ext = path.extname(originalname).toLowerCase();
+  const baseName = path.basename(originalname, ext).replace(/\s+/g, '-');
+  return `${s3UploadPrefix}/${Date.now()}-${baseName}${ext}`;
+};
 
 const fileFilter = (req, file, cb) => {
   const allowedMimeTypes = [
@@ -40,40 +49,40 @@ const fileFilter = (req, file, cb) => {
     'video/quicktime',
     'video/webm',
     'video/x-msvideo',
-    'video/x-matroska'
+    'video/x-matroska',
   ];
   const allowedExtensions = [
-    '.jpg', '.jpeg', '.png', '.gif', '.webp', 
+    '.jpg', '.jpeg', '.png', '.gif', '.webp',
     '.pdf', '.doc', '.docx',
-    '.mp4', '.mov', '.avi', '.mkv', '.webm'
+    '.mp4', '.mov', '.avi', '.mkv', '.webm',
   ];
-  
+
   const fileExtension = path.extname(file.originalname).toLowerCase();
   const isImage = file.mimetype.startsWith('image/');
   const isVideo = file.mimetype.startsWith('video/');
   const isAllowedMime = allowedMimeTypes.includes(file.mimetype);
   const isAllowedExt = allowedExtensions.includes(fileExtension);
 
-  console.log("📁 Receiving file:", {
-    mimetype: file.mimetype,
-    originalname: file.originalname,
-    extension: fileExtension,
-    isImage,
-    isVideo,
-    isAllowedMime,
-    isAllowedExt
-  });
-
   if (isImage || isVideo || isAllowedMime || isAllowedExt) {
     cb(null, true);
   } else {
-    console.error("❌ Rejected file type:", file.mimetype, fileExtension);
     cb(new Error('Only images, videos, PDFs, and Word documents are allowed!'), false);
   }
 };
 
-export const upload = multer({ 
-    storage, 
-    fileFilter,
-    limits: { fileSize: 30 * 1024 * 1024 } // 30MB limit
+const storage = multerS3({
+  s3: s3Client,
+  bucket: s3Bucket,
+  contentType: multerS3.AUTO_CONTENT_TYPE,
+  key: (req, file, cb) => {
+    cb(null, buildObjectKey(file.originalname));
+  },
+});
+
+console.log(`📦 Upload storage: AWS S3 (bucket: ${s3Bucket}, prefix: ${s3UploadPrefix})`);
+
+export const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: 30 * 1024 * 1024 },
 });

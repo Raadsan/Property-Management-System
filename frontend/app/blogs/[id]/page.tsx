@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import { getBlogById, Blog } from "@/api/blogApi";
+import { getMediaUrl } from "@/lib/mediaUrl";
 import { Calendar, User, ArrowLeft, Loader2, Tag } from "lucide-react";
 import Link from "next/link";
 
@@ -65,7 +66,7 @@ export default function SingleBlogPage() {
           {blog.image && (
             <div className="w-full h-[400px] md:h-[500px]">
               <img 
-                src={blog.image.startsWith('http') ? blog.image : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/${blog.image}`} 
+                src={getMediaUrl(blog.image)} 
                 alt={blog.title} 
                 className="w-full h-full object-cover"
               />

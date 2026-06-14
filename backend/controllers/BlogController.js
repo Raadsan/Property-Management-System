@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { getFileUrl, rejectLegacyUploadUrl } from "../lib/upload.js";
 
 // @desc    Get all blogs
 // @route   GET /api/blogs
@@ -56,9 +57,12 @@ export const createBlog = async (req, res) => {
   }
 
   try {
-    let imagePath = image;
+    let imagePath = null;
     if (req.file) {
-      imagePath = req.file.path; // Multer path
+      imagePath = getFileUrl(req.file);
+    } else if (image) {
+      if (rejectLegacyUploadUrl(image, res, 'image')) return;
+      imagePath = image;
     }
 
     const blog = await prisma.blog.create({
@@ -95,8 +99,9 @@ export const updateBlog = async (req, res) => {
     if (categoryId) updateData.categoryId = parseInt(categoryId);
     
     if (req.file) {
-      updateData.image = req.file.path;
+      updateData.image = getFileUrl(req.file);
     } else if (image) {
+      if (rejectLegacyUploadUrl(image, res, 'image')) return;
       updateData.image = image;
     }
 

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Calendar, User, ArrowRight, Tag, Search, TrendingUp } from "lucide-react";
 
 import { getBlogs, getBlogCategories, Blog, BlogCategory } from "@/api/blogApi";
+import { getMediaUrl } from "@/lib/mediaUrl";
 
 export default function BlogsPage() {
   const [blogs, setBlogs] = React.useState<Blog[]>([]);
@@ -156,7 +157,7 @@ export default function BlogsPage() {
                   {/* Image Container */}
                   <div className="relative h-64 overflow-hidden">
                     <img 
-                      src={post.image?.startsWith('http') ? post.image : `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}/${post.image}`} 
+                      src={getMediaUrl(post.image)} 
                       alt={post.title} 
                       className="w-full h-full object-cover transition-transform duration-700"
                     />

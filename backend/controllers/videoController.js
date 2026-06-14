@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { getFileUrl } from "../lib/upload.js";
 
 // @desc    Create a new video
 // @route   POST /api/videos
@@ -18,7 +19,7 @@ export const createVideo = async (req, res) => {
       return res.status(400).json({ message: "Video file is required" });
     }
 
-    const videoUrl = req.file.path;
+    const videoUrl = getFileUrl(req.file);
 
     const video = await prisma.video.create({
       data: {
@@ -162,7 +163,7 @@ export const updateVideo = async (req, res) => {
     if (updateFields.propertyTypeId) data.propertyTypeId = parseInt(updateFields.propertyTypeId);
 
     if (req.file) {
-      data.videoUrl = req.file.path;
+      data.videoUrl = getFileUrl(req.file);
     }
 
     const video = await prisma.video.update({

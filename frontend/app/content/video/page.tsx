@@ -18,6 +18,7 @@ import {
   deleteVideo,
   Video
 } from "@/api/videoApi"
+import { getMediaUrl } from "@/lib/mediaUrl"
 
 import { Country, City } from "country-state-city"
 import ReactSelect from "react-select"
@@ -466,7 +467,7 @@ export default function VedioPage() {
             {viewVideo && (
               <div className="space-y-4">
                 <div className="aspect-video bg-black rounded-lg overflow-hidden">
-                  <video src={viewVideo.videoUrl.startsWith('http') ? viewVideo.videoUrl : `http://localhost:8002/${viewVideo.videoUrl}`} controls className="w-full h-full" />
+                  <video src={getMediaUrl(viewVideo.videoUrl)} controls className="w-full h-full" />
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div><strong>Price:</strong> ${viewVideo.price}</div>

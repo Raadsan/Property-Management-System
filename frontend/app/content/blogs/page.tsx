@@ -17,6 +17,7 @@ import {
   Blog, 
   BlogCategory 
 } from "@/api/blogApi"
+import { getMediaUrl } from "@/lib/mediaUrl"
 import { getRolePermissionsById } from "@/api/rolePermissionsApi"
 import { 
   Dialog, 
@@ -202,12 +203,7 @@ export default function BlogsRegistrationPage() {
     })
   }, [blogs, filterCategory])
 
-  const getImageUrl = (imagePath?: string) => {
-    if (!imagePath) return "";
-    if (imagePath.startsWith("http")) return imagePath;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
-    return `${apiUrl}/${imagePath.replace(/\\/g, '/').replace(/^\//, '')}`;
-  }
+  const getImageUrl = (imagePath?: string) => getMediaUrl(imagePath)
 
   const columns: ColumnDef<Blog>[] = [
     {

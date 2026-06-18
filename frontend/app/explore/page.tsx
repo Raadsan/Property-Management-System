@@ -7,6 +7,14 @@ import Footer from "@/components/landing/Footer";
 import PropertyCard from "@/components/landing/PropertyCard";
 import { getProperties, Property } from "@/api/propertyApi";
 import { Search, SlidersHorizontal, MapPin, Loader2, Home } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Label } from "@/components/ui/label";
 
 function ExploreContent() {
   const searchParams = useSearchParams();
@@ -20,8 +28,10 @@ function ExploreContent() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedCity, setSelectedCity] = React.useState(initialCity);
+  const [selectedDistrict, setSelectedDistrict] = React.useState("");
   const [selectedType, setSelectedType] = React.useState(initialType);
   const [selectedListingType, setSelectedListingType] = React.useState(initialListingType);
+  const [selectedStatus, setSelectedStatus] = React.useState("");
 
   React.useEffect(() => {
     const fetchProps = async () => {
@@ -46,19 +56,36 @@ function ExploreContent() {
     "Bosaso"
   ];
 
+  const districtsList = React.useMemo(() => {
+    if (!selectedCity || selectedCity === "all") return [];
+    const targetCity = (selectedCity === "Muqdisho" || selectedCity === "Mogadishu") ? "Mogadishu" : selectedCity;
+    const unique = new Set(properties
+      .filter(p => p.city === selectedCity || (targetCity === "Mogadishu" && (p.city === "Mogadishu" || p.city === "Muqdisho")))
+      .map(p => p.district)
+      .filter(Boolean));
+    return Array.from(unique);
+  }, [properties, selectedCity]);
+
+  const typesList = React.useMemo(() => {
+    const unique = new Set(properties.map(p => p.propertyType?.name).filter(Boolean));
+    return Array.from(unique);
+  }, [properties]);
+
   // Filter Logic
   const filteredProperties = properties.filter((p) => {
-    const matchesCity = !selectedCity || 
+    const matchesCity = !selectedCity || selectedCity === "all" ||
       p.city.toLowerCase() === selectedCity.toLowerCase() ||
       (selectedCity === "Mogadishu" && p.city.toLowerCase() === "muqdisho") ||
       (selectedCity === "Muqdisho" && p.city.toLowerCase() === "mogadishu") ||
       (selectedCity === "Galkacyo" && p.city.toLowerCase() === "galkacayo") ||
       (selectedCity === "Galkacayo" && p.city.toLowerCase() === "galkacyo");
+    const matchesDistrict = !selectedDistrict || selectedDistrict === "all" || p.district === selectedDistrict;
     const matchesSearch = !searchTerm || 
       p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
       p.location.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = !selectedType || p.propertyType?.name.toLowerCase() === selectedType.toLowerCase();
-    const matchesListingType = !selectedListingType || p.listingType.toUpperCase() === selectedListingType.toUpperCase();
+    const matchesType = !selectedType || selectedType === "all" || p.propertyType?.name.toLowerCase() === selectedType.toLowerCase();
+    const matchesListingType = !selectedListingType || selectedListingType === "all" || p.listingType.toUpperCase() === selectedListingType.toUpperCase();
+    const matchesStatus = !selectedStatus || selectedStatus === "all" || p.status.toUpperCase() === selectedStatus.toUpperCase();
     
     let matchesPrice = true;
     if (initialMinPrice !== null && p.price < initialMinPrice) matchesPrice = false;
@@ -66,7 +93,7 @@ function ExploreContent() {
 
     const isApproved = p.status !== "CREATED";
 
-    return matchesCity && matchesSearch && matchesType && matchesListingType && matchesPrice && isApproved;
+    return matchesCity && matchesDistrict && matchesSearch && matchesType && matchesListingType && matchesPrice && isApproved && matchesStatus;
   });
 
   return (
@@ -119,34 +146,87 @@ function ExploreContent() {
                </div>
             </div>
 
-            {/* City Filter Row */}
-            <div className="flex flex-wrap items-center gap-3">
-              <button 
-                onClick={() => setSelectedCity("")}
-                className={`px-5 py-2 rounded-full text-[13px] font-bold transition-all border ${
-                  !selectedCity 
-                    ? "bg-[#214347] text-white border-[#214347] shadow-md shadow-[#214347]/20" 
-                    : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-                }`}
-              >
-                All Cities
-              </button>
-              {somaliCities.map(city => (
+            {/* Advanced Filter Row */}
+            <div className="flex flex-wrap items-center gap-4">
+              <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Status</Label>
+                <Select value={selectedStatus || "all"} onValueChange={setSelectedStatus}>
+                  <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-gray-50 font-medium text-sm">
+                    <SelectValue placeholder="All Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value="AVAILABLE">Available</SelectItem>
+                    <SelectItem value="BOOKED">Booked</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Prop Type</Label>
+                <Select value={selectedType || "all"} onValueChange={setSelectedType}>
+                  <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-gray-50 font-medium text-sm">
+                    <SelectValue placeholder="All Types" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    {typesList.map(t => (
+                      <SelectItem key={t!} value={t!}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Listing</Label>
+                <Select value={selectedListingType || "all"} onValueChange={setSelectedListingType}>
+                  <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-gray-50 font-medium text-sm">
+                    <SelectValue placeholder="All Listings" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Listings</SelectItem>
+                    <SelectItem value="RENT">Rent</SelectItem>
+                    <SelectItem value="SALE">Sale</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">City</Label>
+                <Select value={selectedCity || "all"} onValueChange={(val) => { setSelectedCity(val === "all" ? "" : val); setSelectedDistrict(""); }}>
+                  <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-gray-50 font-medium text-sm">
+                    <SelectValue placeholder="All Cities" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Cities</SelectItem>
+                    {somaliCities.map(city => (
+                      <SelectItem key={city} value={city}>{city}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
+                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">District</Label>
+                <Select value={selectedDistrict || "all"} onValueChange={setSelectedDistrict} disabled={!selectedCity || selectedCity === "all"}>
+                  <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-gray-50 font-medium text-sm">
+                    <SelectValue placeholder="All Districts" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Districts</SelectItem>
+                    {districtsList.map(district => (
+                      <SelectItem key={district!} value={district!}>{district}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="ml-auto mt-5">
                 <button 
-                  key={city}
-                  onClick={() => setSelectedCity(city)}
-                  className={`px-5 py-2 rounded-full text-[13px] font-bold transition-all border ${
-                    selectedCity === city 
-                      ? "bg-[#214347] text-white border-[#214347] shadow-md shadow-[#214347]/20" 
-                      : "bg-white text-gray-500 border-gray-200 hover:border-gray-400"
-                  }`}
+                  onClick={() => { setSelectedStatus(""); setSelectedType(""); setSelectedListingType(""); setSelectedCity(""); setSelectedDistrict(""); setSearchTerm(""); }}
+                  className="px-4 py-2 rounded-xl text-[13px] font-bold text-gray-500 hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200"
                 >
-                  {city}
-                </button>
-              ))}
-              <div className="ml-auto flex items-center gap-2">
-                <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-xl text-[13px] font-bold text-gray-600 hover:bg-gray-50 transition-all">
-                  <SlidersHorizontal className="h-4 w-4" /> Filters
+                  Reset Filters
                 </button>
               </div>
             </div>

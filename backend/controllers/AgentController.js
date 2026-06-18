@@ -41,7 +41,7 @@ export const getAgentById = async (req, res) => {
 
 // Create new agent
 export const createAgent = async (req, res) => {
-  const { fullName, email, primaryPhone, secondaryPhone, address, city, roleId, status, password } = req.body;
+  const { fullName, email, primaryPhone, secondaryPhone, address, city, district, roleId, status, password } = req.body;
   
   if (!fullName || !email || !primaryPhone || !roleId || !password) {
     return res.status(400).json({ status: 'ERR', message: 'Missing required fields' });
@@ -59,6 +59,7 @@ export const createAgent = async (req, res) => {
         secondaryPhone,
         address,
         city,
+        district,
         roleId: parseInt(roleId),
         status: status || 'ACTIVE',
         password: hashedPassword
@@ -80,7 +81,7 @@ export const createAgent = async (req, res) => {
 // Update agent
 export const updateAgent = async (req, res) => {
   const { id } = req.params;
-  const { fullName, email, primaryPhone, secondaryPhone, address, city, roleId, status, password } = req.body;
+  const { fullName, email, primaryPhone, secondaryPhone, address, city, district, roleId, status, password } = req.body;
 
   try {
     const updateData = {
@@ -90,6 +91,7 @@ export const updateAgent = async (req, res) => {
       secondaryPhone,
       address,
       city,
+      district,
       roleId: roleId ? parseInt(roleId) : undefined,
       status
     };

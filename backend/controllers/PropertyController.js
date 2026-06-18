@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma.js"; // Restart nodemon 2
 import axios from "axios";
+import { getFileUrl, rejectLegacyUploadUrl } from "../lib/upload.js";
 
 // @desc    Create a new property
 // @route   POST /api/properties
@@ -28,12 +29,17 @@ export const createProperty = async (req, res) => {
       });
     }
 
-    // Combine images from body (URLs) and files (uploads)
+    // Combine images from uploaded files (S3) and optional existing S3 URLs in body
     let images = [];
     if (req.files && req.files.length > 0) {
-      images = req.files.map(file => file.path);
-    } else if (bodyImages) {
-      images = Array.isArray(bodyImages) ? bodyImages : [bodyImages];
+      images = req.files.map(getFileUrl).filter(Boolean);
+    }
+    if (bodyImages) {
+      const bodyImageList = Array.isArray(bodyImages) ? bodyImages : [bodyImages];
+      for (const imageUrl of bodyImageList) {
+        if (rejectLegacyUploadUrl(imageUrl, res, 'images')) return;
+      }
+      images = [...images, ...bodyImageList];
     }
 
     // Parse features
@@ -268,7 +274,7 @@ export const updateProperty = async (req, res) => {
 
     // Handle IMAGE REPLACEMENT
     if (req.files && req.files.length > 0) {
-      const newImages = req.files.map(file => ({ url: file.path }));
+      const newImages = req.files.map(file => ({ url: getFileUrl(file) }));
       updateData.images = {
         deleteMany: {},
         create: newImages

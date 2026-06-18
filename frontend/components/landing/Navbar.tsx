@@ -36,17 +36,17 @@ export default function Navbar() {
       user.roleId === 3
     );
 
-  const navLinks = [
+  const navLinks: Array<{ name: string; href?: string; dropdown?: { name: string; href: string; icon: any }[] }> = [
     { name: "Home", href: "/" },
     { name: "About", href: "/about" },
     { name: "Explore", href: "/explore" },
-    { 
-      name: "Property", 
-      dropdown: [
-        { name: "Buy Property", href: "/buy", icon: HomeIcon },
-        { name: "Rent Property", href: "/rent", icon: Key }
-      ]
-    },  
+    // { 
+    //   name: "Property", 
+    //   dropdown: [
+    //     { name: "Buy Property", href: "/buy", icon: HomeIcon },
+    //     { name: "Rent Property", href: "/rent", icon: Key }
+    //   ]
+    // },  
     { name: "Blogs", href: "/blogs" },
     { name: "Contact Us", href: "/contact" },
   ];
@@ -96,7 +96,7 @@ export default function Navbar() {
                             </Link>
 
                             {/* Divider */}
-                            {idx !== link.dropdown.length - 1 && (
+                            {idx !== link.dropdown!.length - 1 && (
                               <div className="mx-6 border-b border-dashed border-gray-100"></div>
                             )}
                           </div>
@@ -210,14 +210,14 @@ export default function Navbar() {
                         <ChevronDown className={`w-5 h-5 transition-transform duration-300 ${mobileDropdownOpen ? 'rotate-180' : ''}`} />
                       </button>
                       <div className={`flex flex-col pl-2 overflow-hidden transition-all duration-300 ${mobileDropdownOpen ? 'max-h-48 py-2' : 'max-h-0'}`}>
-                        {link.dropdown.map((sublink, idx) => {
+                        {link.dropdown!.map((sublink, idx) => {
                            const Icon = sublink.icon;
                            return (
                               <Link
                                 key={sublink.name}
                                 href={sublink.href}
                                 className={`flex items-center gap-3 py-3 text-gray-600 hover:text-[#214347] text-[16px] font-medium ${
-                                  idx !== link.dropdown.length - 1 ? 'border-b border-dashed border-gray-100' : ''
+                                  idx !== link.dropdown!.length - 1 ? 'border-b border-dashed border-gray-100' : ''
                                 }`}
                                 onClick={() => setIsOpen(false)}
                               >

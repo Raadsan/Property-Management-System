@@ -139,12 +139,13 @@ export default function PropertiesPage() {
   // View Details Modal State
   const [isViewModalOpen, setIsViewModalOpen] = React.useState(false)
   const [viewProperty, setViewProperty] = React.useState<Property | null>(null)
-  
+
   // Filtering State
   const [filterStatus, setFilterStatus] = React.useState<string>("all")
   const [filterType, setFilterType] = React.useState<string>("all")
   const [filterListing, setFilterListing] = React.useState<string>("all")
   const [filterCity, setFilterCity] = React.useState<string>("all")
+  const [filterDistrict, setFilterDistrict] = React.useState<string>("all")
 
   // Permissions State
   const [permissions, setPermissions] = React.useState({
@@ -184,7 +185,7 @@ export default function PropertiesPage() {
     }
     return (City.getCitiesOfCountry(countryIso) || []).map(c => ({ value: c.name, label: c.name }));
   }, [selectedCountry, countryIso]);
-  const countryOptions = React.useMemo(() => 
+  const countryOptions = React.useMemo(() =>
     countryData.map(c => ({ value: c.isoCode, label: c.name })),
     [countryData]
   );
@@ -226,7 +227,7 @@ export default function PropertiesPage() {
       // 🛡️ Filter Logic: If the user is an agent, they only see themselves in the dropdown
       if (isAgent && loggedInUser) {
         allAgents = allAgents.filter((a: any) => a.id === loggedInUser.id)
-        
+
         // Auto-select the agent if creating a new property
         if (!currentProperty && allAgents.length > 0) {
           setAgentId(allAgents[0].id.toString())
@@ -249,7 +250,7 @@ export default function PropertiesPage() {
       if (!user.roleId) return
 
       const permsData = await getRolePermissionsById(user.roleId)
-      
+
       // Find the Content Management menu and Properties submenu
       const contentMenu = permsData.menus.find(m => m.menu?.title === "Content Management")
       const propSubMenu = contentMenu?.subMenus?.find(sm => sm.subMenu?.title === "Properties")
@@ -290,7 +291,7 @@ export default function PropertiesPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!title || !location || !selectedCity || !price || !propertyTypeId || !agentId) {
+    if (!title || !selectedCity || !price || !propertyTypeId || !agentId) {
       return toast.error("Please fill in all strictly required fields.")
     }
 
@@ -471,7 +472,7 @@ export default function PropertiesPage() {
     setStatus("CREATED")
     setPropertyTypeId("")
     setOwnerId("")
-    
+
     // 🛡️ Preserve Agent ID if user is an agent
     if (isAgent && loggedInUser) {
       setAgentId(loggedInUser.id.toString())
@@ -502,19 +503,42 @@ export default function PropertiesPage() {
       const matchStatus = filterStatus === "all" || prop.status === filterStatus
       const matchType = filterType === "all" || prop.propertyTypeId.toString() === filterType
       const matchListing = filterListing === "all" || prop.listingType === filterListing
-      const matchCity = filterCity === "all" || 
-        prop.city === filterCity || 
+      const matchCity = filterCity === "all" ||
+        prop.city === filterCity ||
         (filterCity === "Muqdisho" && prop.city === "Mogadishu") ||
         (filterCity === "Mogadishu" && prop.city === "Muqdisho")
-      return matchStatus && matchType && matchListing && matchCity
+      const matchDistrict = filterDistrict === "all" || prop.district === filterDistrict
+      return matchStatus && matchType && matchListing && matchCity && matchDistrict
     })
-  }, [properties, filterStatus, filterType, filterListing, filterCity])
+  }, [properties, filterStatus, filterType, filterListing, filterCity, filterDistrict])
 
   const citiesList = React.useMemo(() => {
     const normalized = properties.map(p => p.city === "Muqdisho" ? "Mogadishu" : p.city).filter(Boolean)
     const uniqueCities = new Set(normalized)
     return Array.from(uniqueCities)
   }, [properties])
+
+
+  const districtsList = React.useMemo(() => {
+    if (filterCity === "all") {
+      // Get all unique districts from properties
+      const unique = new Set(properties.map(p => p.district).filter(Boolean))
+      return Array.from(unique)
+    }
+    // Get districts for this specific city
+    // Convert Mogadishu/Muqdisho compatibility
+    const targetCity = (filterCity === "Muqdisho" || filterCity === "Mogadishu") ? "Mogadishu" : filterCity;
+    const preDefined = getDistrictOptions(targetCity).map(d => d.value)
+
+    // Also include any other custom districts saved in database for this city
+    const savedInDb = properties
+      .filter(p => p.city === filterCity || (targetCity === "Mogadishu" && (p.city === "Mogadishu" || p.city === "Muqdisho")))
+      .map(p => p.district)
+      .filter(Boolean)
+
+    const combined = new Set([...preDefined, ...savedInDb])
+    return Array.from(combined)
+  }, [properties, filterCity])
 
   // Determine badge styling based on Status
   const getStatusBadge = (status: string) => {
@@ -694,7 +718,7 @@ export default function PropertiesPage() {
                     Add Property
                   </Button>
                 </DialogTrigger>
-                <DialogContent 
+                <DialogContent
                   className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto"
                   onPointerDownOutside={(e) => {
                     const target = e.target as Element;
@@ -724,7 +748,7 @@ export default function PropertiesPage() {
                         onChange={(opt: any) => {
                           if (opt) {
                             setSelectedCountry(opt.label);
-                            setSelectedCity(""); 
+                            setSelectedCity("");
                           }
                         }}
                         menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
@@ -776,7 +800,7 @@ export default function PropertiesPage() {
                       <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
                       <ReactSelect
                         instanceId="reg-city-select"
-                        key={`city-select-${countryIso}`} 
+                        key={`city-select-${countryIso}`}
                         options={cityOptions}
                         value={selectedCity ? { value: selectedCity, label: selectedCity } : null}
                         onChange={(opt: any) => {
@@ -884,8 +908,8 @@ export default function PropertiesPage() {
 
                     {/* Location Area */}
                     <div className="space-y-2">
-                      <Label htmlFor="location"> Location <span className="text-red-500">*</span></Label>
-                      <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder=" Location" required />
+                      <Label htmlFor="location"> Location</Label>
+                      <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder=" Location" />
                     </div>
 
                     {/* Price */}
@@ -1002,8 +1026,6 @@ export default function PropertiesPage() {
                           <SelectItem value="CREATED">CREATED</SelectItem>
                           <SelectItem value="AVAILABLE">AVAILABLE</SelectItem>
                           <SelectItem value="BOOKED">BOOKED</SelectItem>
-                          <SelectItem value="RENTED">RENTED</SelectItem>
-                          <SelectItem value="SOLD">SOLD</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -1064,169 +1086,169 @@ export default function PropertiesPage() {
             )}
           </div>
 
-            <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-              <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
-                <DialogHeader>
-                  <DialogTitle>Property Highlights</DialogTitle>
-                </DialogHeader>
-                {viewProperty && (
-                  <div className="space-y-6 py-4">
-                    {/* Horizontal Image Gallery */}
-                    {viewProperty.images && viewProperty.images.length > 0 ? (
-                      <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
-                        {viewProperty.images.map((img) => {
-                          const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
-                          const baseUrl = apiUrl.replace("/api", "");
-                          const finalUrl = img.url.startsWith('http')
-                            ? img.url
-                            : `${baseUrl}/${img.url.replace(/\\/g, '/').replace(/^\//, '')}`;
+          <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+            <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Property Highlights</DialogTitle>
+              </DialogHeader>
+              {viewProperty && (
+                <div className="space-y-6 py-4">
+                  {/* Horizontal Image Gallery */}
+                  {viewProperty.images && viewProperty.images.length > 0 ? (
+                    <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
+                      {viewProperty.images.map((img) => {
+                        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
+                        const baseUrl = apiUrl.replace("/api", "");
+                        const finalUrl = img.url.startsWith('http')
+                          ? img.url
+                          : `${baseUrl}/${img.url.replace(/\\/g, '/').replace(/^\//, '')}`;
 
-                          return (
-                            <img
-                              key={img.id}
-                              src={finalUrl}
-                              alt={viewProperty.title}
-                              className="h-48 w-auto min-w-[200px] object-cover rounded-md border shadow-sm snap-center"
-                            />
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="h-40 w-full flex items-center justify-center bg-muted rounded-md text-muted-foreground border border-dashed">
-                        <ImageIcon className="h-8 w-8 opacity-50 mr-2" /> No media attached
+                        return (
+                          <img
+                            key={img.id}
+                            src={finalUrl}
+                            alt={viewProperty.title}
+                            className="h-48 w-auto min-w-[200px] object-cover rounded-md border shadow-sm snap-center"
+                          />
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="h-40 w-full flex items-center justify-center bg-muted rounded-md text-muted-foreground border border-dashed">
+                      <ImageIcon className="h-8 w-8 opacity-50 mr-2" /> No media attached
+                    </div>
+                  )}
+
+                  {/* Information Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                    <div className="col-span-1 md:col-span-2">
+                      <span className="font-semibold text-muted-foreground block mb-1">Name</span>
+                      <p className="font-medium text-lg leading-tight">{viewProperty.title}</p>
+                    </div>
+
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Price</span>
+                      <p className="font-bold text-[#166534] dark:text-[#6ee7b7] text-lg">${viewProperty.price.toLocaleString()}</p>
+                    </div>
+
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">City & Country</span>
+                      <p className="font-medium bg-muted/40 p-2 rounded-md capitalize">{viewProperty.city}, {viewProperty.country || "Somalia"}</p>
+                    </div>
+
+                    {viewProperty.district && (
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">District / Degmo</span>
+                        <p className="font-medium bg-muted/40 p-2 rounded-md capitalize">{viewProperty.district}</p>
                       </div>
                     )}
 
-                    {/* Information Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 text-sm">
-                      <div className="col-span-1 md:col-span-2">
-                        <span className="font-semibold text-muted-foreground block mb-1">Name</span>
-                        <p className="font-medium text-lg leading-tight">{viewProperty.title}</p>
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Location / Address</span>
+                      <p className="font-medium bg-muted/40 p-2 rounded-md">{viewProperty.location}</p>
+                    </div>
+
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Category & Type</span>
+                      <div className="flex items-center gap-2">
+                        <span className="border px-2 py-0.5 rounded text-xs font-semibold uppercase">{viewProperty.propertyType?.name || 'Uncategorized'}</span>
+                        <span className="font-bold text-xs uppercase opacity-80">{viewProperty.listingType}</span>
                       </div>
+                    </div>
 
-                      <div>
-                        <span className="font-semibold text-muted-foreground block mb-1">Price</span>
-                        <p className="font-bold text-[#166534] dark:text-[#6ee7b7] text-lg">${viewProperty.price.toLocaleString()}</p>
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Listing Status</span>
+                      <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${getStatusBadge(viewProperty.status)}`}>{viewProperty.status}</span>
+                    </div>
+
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Owner Contact</span>
+                      <div className="bg-muted/30 p-2 rounded-md">
+                        <p className="font-medium">{viewProperty.owner?.name || 'Unassigned'}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 font-mono">{viewProperty.owner?.phone || 'N/A'}</p>
                       </div>
+                    </div>
 
-                      <div>
-                        <span className="font-semibold text-muted-foreground block mb-1">City & Country</span>
-                        <p className="font-medium bg-muted/40 p-2 rounded-md capitalize">{viewProperty.city}, {viewProperty.country || "Somalia"}</p>
-                      </div>
-
-                      {viewProperty.district && (
-                        <div>
-                          <span className="font-semibold text-muted-foreground block mb-1">District / Degmo</span>
-                          <p className="font-medium bg-muted/40 p-2 rounded-md capitalize">{viewProperty.district}</p>
-                        </div>
-                      )}
-
-                      <div>
-                        <span className="font-semibold text-muted-foreground block mb-1">Location / Address</span>
-                        <p className="font-medium bg-muted/40 p-2 rounded-md">{viewProperty.location}</p>
-                      </div>
-
-                      <div>
-                        <span className="font-semibold text-muted-foreground block mb-1">Category & Type</span>
-                        <div className="flex items-center gap-2">
-                          <span className="border px-2 py-0.5 rounded text-xs font-semibold uppercase">{viewProperty.propertyType?.name || 'Uncategorized'}</span>
-                          <span className="font-bold text-xs uppercase opacity-80">{viewProperty.listingType}</span>
-                        </div>
-                      </div>
-
-                      <div>
-                        <span className="font-semibold text-muted-foreground block mb-1">Listing Status</span>
-                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${getStatusBadge(viewProperty.status)}`}>{viewProperty.status}</span>
-                      </div>
-
-                      <div>
-                        <span className="font-semibold text-muted-foreground block mb-1">Owner Contact</span>
-                        <div className="bg-muted/30 p-2 rounded-md">
-                          <p className="font-medium">{viewProperty.owner?.name || 'Unassigned'}</p>
-                          <p className="text-xs text-muted-foreground mt-0.5 font-mono">{viewProperty.owner?.phone || 'N/A'}</p>
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Agent Contact</span>
+                      <div className="bg-transparent py-1">
+                        <p className="font-medium text-blue-700 dark:text-blue-400">{viewProperty.agent?.fullName || 'Unassigned'}</p>
+                        <div className="mt-1">
+                          <p className="text-xs text-muted-foreground font-mono">
+                            <span className="font-semibold text-foreground/70">Primary Phone:</span> {viewProperty.agent?.primaryPhone || 'N/A'}
+                            {viewProperty.agent?.secondaryPhone && (
+                              <span className="ml-3">
+                                <span className="font-semibold text-foreground/70">Secondary Phone:</span> {viewProperty.agent?.secondaryPhone}
+                              </span>
+                            )}
+                          </p>
                         </div>
                       </div>
+                    </div>
 
-                      <div>
-                        <span className="font-semibold text-muted-foreground block mb-1">Agent Contact</span>
-                        <div className="bg-transparent py-1">
-                          <p className="font-medium text-blue-700 dark:text-blue-400">{viewProperty.agent?.fullName || 'Unassigned'}</p>
-                          <div className="mt-1">
-                            <p className="text-xs text-muted-foreground font-mono">
-                              <span className="font-semibold text-foreground/70">Primary Phone:</span> {viewProperty.agent?.primaryPhone || 'N/A'}
-                              {viewProperty.agent?.secondaryPhone && (
-                                <span className="ml-3">
-                                  <span className="font-semibold text-foreground/70">Secondary Phone:</span> {viewProperty.agent?.secondaryPhone}
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                        </div>
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Dimensions & Area</span>
+                      <p className="font-medium bg-muted/40 p-2 rounded-md">
+                        {viewProperty.sizeLabel || "N/A"} ({viewProperty.area ? `${viewProperty.area} units` : "No area specified"})
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Rooms & Bathrooms</span>
+                      <p className="font-medium bg-muted/40 p-2 rounded-md">
+                        {viewProperty.Rooms || 0} Rooms, {viewProperty.Bathrooms || 0} Bathrooms
+                      </p>
+                    </div>
+
+                    <div className="col-span-1 md:col-span-2 mt-2">
+                      <span className="font-semibold text-muted-foreground block mb-2">Features</span>
+                      <div className="flex flex-wrap gap-2">
+                        {viewProperty.features && viewProperty.features.length > 0 ? (
+                          viewProperty.features.map(f => (
+                            <span key={f.id} className="bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-md text-xs font-medium">{f.name}</span>
+                          ))
+                        ) : <span className="text-muted-foreground italic">No features listed</span>}
                       </div>
+                    </div>
 
-                      <div>
-                        <span className="font-semibold text-muted-foreground block mb-1">Dimensions & Area</span>
-                        <p className="font-medium bg-muted/40 p-2 rounded-md">
-                          {viewProperty.sizeLabel || "N/A"} ({viewProperty.area ? `${viewProperty.area} units` : "No area specified"})
-                        </p>
-                      </div>
-
-                      <div>
-                        <span className="font-semibold text-muted-foreground block mb-1">Rooms & Bathrooms</span>
-                        <p className="font-medium bg-muted/40 p-2 rounded-md">
-                          {viewProperty.Rooms || 0} Rooms, {viewProperty.Bathrooms || 0} Bathrooms
-                        </p>
-                      </div>
-
-                      <div className="col-span-1 md:col-span-2 mt-2">
-                        <span className="font-semibold text-muted-foreground block mb-2">Features</span>
-                        <div className="flex flex-wrap gap-2">
-                          {viewProperty.features && viewProperty.features.length > 0 ? (
-                            viewProperty.features.map(f => (
-                              <span key={f.id} className="bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-md text-xs font-medium">{f.name}</span>
-                            ))
-                          ) : <span className="text-muted-foreground italic">No features listed</span>}
-                        </div>
-                      </div>
-
-                      <div className="col-span-1 md:col-span-2 mt-2">
-                        <span className="font-semibold text-muted-foreground block mb-2">Description</span>
-                        <div className="bg-muted/20 border p-3 rounded-md text-muted-foreground leading-relaxed">
-                          {viewProperty.description || <span className="italic">No description provided for this listing.</span>}
-                        </div>
+                    <div className="col-span-1 md:col-span-2 mt-2">
+                      <span className="font-semibold text-muted-foreground block mb-2">Description</span>
+                      <div className="bg-muted/20 border p-3 rounded-md text-muted-foreground leading-relaxed">
+                        {viewProperty.description || <span className="italic">No description provided for this listing.</span>}
                       </div>
                     </div>
                   </div>
-                )}
-              </DialogContent>
-            </Dialog>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
 
-            <Dialog open={isBookingModalOpen} onOpenChange={setIsBookingModalOpen}>
-              <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                  <DialogTitle>Secure Your Booking</DialogTitle>
-                </DialogHeader>
-                {bookingProperty && (
-                  <form onSubmit={handleBookingSubmit} className="space-y-4 py-4">
-                    <div className="bg-muted/30 p-3 rounded-md text-sm mb-4">
-                      <p className="font-semibold">{bookingProperty.title}</p>
-                    </div>
+          <Dialog open={isBookingModalOpen} onOpenChange={setIsBookingModalOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Secure Your Booking</DialogTitle>
+              </DialogHeader>
+              {bookingProperty && (
+                <form onSubmit={handleBookingSubmit} className="space-y-4 py-4">
+                  <div className="bg-muted/30 p-3 rounded-md text-sm mb-4">
+                    <p className="font-semibold">{bookingProperty.title}</p>
+                  </div>
 
-                    <div className="space-y-2 mb-4">
-                      <Label htmlFor="b-phone">Wafi Mobile Account <span className="text-red-500">*</span></Label>
-                      <Input id="b-phone" type="tel" placeholder="e.g. 25261..." value={wafiPhone} onChange={e => setWafiPhone(e.target.value)} required />
-                    </div>
+                  <div className="space-y-2 mb-4">
+                    <Label htmlFor="b-phone">Wafi Mobile Account <span className="text-red-500">*</span></Label>
+                    <Input id="b-phone" type="tel" placeholder="e.g. 25261..." value={wafiPhone} onChange={e => setWafiPhone(e.target.value)} required />
+                  </div>
 
-                    <DialogFooter className="mt-6">
-                      <Button type="submit" className="w-full btn-category bg-[#16a34a] hover:bg-[#15803d] text-white">
-                        Confirm & Pay via WaafiPay
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                )}
-              </DialogContent>
-            </Dialog>
-          
+                  <DialogFooter className="mt-6">
+                    <Button type="submit" className="w-full btn-category bg-[#16a34a] hover:bg-[#15803d] text-white">
+                      Confirm & Pay via WaafiPay
+                    </Button>
+                  </DialogFooter>
+                </form>
+              )}
+            </DialogContent>
+          </Dialog>
+
 
           {/* Filter Bar */}
           <div className="flex flex-wrap gap-4 mb-6 items-end bg-card p-4 rounded-2xl border border-border/50">
@@ -1238,10 +1260,9 @@ export default function PropertiesPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="CREATED">Created</SelectItem>
                   <SelectItem value="AVAILABLE">Available</SelectItem>
                   <SelectItem value="BOOKED">Booked</SelectItem>
-                  <SelectItem value="RENTED">Rented</SelectItem>
-                  <SelectItem value="SOLD">Sold</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -1277,7 +1298,7 @@ export default function PropertiesPage() {
 
             <div className="flex flex-col gap-1.5 min-w-[130px]">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">City</Label>
-              <Select value={filterCity} onValueChange={setFilterCity}>
+              <Select value={filterCity} onValueChange={(val) => { setFilterCity(val); setFilterDistrict("all"); }}>
                 <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Cities" />
                 </SelectTrigger>
@@ -1290,10 +1311,31 @@ export default function PropertiesPage() {
               </Select>
             </div>
 
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => { setFilterStatus("all"); setFilterType("all"); setFilterListing("all"); setFilterCity("all"); }}
+            <div className="flex flex-col gap-1.5 min-w-[130px]">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">District</Label>
+              <Select value={filterDistrict} onValueChange={setFilterDistrict}>
+                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                  <SelectValue placeholder="All Districts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Districts</SelectItem>
+                  {districtsList.map(district => (
+                    <SelectItem key={district} value={district!}>{district}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setFilterStatus("all");
+                setFilterType("all");
+                setFilterListing("all");
+                setFilterCity("all");
+                setFilterDistrict("all");
+              }}
               className="text-xs font-bold text-muted-foreground h-9 hover:bg-muted"
             >
               Reset

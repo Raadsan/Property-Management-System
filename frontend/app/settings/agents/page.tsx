@@ -8,20 +8,20 @@ import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon, PhoneIcon, MapPinIcon } from "lucide-react"
-import { 
-  getAgents, 
-  createAgent, 
-  updateAgent, 
+import {
+  getAgents,
+  createAgent,
+  updateAgent,
   deleteAgent,
-  AgentData 
+  AgentData
 } from "@/api/agentApi"
 import { getRoles, Role } from "@/api/rolesApi"
 import { getRolePermissionsById } from "@/api/rolePermissionsApi"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
   DialogFooter,
   DialogDescription
@@ -37,13 +37,94 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 
+const somaliCities = [
+  { value: "Mogadishu", label: "Mogadishu" },
+  { value: "Hargeisa", label: "Hargeisa" },
+  { value: "Galkacyo", label: "Galkacyo" },
+  { value: "Garowe", label: "Garowe" },
+  { value: "Kismayo", label: "Kismayo" },
+  { value: "Bosaso", label: "Bosaso" }
+]
+
+const mogadishuDistricts = [
+  { value: "Cabdi Casiis", label: "Cabdi Casiis" },
+  { value: "Boondheere", label: "Boondheere" },
+  { value: "Dayniile", label: "Dayniile" },
+  { value: "Dharkeenley", label: "Dharkeenley" },
+  { value: "Gubadley", label: "Gubadley" },
+  { value: "Heliwaa", label: "Heliwaa" },
+  { value: "Hodan", label: "Hodan" },
+  { value: "Howlwadaag", label: "Howlwadaag" },
+  { value: "Kaaraan", label: "Kaaraan" },
+  { value: "Kaxda", label: "Kaxda" },
+  { value: "Shangaani", label: "Shangaani" },
+  { value: "Shibis", label: "Shibis" },
+  { value: "Waaberi", label: "Waaberi" },
+  { value: "Wadajir", label: "Wadajir" },
+  { value: "Wardhiigley", label: "Wardhiigley" },
+  { value: "Xamar Jajab", label: "Xamar Jajab" },
+  { value: "Xamar Weyne", label: "Xamar Weyne" },
+  { value: "Yaaqshiid", label: "Yaaqshiid" }
+]
+
+const hargeisaDistricts = [
+  { value: "26 June", label: "26 June" },
+  { value: "Ahmed Dhagax", label: "Ahmed Dhagax" },
+  { value: "Gacan Libaax", label: "Gacan Libaax" },
+  { value: "Ibraahim Koodbuur", label: "Ibraahim Koodbuur" },
+  { value: "Maxamuud Haybe", label: "Maxamuud Haybe" },
+  { value: "Mohamed Mooge", label: "Mohamed Mooge" }
+]
+
+const garoweDistricts = [
+  { value: "1da Agoosto", label: "1da Agoosto" },
+  { value: "Hantiwadaag", label: "Hantiwadaag" },
+  { value: "Horseed", label: "Horseed" },
+  { value: "Waaberi", label: "Waaberi" },
+  { value: "Wadajir", label: "Wadajir" }
+]
+
+const kismayoDistricts = [
+  { value: "Calanley", label: "Calanley" },
+  { value: "Farjano", label: "Farjano" },
+  { value: "Faanoole", label: "Faanoole" },
+  { value: "Shaqaalaha", label: "Shaqaalaha" },
+  { value: "Siinaay", label: "Siinaay" }
+]
+
+const galkacayoDistricts = [
+  { value: "Garsoor", label: "Garsoor" },
+  { value: "Horumar", label: "Horumar" },
+  { value: "Israac", label: "Israac" },
+  { value: "Wadajir", label: "Wadajir" }
+]
+
+const bosasoDistricts = [
+  { value: "1st July", label: "1st July" },
+  { value: "Hawlwadag", label: "Hawlwadag" },
+  { value: "Grible", label: "Grible" },
+  { value: "Ubah", label: "Ubah" },
+  { value: "Karin", label: "Karin" },
+  { value: "Dayaha", label: "Dayaha" }
+]
+
+const getDistrictOptions = (city: string) => {
+  if (city === "Mogadishu") return mogadishuDistricts
+  if (city === "Hargeisa") return hargeisaDistricts
+  if (city === "Galkacyo" || city === "Galkacayo") return galkacayoDistricts
+  if (city === "Garowe") return garoweDistricts
+  if (city === "Kismayo") return kismayoDistricts
+  if (city === "Bosaso") return bosasoDistricts
+  return []
+}
+
 export default function AgentsPage() {
   const [agents, setAgents] = React.useState<AgentData[]>([])
   const [roles, setRoles] = React.useState<Role[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentAgent, setCurrentAgent] = React.useState<AgentData | null>(null)
-  
+
   // Permissions State
   const [permissions, setPermissions] = React.useState({
     canAdd: false,
@@ -51,9 +132,9 @@ export default function AgentsPage() {
     canDelete: false,
     isLoaded: false
   })
-  
+
   const isReadOnly = !permissions.canEdit && permissions.isLoaded; // backwards compatibility for some parts of code
-  
+
   // Form State
   const [fullName, setFullName] = React.useState("")
   const [email, setEmail] = React.useState("")
@@ -61,13 +142,15 @@ export default function AgentsPage() {
   const [secondaryPhone, setSecondaryPhone] = React.useState("")
   const [address, setAddress] = React.useState("")
   const [city, setCity] = React.useState("")
+  const [district, setDistrict] = React.useState("")
   const [roleId, setRoleId] = React.useState<string>("")
   const [status, setStatus] = React.useState("ACTIVE")
   const [password, setPassword] = React.useState("")
-  
+
   // Filtering State
   const [filterStatus, setFilterStatus] = React.useState<string>("all")
   const [filterCity, setFilterCity] = React.useState<string>("all")
+  const [filterDistrict, setFilterDistrict] = React.useState<string>("all")
 
   const loadData = async () => {
     setIsLoading(true)
@@ -99,7 +182,7 @@ export default function AgentsPage() {
       if (!user.roleId) return
 
       const permsData = await getRolePermissionsById(user.roleId)
-      
+
       // Find the System Settings menu and Agents submenu
       const settingsMenu = permsData.menus.find(m => m.menu?.title === "System Settings")
       const agentSubMenu = settingsMenu?.subMenus?.find(sm => sm.subMenu?.title === "Agents")
@@ -144,6 +227,7 @@ export default function AgentsPage() {
         secondaryPhone: secondaryPhone || undefined,
         address: address || undefined,
         city: city || undefined,
+        district: district || undefined,
         roleId: parseInt(roleId),
         status,
         password: password || undefined
@@ -186,6 +270,7 @@ export default function AgentsPage() {
     setSecondaryPhone(agent.secondaryPhone || "")
     setAddress(agent.address || "")
     setCity(agent.city || "")
+    setDistrict(agent.district || "")
     setRoleId(agent.roleId.toString())
     setStatus(agent.status)
     setPassword("") // Clear for security
@@ -205,6 +290,7 @@ export default function AgentsPage() {
     setSecondaryPhone("")
     setAddress("")
     setCity("")
+    setDistrict("")
     // Keep agent role selected
     const agentRole = roles.find(r => r.name.toLowerCase() === 'agent')
     if (agentRole) {
@@ -222,13 +308,30 @@ export default function AgentsPage() {
     return Array.from(uniqueCities)
   }, [agents])
 
+  const districtsList = React.useMemo(() => {
+    if (filterCity === "all") {
+      const unique = new Set(agents.map(a => a.district).filter(Boolean))
+      return Array.from(unique)
+    }
+    // districts for specific city
+    const targetCity = filterCity
+    const preDefined = getDistrictOptions(targetCity).map(d => d.value)
+    const savedInDb = agents
+      .filter(a => a.city === filterCity)
+      .map(a => a.district)
+      .filter(Boolean)
+    const combined = new Set([...preDefined, ...savedInDb])
+    return Array.from(combined)
+  }, [agents, filterCity])
+
   const filteredAgents = React.useMemo(() => {
     return agents.filter(agent => {
       const matchStatus = filterStatus === "all" || agent.status === filterStatus
       const matchCity = filterCity === "all" || agent.city === filterCity
-      return matchStatus && matchCity
+      const matchDistrict = filterDistrict === "all" || agent.district === filterDistrict
+      return matchStatus && matchCity && matchDistrict
     })
-  }, [agents, filterStatus, filterCity])
+  }, [agents, filterStatus, filterCity, filterDistrict])
 
   // Define columns for DataTable
   const columns: ColumnDef<AgentData>[] = [
@@ -270,6 +373,15 @@ export default function AgentsPage() {
       ),
     },
     {
+      accessorKey: "district",
+      header: "District",
+      cell: ({ row }) => (
+        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+          {row.original.district ? row.original.district : "N/A"}
+        </div>
+      ),
+    },
+    {
       accessorKey: "role.name",
       header: "Role",
       cell: ({ row }) => (
@@ -293,9 +405,9 @@ export default function AgentsPage() {
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
           {permissions.canEdit && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => openEditModal(row.original)}
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
             >
@@ -303,9 +415,9 @@ export default function AgentsPage() {
             </Button>
           )}
           {permissions.canDelete && (
-            <Button 
-              variant="ghost" 
-              size="icon" 
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => row.original.id && handleDelete(row.original.id)}
               className="text-red-600 hover:text-red-700 hover:bg-red-50"
             >
@@ -346,13 +458,13 @@ export default function AgentsPage() {
                 </DialogTrigger>
                 <DialogContent className="sm:max-w-[500px]">
                   <DialogHeader>
-                  <DialogTitle>{currentAgent ? "Edit Agent" : "Add New Agent"}</DialogTitle>
-                  <DialogDescription>
-                    {currentAgent ? "Update the details of the selected agent." : "Fill in the details to register a new property agent."}
-                  </DialogDescription>
-                </DialogHeader>
+                    <DialogTitle>{currentAgent ? "Edit Agent" : "Add New Agent"}</DialogTitle>
+                    <DialogDescription>
+                      {currentAgent ? "Update the details of the selected agent." : "Fill in the details to register a new property agent."}
+                    </DialogDescription>
+                  </DialogHeader>
                   <form onSubmit={handleSubmit} className="grid gap-4 py-4" autoComplete="off">
-                    
+
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="fullName" className="text-right">Full Name <span className="text-red-500">*</span></Label>
                       <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} className="col-span-3" placeholder="Full Name" required />
@@ -375,7 +487,34 @@ export default function AgentsPage() {
 
                     <div className="grid grid-cols-4 items-center gap-4">
                       <Label htmlFor="city" className="text-right">City</Label>
-                      <Input id="city" value={city} onChange={(e) => setCity(e.target.value)} className="col-span-3" placeholder="City" />
+                      <div className="col-span-3">
+                        <Select value={city} onValueChange={(val) => { setCity(val); setDistrict(""); }}>
+                          <SelectTrigger id="city" className="w-full">
+                            <SelectValue placeholder="Select City" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {somaliCities.map((c) => (
+                              <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-4 items-center gap-4">
+                      <Label htmlFor="district" className="text-right">District</Label>
+                      <div className="col-span-3">
+                        <Select value={district} onValueChange={setDistrict} disabled={!city}>
+                          <SelectTrigger id="district" className="w-full">
+                            <SelectValue placeholder={city ? "Select District" : "Select a city first"} />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getDistrictOptions(city).map((d) => (
+                              <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-4 items-center gap-4">
@@ -391,10 +530,10 @@ export default function AgentsPage() {
                             <SelectValue placeholder="Select a role" />
                           </SelectTrigger>
                           <SelectContent>
-                          {roles.filter(r => r.name.toLowerCase() === 'agent').map((r) => (
-                            <SelectItem key={r.id} value={r.id.toString()}>{r.name}</SelectItem>
-                          ))}
-                        </SelectContent>
+                            {roles.filter(r => r.name.toLowerCase() === 'agent').map((r) => (
+                              <SelectItem key={r.id} value={r.id.toString()}>{r.name}</SelectItem>
+                            ))}
+                          </SelectContent>
                         </Select>
                       </div>
                     </div>
@@ -413,22 +552,22 @@ export default function AgentsPage() {
                         </Select>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="password" className="text-right">Password {currentAgent ? "" : <span className="text-red-500">*</span>}</Label>
-                    <Input 
-                      id="password" 
-                      type="password"
-                      value={password} 
-                      onChange={(e) => setPassword(e.target.value)} 
-                      className="col-span-3" 
-                      placeholder={currentAgent ? "Leave blank to keep unchanged" : "Secure Password"} 
-                      required={!currentAgent}
-                      autoComplete="new-password"
-                    />
-                  </div>
-                  
-                  <DialogFooter>
+                      <Label htmlFor="password" className="text-right">Password {currentAgent ? "" : <span className="text-red-500">*</span>}</Label>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="col-span-3"
+                        placeholder={currentAgent ? "Leave blank to keep unchanged" : "Secure Password"}
+                        required={!currentAgent}
+                        autoComplete="new-password"
+                      />
+                    </div>
+
+                    <DialogFooter>
                       <Button type="submit" className="btn-category mt-4">
                         {currentAgent ? "Update Agent" : "Save Agent"}
                       </Button>
@@ -457,7 +596,7 @@ export default function AgentsPage() {
 
             <div className="flex flex-col gap-1.5 min-w-[150px]">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">City Filter</Label>
-              <Select value={filterCity} onValueChange={setFilterCity}>
+              <Select value={filterCity} onValueChange={(val) => { setFilterCity(val); setFilterDistrict("all"); }}>
                 <SelectTrigger className="h-9 border-border bg-card">
                   <SelectValue placeholder="All Cities" />
                 </SelectTrigger>
@@ -470,20 +609,35 @@ export default function AgentsPage() {
               </Select>
             </div>
 
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              onClick={() => { setFilterStatus("all"); setFilterCity("all"); }}
+            <div className="flex flex-col gap-1.5 min-w-[150px]">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">District Filter</Label>
+              <Select value={filterDistrict} onValueChange={setFilterDistrict}>
+                <SelectTrigger className="h-9 border-border bg-card">
+                  <SelectValue placeholder="All Districts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Districts</SelectItem>
+                  {districtsList.map(district => (
+                    <SelectItem key={district} value={district!}>{district}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setFilterStatus("all"); setFilterCity("all"); setFilterDistrict("all"); }}
               className="text-xs font-bold text-muted-foreground h-9"
             >
               Reset Filters
             </Button>
           </div>
 
-          <DataTable 
-            columns={columns} 
-            data={filteredAgents} 
-            isLoading={isLoading} 
+          <DataTable
+            columns={columns}
+            data={filteredAgents}
+            isLoading={isLoading}
             filterColumn="fullName"
             filterPlaceholder="Search agents by name..."
           />

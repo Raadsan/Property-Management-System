@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { getFileUrl, rejectLegacyUploadUrl } from "../lib/upload.js";
 
 // @desc    Create a new sale
 // @route   POST /api/sales
@@ -13,7 +14,9 @@ export const createSale = async (req, res) => {
   // Handle uploaded document if present
   let documentUrl = null;
   if (req.file) {
-    documentUrl = req.file.path;
+    documentUrl = getFileUrl(req.file);
+  } else if (rejectLegacyUploadUrl(req.body?.documentUrl, res, 'document')) {
+    return;
   }
 
   try {
@@ -94,7 +97,9 @@ export const updateSale = async (req, res) => {
 
   // Handle new document upload
   if (req.file) {
-    updateFields.documentUrl = req.file.path;
+    updateFields.documentUrl = getFileUrl(req.file);
+  } else if (updateFields.documentUrl && rejectLegacyUploadUrl(updateFields.documentUrl, res, 'document')) {
+    return;
   }
 
   try {

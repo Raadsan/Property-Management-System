@@ -2,6 +2,7 @@ import { prisma } from "../lib/prisma.js";
 import bcrypt from "bcrypt";
 import nodemailer from "nodemailer";
 import { verifyFirebaseToken } from "../lib/firebase.js";
+import { getFileUrl, rejectLegacyUploadUrl } from "../lib/upload.js";
 
 // @desc    Create a new user
 // @route   POST /api/users
@@ -20,7 +21,9 @@ export const createUser = async (req, res) => {
 
     let photoPath = photo;
     if (req.file) {
-      photoPath = req.file.path;
+      photoPath = getFileUrl(req.file);
+    } else if (rejectLegacyUploadUrl(photo, res, 'photo')) {
+      return;
     }
 
     const user = await prisma.user.create({
@@ -117,8 +120,9 @@ export const updateUser = async (req, res) => {
 
     // Handle photo upload
     if (req.file) {
-      updateData.photo = req.file.path;
+      updateData.photo = getFileUrl(req.file);
     } else if (photo) {
+      if (rejectLegacyUploadUrl(photo, res, 'photo')) return;
       updateData.photo = photo;
     }
 

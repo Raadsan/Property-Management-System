@@ -409,7 +409,16 @@ export const socialLogin = async (req, res) => {
 
   } catch (error) {
     console.error("Social Login Error:", error);
-    res.status(500).json({ message: "Error during social login", error: error.message });
+    const hint =
+      error.code === "auth/argument-error" ||
+      error.message?.includes("aud") ||
+      error.message?.includes("audience")
+        ? "Firebase project mismatch: update backend serviceAccountKey.json to damal-appplication"
+        : error.message;
+    res.status(500).json({
+      message: "Error during social login",
+      error: hint,
+    });
   }
 };
 

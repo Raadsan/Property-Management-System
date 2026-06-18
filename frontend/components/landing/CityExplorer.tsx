@@ -150,7 +150,7 @@ export default function CityExplorer() {
             Featured Property
           </span> */}
           <h2 className="text-3xl md:text-[40px] font-bold text-[#1f2937] tracking-tight leading-tight">
-            Recommended Place to Live for You
+          Featured Properties 
           </h2>
         </div>
 

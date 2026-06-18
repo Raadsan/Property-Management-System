@@ -115,8 +115,8 @@ function ExploreContent() {
           </h1>
           <p className="text-white/80 text-lg max-w-xl mx-auto">
             {selectedCity 
-              ? `Discover the best property management options and verified listings available across ${selectedCity}.`
-              : "Discover the best property management options and listings across the most vibrant cities in the region."
+              ? "Discover homes, apartments, hotels, and event venues across Somalia through a trusted platform designed to make finding your next property simple, transparent, and convenient."
+              : "Discover homes, apartments, hotels, and event venues across Somalia through a trusted platform designed to make finding your next property simple, transparent, and convenient."
             }
           </p>
         </div>

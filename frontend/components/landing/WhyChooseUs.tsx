@@ -1,38 +1,53 @@
 "use client";
 
 import React from "react";
-import { Headset, Zap, ShieldCheck, Map, LayoutDashboard, DollarSign } from "lucide-react";
+import { Building2, ShieldCheck, TrendingUp, LayoutDashboard, Headset, MapPin, Eye, Sprout, Handshake } from "lucide-react";
 
 const features = [
   { 
-    icon: Headset, 
-    title: "24/7 Property Support", 
-    desc: "Our dedicated team is always available to handle tenant emergencies and maintenance requests." 
-  },
-  { 
-    icon: Zap, 
-    title: "Fast Tenant Placement", 
-    desc: "We aggressively market your property to quickly secure reliable, thoroughly-vetted tenants." 
+    icon: Building2, 
+    title: "All Your Property Needs in One Place ", 
+    desc: "Whether you are searching for a home, apartment, hotel, event hall, or investment opportunity, Damal brings everything together on a single platform, making property discovery simple, efficient, and convenient. " 
   },
   { 
     icon: ShieldCheck, 
-    title: "Secure Transactions", 
-    desc: "Bank-grade encryption ensures all your rent payments, deposits, and financial data stay protected." 
+    title: "Verified & Trusted Listings", 
+    desc: "We prioritize quality and credibility. Our verification process helps ensure that users can browse genuine properties with confidence, creating a trusted marketplace for everyone involved. " 
   },
   { 
-    icon: Map, 
-    title: "Deep Local Expertise", 
-    desc: "With extensive roots in Mogadishu, we understand the local real estate market meticulously." 
+    icon: TrendingUp, 
+    title: "Faster Occupancy, Greater Visibility ", 
+    desc: "Property owners gain access to a wider audience through Damal’s powerful marketing and discovery tools, helping them attract qualified tenants, guests, and customers more efficiently. " 
   },
   { 
     icon: LayoutDashboard, 
-    title: "Smart Landlord Portal", 
-    desc: "Access your centralized dashboard to monitor rent, occupancy rates, and repair statuses." 
+    title: "Smart Owner Dashboard ", 
+    desc: "Our intuitive landlord and property management portal provides owners with a centralized view of their listings, bookings, occupancy performance, and customer interactions, enabling smarter decision-making. " 
   },
   { 
-    icon: DollarSign, 
-    title: "Transparent Pricing", 
-    desc: "No hidden fees. Experience full financial clarity with our competitive and straightforward rates." 
+    icon: Headset, 
+    title: "Dedicated Customer Support ", 
+    desc: "Our professional support team is available to assist users throughout their journey, ensuring a smooth experience from property search to successful booking. " 
+  },
+  { 
+    icon: MapPin, 
+    title: "Deep Local Market Knowledge ", 
+    desc: "Built by people who understand Somalia's real estate landscape, Damal combines local expertise with modern technology to deliver solutions tailored to the needs of communities, property owners, and businesses." 
+  },
+  { 
+    icon: Eye, 
+    title: "Transparent & Reliable Experience ", 
+    desc: "Clear information, accurate property details, and straightforward processes help users make informed decisions while building long-term trust within the marketplace. " 
+  },
+  { 
+    icon: Sprout, 
+    title: "Built for Growth", 
+    desc: "Damal is designed to grow alongside Somalia’s rapidly evolving real estate and hospitality sectors. Our platform continuously evolves to provide innovative solutions that create value for both customers and property owners. " 
+  },
+  { 
+    icon: Handshake, 
+    title: "The Damal Promise  ", 
+    desc: "Whether you are looking for your next home, promoting a property, booking accommodation, or exploring opportunities, Damal provides the platform, technology, and support to help you succeed. " 
   }
 ];
 
@@ -45,7 +60,7 @@ export default function WhyChooseUs() {
              Why Choose <span className="text-[#214347]">Damal Property?</span>
            </h2>
            <p className="text-gray-500 text-[1.1rem] max-w-2xl mx-auto">
-             We provide everything you need to manage your property online and thriving.
+           Damal is transforming how people discover, book, rent, and manage properties across Somalia. Inspired by the Damal Tree—a symbol of trust, shelter, and community—we provide a modern digital platform that connects property owners, tenants, travelers, and businesses through a seamless and reliable experience.
            </p>
         </div>
 

@@ -23,8 +23,9 @@ export default function CTA() {
                   viewport={{ once: true }}
                   className="text-3xl md:text-5xl font-black text-white leading-[1.1]"
                 >
-                  The <span className="text-[#eae1d2]">Damal App</span> <br />
-                  In Your Pocket.
+                  The <span className="text-[#eae1d2]">Damal App.</span> <br />
+                  Wherever You Go.
+                
                 </motion.h2>
                 <motion.p
                   initial={{ opacity: 0, x: -20 }}
@@ -33,8 +34,7 @@ export default function CTA() {
                   transition={{ delay: 0.1 }}
                   className="text-white/70 text-sm md:text-base max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium"
                 >
-                  Track properties, manage payments, and chat with tenants instantly. <br className="hidden md:block" />
-                  Experience Somalia's leading real estate platform.
+                  Discover homes, apartments, hotels, and event venues across Somalia from your smartphone. Search, compare, book, and connect—all through one trusted platform. 
                 </motion.p>
               </div>
 

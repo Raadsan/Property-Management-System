@@ -21,10 +21,10 @@ export default function AboutPage() {
             who we are?
           </div>
           <h1 className="text-3xl md:text-[44px] font-serif text-white mb-5 font-normal tracking-wide leading-tight">
-            Elevating Property Management
+          Connecting People, Properties, and Opportunities 
           </h1>
           <p className="text-white/80 text-[14px] md:text-[16px] max-w-3xl mx-auto leading-relaxed font-serif tracking-wide">
-            Discover who we are, what drives us, and how we're transforming real estate and<br className="hidden md:block" /> property management in Somalia with digital innovation.
+          Discover who we are, what drives us, and how Damal is transforming property discovery, bookings, and real estate accessibility across Somalia through trusted digital innovation. 
           </p>
         </div>
       </section>
@@ -47,8 +47,9 @@ export default function AboutPage() {
                </div>
                <h3 className="text-2xl md:text-3xl font-extrabold mb-4 text-gray-900 group-hover:text-white transition-colors duration-300">Vision</h3>
                <p className="text-gray-600 group-hover:text-white/90 leading-relaxed text-[15px] md:text-base max-w-lg transition-colors duration-300">
-                 To become the most trusted and innovative property management platform, empowering individuals and businesses to seamlessly navigate the real estate market with confidence and transparency.
+               To simplify and modernize the way people discover, book, rent, and manage properties by providing a trusted digital platform that connects customers, property owners, and service providers through a seamless, transparent, and user-friendly experience.  
                </p>
+             
             </div>
 
             {/* Mission */}
@@ -58,7 +59,7 @@ export default function AboutPage() {
                </div>
                <h3 className="text-2xl md:text-3xl font-extrabold mb-4 text-gray-900 group-hover:text-white transition-colors duration-300">Mission</h3>
                <p className="text-gray-600 group-hover:text-white/90 leading-relaxed text-[15px] md:text-base max-w-lg transition-colors duration-300">
-                 To provide fully transparent, client-centric, and exceptionally reliable services that simplify buying, renting, and managing properties using modern technology tailored for the African market.
+               To become Somalia's leading digital property ecosystem and the most trusted platform for real estate, hospitality, and venue bookings, transforming how people access opportunities, make decisions, and connect with properties. 
                </p>
             </div>
           </div>

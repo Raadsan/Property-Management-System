@@ -3,7 +3,7 @@
 import * as React from "react";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
-import { Mail, Phone, MapPin, Send, MessageSquare, Clock, Loader2 } from "lucide-react";
+import { Mail, Phone, MapPin, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { sendContactMessage } from "@/api/contactApi";
 
@@ -82,7 +82,7 @@ export default function ContactPage() {
            <div className="bg-white rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.06)] border border-gray-100 overflow-hidden flex flex-col lg:flex-row">
               
               {/* Left Side: Contact Info Sidebar */}
-              <div className="lg:w-2/5 bg-[#214347] p-10 lg:p-14 text-white flex flex-col justify-between relative overflow-hidden">
+              <div className="lg:w-2/5 bg-[#214347] p-10 lg:p-14 text-white flex flex-col relative overflow-hidden">
                  {/* Subtle decorative background circles */}
                  <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/5 blur-3xl pointer-events-none"></div>
                  <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 rounded-full bg-white/5 blur-3xl pointer-events-none"></div>
@@ -98,34 +98,25 @@ export default function ContactPage() {
                           <span className="text-xs font-bold text-teal-300 uppercase tracking-widest flex items-center gap-2">
                             <Phone className="h-4 w-4" /> Phone
                           </span>
-                          <span className="text-lg font-medium">+252 613052542 / 613055580</span>
+                          <span className="text-lg font-medium">+252 613339527 / 613339529</span>
                        </div>
                        
                        <div className="flex flex-col gap-2">
                           <span className="text-xs font-bold text-teal-300 uppercase tracking-widest flex items-center gap-2">
                             <Mail className="h-4 w-4" /> Email
                           </span>
-                          <span className="text-lg font-medium">imustaqbalproperties@gmail.com</span>
+                          <a href="mailto:info.damalso@gmail.com" className="text-lg font-medium hover:text-teal-100 transition-colors">info.damalso@gmail.com</a>
                        </div>
                        
                        <div className="flex flex-col gap-2">
                           <span className="text-xs font-bold text-teal-300 uppercase tracking-widest flex items-center gap-2">
-                            <MapPin className="h-4 w-4" /> Office
+                            <MapPin className="h-4 w-4" /> Office HQ
                           </span>
                           <span className="text-lg font-medium leading-relaxed max-w-[200px]">
-                            HQ Digfeer,<br/>Mogadishu, Somalia
+                            Hamarweyne,<br/>Mogadishu, Somalia
                           </span>
                        </div>
                     </div>
-                 </div>
-
-                 <div className="relative z-10 pt-16 flex gap-4">
-                    <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#eae1d2] hover:text-[#214347] transition-all text-white">
-                       <MessageSquare className="h-4 w-4" />
-                    </a>
-                    <a href="#" className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-[#eae1d2] hover:text-[#214347] transition-all text-white">
-                       <Clock className="h-4 w-4" />
-                    </a>
                  </div>
               </div>
 
@@ -244,7 +235,7 @@ export default function ContactPage() {
            <div className="bg-white rounded-2xl shadow-[0_20px_40px_rgba(0,0,0,0.06)] border border-gray-100 overflow-hidden">
               <div className="p-2 h-[450px] w-full">
                   <iframe 
-                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15949.176413289053!2d45.3113972!3d2.036063!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3d07e94bc65f6c8d%3A0x6bba3bc7f677d61c!2sDeero%20Institute!5e0!3m2!1sen!2sso!4v1713430800000!5m2!1sen!2sso"
+                    src="https://maps.google.com/maps?q=Hamarweyne,+Mogadishu,+Somalia&output=embed"
                     width="100%" 
                     height="100%" 
                     style={{ border: 0 }} 

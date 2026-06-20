@@ -4,12 +4,6 @@ import multerS3 from 'multer-s3';
 import { isS3Configured, s3Client, s3Bucket, s3UploadPrefix } from './s3.js';
 import 'dotenv/config';
 
-if (!isS3Configured) {
-  throw new Error(
-    'AWS S3 is required for uploads. Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, and AWS_BUCKET_NAME in .env'
-  );
-}
-
 /** Returns the public S3 URL from a multer-s3 file object. */
 export const getFileUrl = (file) => file?.location || null;
 
@@ -70,19 +64,63 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-const storage = multerS3({
-  s3: s3Client,
-  bucket: s3Bucket,
-  contentType: multerS3.AUTO_CONTENT_TYPE,
-  key: (req, file, cb) => {
-    cb(null, buildObjectKey(file.originalname));
+let multerUpload;
+
+const getMulterUpload = () => {
+  if (multerUpload) return multerUpload;
+
+  if (!isS3Configured) {
+    throw new Error(
+      'AWS S3 is required for uploads. Set AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION, and AWS_BUCKET_NAME in .env'
+    );
+  }
+
+  const storage = multerS3({
+    s3: s3Client,
+    bucket: s3Bucket,
+    contentType: multerS3.AUTO_CONTENT_TYPE,
+    key: (req, file, cb) => {
+      cb(null, buildObjectKey(file.originalname));
+    },
+  });
+
+  multerUpload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 30 * 1024 * 1024 },
+  });
+
+  console.log(`📦 Upload storage: AWS S3 (bucket: ${s3Bucket}, prefix: ${s3UploadPrefix})`);
+  return multerUpload;
+};
+
+const wrapMulter = (handler) => (req, res, next) => {
+  try {
+    return handler(req, res, next);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const upload = {
+  single: (field) => (req, res, next) => {
+    try {
+      getMulterUpload().single(field)(req, res, next);
+    } catch (error) {
+      next(error);
+    }
   },
-});
+  array: (field, maxCount) => (req, res, next) => {
+    try {
+      getMulterUpload().array(field, maxCount)(req, res, next);
+    } catch (error) {
+      next(error);
+    }
+  },
+};
 
-console.log(`📦 Upload storage: AWS S3 (bucket: ${s3Bucket}, prefix: ${s3UploadPrefix})`);
-
-export const upload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: 30 * 1024 * 1024 },
-});
+if (isS3Configured) {
+  console.log(`📦 Upload storage ready: AWS S3 (bucket: ${s3Bucket}, prefix: ${s3UploadPrefix})`);
+} else {
+  console.warn('⚠️ AWS S3 not configured. Read APIs work; file uploads will fail until env vars are set.');
+}

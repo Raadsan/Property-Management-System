@@ -30,11 +30,12 @@ export interface Property {
   ownerId?: number;
   agentId?: number;
   propertyTypeId: number;
+  features?: boolean;
   createdAt: string;
   updatedAt: string;
 
   images?: PropertyImage[];
-  features?: PropertyFeature[];
+  amenities?: PropertyFeature[];
   propertyType?: { name: string };
   owner?: { name: string; phone: string; email?: string; photo?: string };
   agent?: { fullName: string; primaryPhone: string; secondaryPhone?: string; email?: string; photo?: string };

@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 
 const somaliCities = [
@@ -171,7 +172,8 @@ export default function PropertiesPage() {
   const [area, setArea] = React.useState("")
   const [rooms, setRooms] = React.useState("")
   const [bathrooms, setBathrooms] = React.useState("")
-  const [featuresInput, setFeaturesInput] = React.useState("")
+  const [amenitiesInput, setAmenitiesInput] = React.useState("")
+  const [features, setFeatures] = React.useState(false)
   const [selectedDistrict, setSelectedDistrict] = React.useState("")
   const [addressDetails, setAddressDetails] = React.useState("")
 
@@ -318,10 +320,12 @@ export default function PropertiesPage() {
       if (rooms) formData.append("Rooms", rooms)
       if (bathrooms) formData.append("Bathrooms", bathrooms)
 
-      // Convert comma separated features into an array string
-      if (featuresInput.trim()) {
-        const featureArray = featuresInput.split(",").map(f => f.trim()).filter(f => f !== "")
-        formData.append("features", JSON.stringify(featureArray))
+      formData.append("features", features ? "true" : "false")
+
+      // Convert comma separated amenities into an array string
+      if (amenitiesInput.trim()) {
+        const amenityArray = amenitiesInput.split(",").map(f => f.trim()).filter(f => f !== "")
+        formData.append("amenities", JSON.stringify(amenityArray))
       }
 
       // Append images
@@ -425,7 +429,8 @@ export default function PropertiesPage() {
       setArea(prop.area?.toString() || "")
       setRooms(prop.Rooms?.toString() || "")
       setBathrooms(prop.Bathrooms?.toString() || "")
-      setFeaturesInput(prop.features?.map(f => f.name).join(", ") || "")
+      setAmenitiesInput(prop.amenities?.map(f => f.name).join(", ") || "")
+      setFeatures(prop.features ?? false)
     } else {
       setCurrentProperty(null)
       setTitle("")
@@ -443,7 +448,8 @@ export default function PropertiesPage() {
       setArea("")
       setRooms("")
       setBathrooms("")
-      setFeaturesInput("")
+      setAmenitiesInput("")
+      setFeatures(false)
     }
 
     setSelectedFiles([])
@@ -485,7 +491,8 @@ export default function PropertiesPage() {
     setArea("")
     setRooms("")
     setBathrooms("")
-    setFeaturesInput("")
+    setAmenitiesInput("")
+    setFeatures(false)
     setSelectedFiles([])
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
@@ -1030,13 +1037,27 @@ export default function PropertiesPage() {
                       </Select>
                     </div>
 
-                    {/* Features */}
+                    {/* Features toggle */}
                     <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="features">Property Features</Label>
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          id="features"
+                          checked={features}
+                          onCheckedChange={(checked) => setFeatures(checked === true)}
+                        />
+                        <Label htmlFor="features" className="cursor-pointer">
+                          Features
+                        </Label>
+                      </div>
+                    </div>
+
+                    {/* Amenities */}
+                    <div className="space-y-2 md:col-span-2">
+                      <Label htmlFor="amenities">Property Amenities</Label>
                       <Input
-                        id="features"
-                        value={featuresInput}
-                        onChange={(e) => setFeaturesInput(e.target.value)}
+                        id="amenities"
+                        value={amenitiesInput}
+                        onChange={(e) => setAmenitiesInput(e.target.value)}
                         placeholder="e.g. Swimming Pool, Garage, Free Wi-Fi (comma separated)"
                       />
                     </div>
@@ -1200,14 +1221,21 @@ export default function PropertiesPage() {
                       </p>
                     </div>
 
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Features</span>
+                      <p className="font-medium bg-muted/40 p-2 rounded-md">
+                        {viewProperty.features ? "Yes" : "No"}
+                      </p>
+                    </div>
+
                     <div className="col-span-1 md:col-span-2 mt-2">
-                      <span className="font-semibold text-muted-foreground block mb-2">Features</span>
+                      <span className="font-semibold text-muted-foreground block mb-2">Amenities</span>
                       <div className="flex flex-wrap gap-2">
-                        {viewProperty.features && viewProperty.features.length > 0 ? (
-                          viewProperty.features.map(f => (
+                        {viewProperty.amenities && viewProperty.amenities.length > 0 ? (
+                          viewProperty.amenities.map(f => (
                             <span key={f.id} className="bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-md text-xs font-medium">{f.name}</span>
                           ))
-                        ) : <span className="text-muted-foreground italic">No features listed</span>}
+                        ) : <span className="text-muted-foreground italic">No amenities listed</span>}
                       </div>
                     </div>
 

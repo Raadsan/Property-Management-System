@@ -10,9 +10,9 @@ export const createProperty = async (req, res) => {
     
     const {
       title, description, location, city, district, country, price,
-      ownerId, propertyTypeId, images: bodyImages, features: bodyFeatures,
-      sizeLabel, area, listingType: bodyListingType, status: bodyStatus,
-      Rooms, Bathrooms, agentId
+      ownerId, propertyTypeId, images: bodyImages, amenities: bodyAmenities,
+      features: bodyFeatures, sizeLabel, area, listingType: bodyListingType,
+      status: bodyStatus, Rooms, Bathrooms, agentId
     } = req.body || {};
 
     console.log("Parsed fields:", { title, city, country, price, propertyTypeId, status: bodyStatus, agentId });
@@ -42,20 +42,22 @@ export const createProperty = async (req, res) => {
       images = [...images, ...bodyImageList];
     }
 
-    // Parse features
-    let features = [];
-    if (bodyFeatures) {
-      if (Array.isArray(bodyFeatures)) {
-        features = bodyFeatures;
+    // Parse amenities (comma-separated property attributes)
+    let amenities = [];
+    if (bodyAmenities) {
+      if (Array.isArray(bodyAmenities)) {
+        amenities = bodyAmenities;
       } else {
         try {
-          const parsed = JSON.parse(bodyFeatures);
-          features = Array.isArray(parsed) ? parsed : [parsed];
+          const parsed = JSON.parse(bodyAmenities);
+          amenities = Array.isArray(parsed) ? parsed : [parsed];
         } catch (e) {
-          features = [bodyFeatures];
+          amenities = [bodyAmenities];
         }
       }
     }
+
+    const features = bodyFeatures === true || bodyFeatures === "true";
 
     // Safe parsing
     const parsedPrice = parseFloat(price);
@@ -94,16 +96,17 @@ export const createProperty = async (req, res) => {
         propertyTypeId: parsedPropertyTypeId,
         sizeLabel,
         area: isNaN(parsedArea) ? null : parsedArea,
+        features,
         images: images && images.length > 0 ? {
           create: images.map(url => ({ url }))
         } : undefined,
-        features: features && features.length > 0 ? {
-          create: features.map(name => ({ name }))
+        amenities: amenities && amenities.length > 0 ? {
+          create: amenities.map(name => ({ name }))
         } : undefined
       },
       include: {
         images: { orderBy: { id: 'desc' } },
-        features: true
+        amenities: true
       }
     });
 
@@ -157,7 +160,7 @@ export const getProperties = async (req, res) => {
       where,
       include: {
         images: { orderBy: { id: 'desc' } },
-        features: true,
+        amenities: true,
         propertyType: { select: { name: true } },
         owner: { select: { name: true, phone: true } },
         agent: { select: { fullName: true, primaryPhone: true, secondaryPhone: true } }
@@ -188,7 +191,7 @@ export const getPropertyById = async (req, res) => {
       where: { id: propertyId },
       include: {
         images: { orderBy: { id: 'desc' } },
-        features: true,
+        amenities: true,
         propertyType: true,
         owner: { select: { name: true, email: true, phone: true, photo: true } },
         agent: { select: { fullName: true, email: true, primaryPhone: true, secondaryPhone: true } },
@@ -281,23 +284,27 @@ export const updateProperty = async (req, res) => {
       };
     }
 
-    // Handle FEATURE REPLACEMENT
-    if (updateFields.features) {
-      let finalFeatures = [];
-      if (Array.isArray(updateFields.features)) {
-        finalFeatures = updateFields.features;
+    if (updateFields.features !== undefined) {
+      updateData.features = updateFields.features === true || updateFields.features === "true";
+    }
+
+    // Handle amenity list replacement
+    if (updateFields.amenities) {
+      let finalAmenities = [];
+      if (Array.isArray(updateFields.amenities)) {
+        finalAmenities = updateFields.amenities;
       } else {
         try {
-          const parsed = JSON.parse(updateFields.features);
-          finalFeatures = Array.isArray(parsed) ? parsed : [parsed];
+          const parsed = JSON.parse(updateFields.amenities);
+          finalAmenities = Array.isArray(parsed) ? parsed : [parsed];
         } catch (e) {
-          finalFeatures = [updateFields.features];
+          finalAmenities = [updateFields.amenities];
         }
       }
 
-      updateData.features = {
+      updateData.amenities = {
         deleteMany: {},
-        create: finalFeatures.map(name => ({ name }))
+        create: finalAmenities.map(name => ({ name }))
       };
     }
 
@@ -306,7 +313,7 @@ export const updateProperty = async (req, res) => {
       data: updateData,
       include: {
         images: { orderBy: { id: 'desc' } },
-        features: true
+        amenities: true
       }
     });
 

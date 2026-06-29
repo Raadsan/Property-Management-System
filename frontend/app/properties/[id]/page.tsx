@@ -340,7 +340,7 @@ export default function PropertyDetailPage() {
                     <span className="text-[13px] font-semibold text-gray-800">{property.area} sqm</span>
                   </div>
                 )}
-                {property.features?.map((feature, idx) => (
+                {property.amenities?.map((feature, idx) => (
                   <div key={idx} className="flex items-center gap-3 group">
                     <div className="text-gray-300 group-hover:text-[#0a74b3] transition-colors">
                       <Star className="h-5 w-5 stroke-[1.5]" />

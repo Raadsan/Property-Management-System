@@ -102,7 +102,7 @@ export const updateLease = async (req, res) => {
       data: data,
       include: {
         property: { 
-          include: { images: true, propertyType: true, features: true } 
+          include: { images: true, propertyType: true, amenities: true } 
         },
         tenant: true
       }

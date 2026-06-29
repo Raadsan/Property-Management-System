@@ -163,9 +163,10 @@ model Property {
   Rooms          Int             @default(0)
   country        String?
   agentId        Int?
+  features       Boolean         @default(false)
   bookings       Booking[]
   favorites      Favorite[]
-  features       Feature[]
+  amenities      Feature[]
   inquiries      PropertyInquiry[]
   agent          Agent?          @relation(fields: [agentId], references: [id])
   owner          User?           @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Cascade)

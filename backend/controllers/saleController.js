@@ -29,7 +29,7 @@ export const createSale = async (req, res) => {
           documentUrl: documentUrl
         },
         include: {
-          property: { include: { images: true, propertyType: true, features: true } },
+          property: { include: { images: true, propertyType: true, amenities: true } },
           buyer: true
         }
       });
@@ -55,7 +55,7 @@ export const getSales = async (req, res) => {
   try {
     const sales = await prisma.sale.findMany({
       include: {
-        property: { include: { images: true, propertyType: true, features: true } },
+        property: { include: { images: true, propertyType: true, amenities: true } },
         buyer: { select: { name: true, phone: true, email: true } }
       }
     });
@@ -73,7 +73,7 @@ export const getSaleById = async (req, res) => {
     const sale = await prisma.sale.findUnique({
       where: { id: parseInt(id) },
       include: {
-        property: { include: { images: true, propertyType: true, features: true } },
+        property: { include: { images: true, propertyType: true, amenities: true } },
         buyer: true,
         payments: true
       }
@@ -112,7 +112,7 @@ export const updateSale = async (req, res) => {
       where: { id: parseInt(id) },
       data: data,
       include: {
-        property: { include: { images: true, propertyType: true, features: true } },
+        property: { include: { images: true, propertyType: true, amenities: true } },
         buyer: true
       }
     });

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { MapPin, Heart, ArrowLeftRight } from "lucide-react";
 import Link from "next/link";
 import { Property } from "@/api/propertyApi";
+import { isVideoItem, resolveMediaUrl, sortMediaVideosFirst } from "@/lib/mediaUtils";
  
 interface PropertyCardProps {
   prop: Property;
@@ -36,12 +37,13 @@ export default function PropertyCard({ prop }: PropertyCardProps) {
     localStorage.setItem("favorites", JSON.stringify(newFavorites));
   };
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
-  const baseUrl = apiUrl.replace("/api", "");
-  
-  const imageUrl = prop.images && prop.images.length > 0 
-    ? (prop.images[0].url.startsWith('http') ? prop.images[0].url : `${baseUrl}/${prop.images[0].url.replace(/\\/g, '/').replace(/^\//, '')}`)
+  const primaryMedia = prop.images?.length
+    ? sortMediaVideosFirst(prop.images)[0]
+    : null;
+  const mediaUrl = primaryMedia
+    ? resolveMediaUrl(primaryMedia.url)
     : "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80";
+  const isVideo = primaryMedia ? isVideoItem(primaryMedia) : false;
 
   const slugify = (text: string) => {
     return text
@@ -60,20 +62,28 @@ export default function PropertyCard({ prop }: PropertyCardProps) {
       {/* Image Section */}
       <div className="relative aspect-[4/3] overflow-hidden">
         <Link href={propertyUrl} className="block w-full h-full">
-          <img
-            src={imageUrl}
-            alt={prop.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+          {isVideo ? (
+            <video
+              src={mediaUrl}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              muted
+              autoPlay
+              loop
+              playsInline
+            />
+          ) : (
+            <img
+              src={mediaUrl}
+              alt={prop.title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            />
+          )}
         </Link>
         
         {/* Badges */}
         <div className="absolute top-4 left-4 flex gap-2 pointer-events-none">
           <span className="bg-[#214347] text-white px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">
-            {prop.listingType}
-          </span>
-          <span className="bg-[#eae1d2] text-[#214347] px-3 py-1 rounded text-[10px] font-bold uppercase tracking-wider shadow-sm">
-            {prop.status}
+            {prop.listingType === "SALE" ? "Buy" : "Rent"}
           </span>
         </div>
  

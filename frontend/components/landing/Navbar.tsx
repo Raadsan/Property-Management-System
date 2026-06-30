@@ -11,6 +11,17 @@ export default function Navbar() {
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 24);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   useEffect(() => {
     const savedUser = sessionStorage.getItem("user");
@@ -25,6 +36,7 @@ export default function Navbar() {
 
   const handleLogout = () => {
     sessionStorage.removeItem("user");
+    sessionStorage.removeItem("token");
     setUser(null);
     window.location.reload();
   };
@@ -52,9 +64,19 @@ export default function Navbar() {
   ];
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 py-4 px-6">
+    <nav
+      className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ease-in-out ${
+        isScrolled ? "py-0 px-0" : "py-4 px-6"
+      }`}
+    >
       {/* Floating Pill Container */}
-      <div className="max-w-7xl mx-auto bg-white/90 backdrop-blur-xl rounded-full shadow-[0_4px_30px_rgba(0,0,0,0.08)] border border-white/60 px-4 md:px-8 py-3 flex justify-between items-center">
+      <div
+        className={`mx-auto flex justify-between items-center transition-all duration-300 ease-in-out ${
+          isScrolled
+            ? "max-w-full rounded-none bg-white shadow-md border-b border-gray-100 px-6 md:px-10 py-3"
+            : "max-w-7xl bg-white/90 backdrop-blur-xl rounded-full shadow-[0_4px_30px_rgba(0,0,0,0.08)] border border-white/60 px-4 md:px-8 py-3"
+        }`}
+      >
         
         {/* Logo */}
         <Link href="/#home" className="flex items-center shrink-0">
@@ -195,7 +217,11 @@ export default function Navbar() {
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="md:hidden bg-white/95 backdrop-blur-xl mt-2 mx-4 rounded-3xl shadow-2xl border border-white/60 py-6 animate-in slide-in-from-top duration-300">
+        <div
+          className={`md:hidden bg-white/95 backdrop-blur-xl mt-2 shadow-2xl border border-white/60 py-6 animate-in slide-in-from-top duration-300 ${
+            isScrolled ? "mx-0 rounded-none border-x-0" : "mx-4 rounded-3xl"
+          }`}
+        >
           <div className="flex flex-col px-6">
             <div className="flex flex-col space-y-2 font-semibold">
               {navLinks.map((link) => {

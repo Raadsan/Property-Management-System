@@ -1,18 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon, ImageIcon, HomeIcon, EyeIcon, ShieldCheckIcon } from "lucide-react"
+import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon, ImageIcon, HomeIcon, EyeIcon, ShieldCheckIcon, VideoIcon } from "lucide-react"
 import { getRolePermissionsById } from "@/api/rolePermissionsApi"
+import { MAX_PROPERTY_MEDIA, isVideoMedia, resolveMediaUrl, sortMediaVideosFirst } from "@/lib/mediaUtils"
 
 import { getPropertyTypes, Category } from "@/api/propertyTypeApi"
 import { getUsers, User } from "@/api/userApi"
-import { getAgents, AgentData } from "@/api/agentApi"
 import {
   getProperties,
   createProperty,
@@ -23,7 +20,7 @@ import {
   Property
 } from "@/api/propertyApi"
 
-import { Country, City } from "country-state-city"
+
 import ReactSelect from "react-select"
 
 import {
@@ -43,6 +40,56 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+
+const ROOM_BATH_OPTIONS = ["1", "2", "3", "4", "5", "6"] as const
+
+const toCountSelectValue = (count?: number) => {
+  if (!count || count === 0) return ""
+  if (count >= 6) return "6"
+  return count.toString()
+}
+
+const formatCountLabel = (count?: number) => {
+  if (!count || count === 0) return "0"
+  if (count >= 6) return "6+"
+  return count.toString()
+}
+
+const AMENITY_OPTIONS = [
+  "Furnished",
+  "CCTV",
+  "Elevator",
+  "Ceiling Fan",
+  "Gym",
+  "Garden",
+  "View of Water",
+  "Laundry Room",
+  "Water Tank",
+  "Security",
+  "Parking",
+  "Air Conditioning",
+  "Jacuzzi",
+  "Swimming Pool",
+  "Balcony",
+  "Modern Kitchen",
+  "Solar System",
+  "Water Heater",
+  "Hot Water",
+  "Internet Access",
+  "Refrigerator",
+  "Breakfast Included",
+  "Restaurant",
+  "Daily Cleaning",
+  "Meeting Room",
+  "School Nearby",
+  "Wi-Fi",
+  "Television",
+  "Mini Bar",
+  "Shared Kitchen",
+  "City View",
+  "Private Bathroom",
+  "Mosque Nearby",
+] as const
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
 
@@ -131,7 +178,7 @@ export default function PropertiesPage() {
   const [properties, setProperties] = React.useState<Property[]>([])
   const [categories, setCategories] = React.useState<Category[]>([])
   const [owners, setOwners] = React.useState<User[]>([])
-  const [agents, setAgents] = React.useState<AgentData[]>([])
+  const [agents, setAgents] = React.useState<User[]>([])
 
   const [isLoading, setIsLoading] = React.useState(true)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
@@ -147,6 +194,7 @@ export default function PropertiesPage() {
   const [filterListing, setFilterListing] = React.useState<string>("all")
   const [filterCity, setFilterCity] = React.useState<string>("all")
   const [filterDistrict, setFilterDistrict] = React.useState<string>("all")
+  const [filterFeature, setFilterFeature] = React.useState<string>("all")
 
   // Permissions State
   const [permissions, setPermissions] = React.useState({
@@ -160,8 +208,7 @@ export default function PropertiesPage() {
   const [title, setTitle] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [location, setLocation] = React.useState("")
-  const [selectedCity, setSelectedCity] = React.useState("")
-  const [selectedCountry, setSelectedCountry] = React.useState("Somalia")
+  const [selectedCity, setSelectedCity] = React.useState("Mogadishu")
   const [price, setPrice] = React.useState("")
   const [status, setStatus] = React.useState<string>("CREATED")
   const [propertyTypeId, setPropertyTypeId] = React.useState<string>("")
@@ -172,25 +219,10 @@ export default function PropertiesPage() {
   const [area, setArea] = React.useState("")
   const [rooms, setRooms] = React.useState("")
   const [bathrooms, setBathrooms] = React.useState("")
-  const [amenitiesInput, setAmenitiesInput] = React.useState("")
+  const [selectedAmenities, setSelectedAmenities] = React.useState<string[]>([])
   const [features, setFeatures] = React.useState(false)
   const [selectedDistrict, setSelectedDistrict] = React.useState("")
   const [addressDetails, setAddressDetails] = React.useState("")
-
-  // 🌍 Derived Location Data for Searchable Selects
-  const countryData = React.useMemo(() => Country.getAllCountries(), []);
-  const currentCountryObj = countryData.find(c => c.name === selectedCountry);
-  const countryIso = currentCountryObj?.isoCode || "SO";
-  const cityOptions = React.useMemo(() => {
-    if (selectedCountry === "Somalia") {
-      return somaliCities;
-    }
-    return (City.getCitiesOfCountry(countryIso) || []).map(c => ({ value: c.name, label: c.name }));
-  }, [selectedCountry, countryIso]);
-  const countryOptions = React.useMemo(() =>
-    countryData.map(c => ({ value: c.isoCode, label: c.name })),
-    [countryData]
-  );
 
   // File State
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -210,11 +242,10 @@ export default function PropertiesPage() {
       const isAdmin = loggedInUser?.role?.name?.toLowerCase() === "admin"
       const isAgent = loggedInUser?.role?.name?.toLowerCase() === "agent"
 
-      const [propsData, catsData, usersData, agentsData] = await Promise.all([
+      const [propsData, catsData, usersData] = await Promise.all([
         getProperties(isAgent && loggedInUser ? { agentId: loggedInUser.id } : {}),
         getPropertyTypes(),
         getUsers(),
-        getAgents()
       ])
       setProperties(propsData)
       setCategories(catsData)
@@ -223,20 +254,18 @@ export default function PropertiesPage() {
       const ownersOnly = usersData.filter(user => user.role?.name === "Owner")
       setOwners(ownersOnly)
 
-      // Set agents from the agents table
-      let allAgents = agentsData.data || agentsData
+      // Agents are users with the Agent role
+      let agentsList = usersData.filter(user => user.role?.name === "Agent" || user.roleId === 4)
 
-      // 🛡️ Filter Logic: If the user is an agent, they only see themselves in the dropdown
       if (isAgent && loggedInUser) {
-        allAgents = allAgents.filter((a: any) => a.id === loggedInUser.id)
+        agentsList = agentsList.filter(u => u.id === loggedInUser.id)
 
-        // Auto-select the agent if creating a new property
-        if (!currentProperty && allAgents.length > 0) {
-          setAgentId(allAgents[0].id.toString())
+        if (!currentProperty && agentsList.length > 0) {
+          setAgentId(agentsList[0].id.toString())
         }
       }
 
-      setAgents(allAgents)
+      setAgents(agentsList)
     } catch (error) {
       toast.error("Failed to load property data")
     } finally {
@@ -286,7 +315,17 @@ export default function PropertiesPage() {
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setSelectedFiles(Array.from(e.target.files))
+      const files = Array.from(e.target.files).sort((a, b) => {
+        const aVideo = isVideoMedia(a) ? 0 : 1;
+        const bVideo = isVideoMedia(b) ? 0 : 1;
+        return aVideo - bVideo;
+      });
+      if (files.length > MAX_PROPERTY_MEDIA) {
+        toast.error(`You can upload up to ${MAX_PROPERTY_MEDIA} files (images and videos).`)
+        if (fileInputRef.current) fileInputRef.current.value = ""
+        return
+      }
+      setSelectedFiles(files)
     }
   }
 
@@ -308,7 +347,7 @@ export default function PropertiesPage() {
       formData.append("location", location)
       formData.append("city", selectedCity)
       formData.append("district", ["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) ? selectedDistrict : "")
-      formData.append("country", selectedCountry)
+      formData.append("country", "Somalia")
       formData.append("price", price)
       formData.append("listingType", listingType)
       formData.append("status", status)
@@ -322,10 +361,8 @@ export default function PropertiesPage() {
 
       formData.append("features", features ? "true" : "false")
 
-      // Convert comma separated amenities into an array string
-      if (amenitiesInput.trim()) {
-        const amenityArray = amenitiesInput.split(",").map(f => f.trim()).filter(f => f !== "")
-        formData.append("amenities", JSON.stringify(amenityArray))
+      if (selectedAmenities.length > 0) {
+        formData.append("amenities", JSON.stringify(selectedAmenities))
       }
 
       // Append images
@@ -418,7 +455,6 @@ export default function PropertiesPage() {
       setLocation(prop.location)
       setSelectedCity(prop.city)
       setSelectedDistrict(prop.district || "")
-      setSelectedCountry(prop.country || "Somalia")
       setPrice(prop.price.toString())
       setListingType(prop.listingType)
       setStatus(prop.status)
@@ -427,17 +463,16 @@ export default function PropertiesPage() {
       setPropertyTypeId(prop.propertyTypeId.toString())
       setSizeLabel(prop.sizeLabel || "")
       setArea(prop.area?.toString() || "")
-      setRooms(prop.Rooms?.toString() || "")
-      setBathrooms(prop.Bathrooms?.toString() || "")
-      setAmenitiesInput(prop.amenities?.map(f => f.name).join(", ") || "")
+      setRooms(toCountSelectValue(prop.Rooms))
+      setBathrooms(toCountSelectValue(prop.Bathrooms))
+      setSelectedAmenities(prop.amenities?.map(f => f.name) || [])
       setFeatures(prop.features ?? false)
     } else {
       setCurrentProperty(null)
       setTitle("")
       setDescription("")
       setLocation("")
-      setSelectedCity("")
-      setSelectedCountry("Somalia")
+      setSelectedCity("Mogadishu")
       setPrice("")
       setListingType("RENT")
       setStatus("CREATED")
@@ -448,7 +483,7 @@ export default function PropertiesPage() {
       setArea("")
       setRooms("")
       setBathrooms("")
-      setAmenitiesInput("")
+      setSelectedAmenities([])
       setFeatures(false)
     }
 
@@ -472,8 +507,7 @@ export default function PropertiesPage() {
     setDescription("")
     setLocation("")
     setSelectedDistrict("")
-    setSelectedCity("")
-    setSelectedCountry("Somalia")
+    setSelectedCity("Mogadishu")
     setPrice("")
     setStatus("CREATED")
     setPropertyTypeId("")
@@ -491,7 +525,7 @@ export default function PropertiesPage() {
     setArea("")
     setRooms("")
     setBathrooms("")
-    setAmenitiesInput("")
+    setSelectedAmenities([])
     setFeatures(false)
     setSelectedFiles([])
     if (fileInputRef.current) {
@@ -515,9 +549,13 @@ export default function PropertiesPage() {
         (filterCity === "Muqdisho" && prop.city === "Mogadishu") ||
         (filterCity === "Mogadishu" && prop.city === "Muqdisho")
       const matchDistrict = filterDistrict === "all" || prop.district === filterDistrict
-      return matchStatus && matchType && matchListing && matchCity && matchDistrict
+      const matchFeature =
+        filterFeature === "all" ||
+        (filterFeature === "featured" && prop.features === true) ||
+        (filterFeature === "not-featured" && !prop.features)
+      return matchStatus && matchType && matchListing && matchCity && matchDistrict && matchFeature
     })
-  }, [properties, filterStatus, filterType, filterListing, filterCity, filterDistrict])
+  }, [properties, filterStatus, filterType, filterListing, filterCity, filterDistrict, filterFeature])
 
   const citiesList = React.useMemo(() => {
     const normalized = properties.map(p => p.city === "Muqdisho" ? "Mogadishu" : p.city).filter(Boolean)
@@ -612,7 +650,7 @@ export default function PropertiesPage() {
     },
     {
       accessorKey: "location",
-      header: "Location",
+      header: "Area",
       cell: ({ row }) => (
         <span className="text-sm font-semibold opacity-85">
           {row.getValue("location")}
@@ -630,12 +668,12 @@ export default function PropertiesPage() {
       ),
     },
     {
-      accessorKey: "agent.fullName",
+      accessorKey: "agent.name",
       header: "Agent",
       cell: ({ row }) => (
         <div className="text-sm flex flex-col">
-          <span className="font-bold text-blue-700 dark:text-blue-400">{row.original.agent?.fullName || 'Unassigned'}</span>
-          <span className="text-[10px] text-muted-foreground font-mono">{row.original.agent?.primaryPhone}</span>
+          <span className="font-bold text-blue-700 dark:text-blue-400">{row.original.agent?.name || 'Unassigned'}</span>
+          <span className="text-[10px] text-muted-foreground font-mono">{row.original.agent?.phone}</span>
         </div>
       ),
     },
@@ -699,16 +737,7 @@ export default function PropertiesPage() {
   ]
 
   return (
-    <SidebarProvider
-      style={{
-        "--sidebar-width": "calc(var(--spacing) * 72)",
-        "--header-height": "calc(var(--spacing) * 12)",
-      } as React.CSSProperties}
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset className="mt-0! mr-0!">
-        <SiteHeader />
-        <div className="flex flex-1 flex-col p-4 md:p-6">
+<div className="flex flex-1 flex-col p-4 md:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Properties Inventory</h1>
@@ -745,71 +774,13 @@ export default function PropertiesPage() {
                       <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Luxurious Downtown Apartment" required />
                     </div>
 
-                    {/* Searchable Country */}
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="country">Country <span className="text-red-500">*</span></Label>
-                      <ReactSelect
-                        instanceId="reg-country-select"
-                        options={countryOptions}
-                        value={currentCountryObj ? { value: currentCountryObj.isoCode, label: currentCountryObj.name } : { value: "SO", label: "Somalia" }}
-                        onChange={(opt: any) => {
-                          if (opt) {
-                            setSelectedCountry(opt.label);
-                            setSelectedCity("");
-                          }
-                        }}
-                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                        classNamePrefix="react-select"
-                        styles={{
-                          control: (base) => ({
-                            ...base,
-                            borderRadius: 'calc(var(--radius) - 2px)',
-                            borderColor: 'var(--border)',
-                            backgroundColor: 'var(--background)',
-                            color: 'var(--foreground)',
-                            boxShadow: 'none',
-                            '&:hover': { borderColor: 'var(--border)' }
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            backgroundColor: 'var(--background)',
-                            border: '1px solid var(--border)',
-                            color: 'var(--foreground)',
-                            zIndex: 9999
-                          }),
-                          menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
-                          option: (base, state) => ({
-                            ...base,
-                            backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
-                            color: state.isFocused ? 'var(--accent-foreground)' : 'var(--foreground)',
-                            '&:active': {
-                              backgroundColor: 'var(--accent)',
-                            }
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            color: 'var(--foreground)',
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            color: 'var(--foreground)',
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            color: 'var(--muted-foreground)',
-                          })
-                        }}
-                      />
-                    </div>
-
-                    {/* Searchable City */}
+                    {/* City */}
                     <div className="space-y-2">
                       <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
                       <ReactSelect
                         instanceId="reg-city-select"
-                        key={`city-select-${countryIso}`}
-                        options={cityOptions}
-                        value={selectedCity ? { value: selectedCity, label: selectedCity } : null}
+                        options={somaliCities}
+                        value={selectedCity ? { value: selectedCity, label: selectedCity } : { value: "Mogadishu", label: "Mogadishu" }}
                         onChange={(opt: any) => {
                           setSelectedCity(opt?.value || "");
                           setSelectedDistrict("");
@@ -913,10 +884,10 @@ export default function PropertiesPage() {
                       />
                     </div>
 
-                    {/* Location Area */}
+                    {/* Area */}
                     <div className="space-y-2">
-                      <Label htmlFor="location"> Location</Label>
-                      <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder=" Location" />
+                      <Label htmlFor="location">Area</Label>
+                      <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Area" />
                     </div>
 
                     {/* Price */}
@@ -975,7 +946,7 @@ export default function PropertiesPage() {
                         <SelectContent>
                           <SelectItem value="none">None / Unassigned</SelectItem>
                           {agents.map((agent) => (
-                            <SelectItem key={`agent-${agent.id}`} value={agent.id?.toString() || ""}>{agent.fullName}</SelectItem>
+                            <SelectItem key={`agent-${agent.id}`} value={agent.id.toString()}>{agent.name}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -1013,13 +984,35 @@ export default function PropertiesPage() {
                     {/* Rooms */}
                     <div className="space-y-2">
                       <Label htmlFor="rooms">Rooms</Label>
-                      <Input id="rooms" type="number" value={rooms} onChange={(e) => setRooms(e.target.value)} placeholder="0" />
+                      <Select value={rooms || undefined} onValueChange={setRooms}>
+                        <SelectTrigger id="rooms">
+                          <SelectValue placeholder="Select rooms" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ROOM_BATH_OPTIONS.map((n) => (
+                            <SelectItem key={`rooms-${n}`} value={n}>
+                              {n === "6" ? "6+" : n}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Bathrooms */}
                     <div className="space-y-2">
                       <Label htmlFor="bathrooms">Bathrooms</Label>
-                      <Input id="bathrooms" type="number" value={bathrooms} onChange={(e) => setBathrooms(e.target.value)} placeholder="0" />
+                      <Select value={bathrooms || undefined} onValueChange={setBathrooms}>
+                        <SelectTrigger id="bathrooms">
+                          <SelectValue placeholder="Select bathrooms" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ROOM_BATH_OPTIONS.map((n) => (
+                            <SelectItem key={`baths-${n}`} value={n}>
+                              {n === "6" ? "6+" : n}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
 
                     {/* Status */}
@@ -1052,14 +1045,31 @@ export default function PropertiesPage() {
                     </div>
 
                     {/* Amenities */}
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="amenities">Property Amenities</Label>
-                      <Input
-                        id="amenities"
-                        value={amenitiesInput}
-                        onChange={(e) => setAmenitiesInput(e.target.value)}
-                        placeholder="e.g. Swimming Pool, Garage, Free Wi-Fi (comma separated)"
-                      />
+                    <div className="space-y-3 md:col-span-2">
+                      <Label className="text-base font-semibold">Amenities</Label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3 rounded-md border border-input bg-muted/10 p-4">
+                        {AMENITY_OPTIONS.map((amenity) => (
+                          <div key={amenity} className="flex items-center gap-2.5">
+                            <Checkbox
+                              id={`amenity-${amenity}`}
+                              checked={selectedAmenities.includes(amenity)}
+                              onCheckedChange={(checked) => {
+                                setSelectedAmenities((prev) =>
+                                  checked === true
+                                    ? [...prev, amenity]
+                                    : prev.filter((a) => a !== amenity)
+                                )
+                              }}
+                            />
+                            <Label
+                              htmlFor={`amenity-${amenity}`}
+                              className="text-sm font-normal cursor-pointer leading-tight"
+                            >
+                              {amenity}
+                            </Label>
+                          </div>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Description */}
@@ -1075,25 +1085,45 @@ export default function PropertiesPage() {
                       />
                     </div>
 
-                    {/* Image Upload array */}
+                    {/* Media upload */}
                     <div className="space-y-2 md:col-span-2 p-4 border rounded-md bg-muted/20">
                       <Label htmlFor="images" className="flex items-center gap-2 text-sm font-semibold mb-2">
-                        <ImageIcon className="h-4 w-4" /> Media Upload (max 10)
+                        <ImageIcon className="h-4 w-4" /> Media Upload (max {MAX_PROPERTY_MEDIA})
                       </Label>
                       <Input
                         id="images"
                         type="file"
                         ref={fileInputRef}
                         multiple
-                        accept="image/*"
+                        accept="image/*,video/*"
                         onChange={handleFileChange}
                         className="cursor-pointer file:cursor-pointer"
                       />
                       <p className="text-[10px] text-muted-foreground mt-1">
                         {currentProperty?.images && currentProperty.images.length > 0
-                          ? `This property currently has ${currentProperty.images.length} image(s). Uploading new ones will replace them.`
-                          : "Select one or multiple images to attach to this listing."}
+                          ? `This property has ${currentProperty.images.length} file(s). Uploading new ones will replace them.`
+                          : "Select images and/or videos (MP4, MOV, WebM). Max 100MB per file."}
                       </p>
+                      {selectedFiles.length > 0 && (
+                        <div className="flex flex-wrap gap-2 pt-2">
+                          {selectedFiles.map((file, idx) => (
+                            <div key={`${file.name}-${idx}`} className="relative w-20 h-20 rounded-md border overflow-hidden bg-muted flex items-center justify-center">
+                              {isVideoMedia(file) ? (
+                                <>
+                                  <VideoIcon className="h-8 w-8 text-muted-foreground" />
+                                  <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] px-1 truncate">{file.name}</span>
+                                </>
+                              ) : (
+                                <img
+                                  src={URL.createObjectURL(file)}
+                                  alt={file.name}
+                                  className="w-full h-full object-cover"
+                                />
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     <DialogFooter className="md:col-span-2 mt-4">
@@ -1117,14 +1147,18 @@ export default function PropertiesPage() {
                   {/* Horizontal Image Gallery */}
                   {viewProperty.images && viewProperty.images.length > 0 ? (
                     <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
-                      {viewProperty.images.map((img) => {
-                        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
-                        const baseUrl = apiUrl.replace("/api", "");
-                        const finalUrl = img.url.startsWith('http')
-                          ? img.url
-                          : `${baseUrl}/${img.url.replace(/\\/g, '/').replace(/^\//, '')}`;
+                      {sortMediaVideosFirst(viewProperty.images).map((img) => {
+                        const finalUrl = resolveMediaUrl(img.url);
+                        const isVideo = img.type === "VIDEO" || isVideoMedia(img.url);
 
-                        return (
+                        return isVideo ? (
+                          <video
+                            key={img.id}
+                            src={finalUrl}
+                            controls
+                            className="h-48 w-auto min-w-[280px] object-cover rounded-md border shadow-sm snap-center bg-black"
+                          />
+                        ) : (
                           <img
                             key={img.id}
                             src={finalUrl}
@@ -1153,8 +1187,8 @@ export default function PropertiesPage() {
                     </div>
 
                     <div>
-                      <span className="font-semibold text-muted-foreground block mb-1">City & Country</span>
-                      <p className="font-medium bg-muted/40 p-2 rounded-md capitalize">{viewProperty.city}, {viewProperty.country || "Somalia"}</p>
+                      <span className="font-semibold text-muted-foreground block mb-1">City</span>
+                      <p className="font-medium bg-muted/40 p-2 rounded-md capitalize">{viewProperty.city}</p>
                     </div>
 
                     {viewProperty.district && (
@@ -1165,7 +1199,7 @@ export default function PropertiesPage() {
                     )}
 
                     <div>
-                      <span className="font-semibold text-muted-foreground block mb-1">Location / Address</span>
+                      <span className="font-semibold text-muted-foreground block mb-1">Area</span>
                       <p className="font-medium bg-muted/40 p-2 rounded-md">{viewProperty.location}</p>
                     </div>
 
@@ -1193,15 +1227,10 @@ export default function PropertiesPage() {
                     <div>
                       <span className="font-semibold text-muted-foreground block mb-1">Agent Contact</span>
                       <div className="bg-transparent py-1">
-                        <p className="font-medium text-blue-700 dark:text-blue-400">{viewProperty.agent?.fullName || 'Unassigned'}</p>
+                        <p className="font-medium text-blue-700 dark:text-blue-400">{viewProperty.agent?.name || 'Unassigned'}</p>
                         <div className="mt-1">
                           <p className="text-xs text-muted-foreground font-mono">
-                            <span className="font-semibold text-foreground/70">Primary Phone:</span> {viewProperty.agent?.primaryPhone || 'N/A'}
-                            {viewProperty.agent?.secondaryPhone && (
-                              <span className="ml-3">
-                                <span className="font-semibold text-foreground/70">Secondary Phone:</span> {viewProperty.agent?.secondaryPhone}
-                              </span>
-                            )}
+                            <span className="font-semibold text-foreground/70">Phone:</span> {viewProperty.agent?.phone || 'N/A'}
                           </p>
                         </div>
                       </div>
@@ -1217,7 +1246,7 @@ export default function PropertiesPage() {
                     <div>
                       <span className="font-semibold text-muted-foreground block mb-1">Rooms & Bathrooms</span>
                       <p className="font-medium bg-muted/40 p-2 rounded-md">
-                        {viewProperty.Rooms || 0} Rooms, {viewProperty.Bathrooms || 0} Bathrooms
+                        {formatCountLabel(viewProperty.Rooms)} Rooms, {formatCountLabel(viewProperty.Bathrooms)} Bathrooms
                       </p>
                     </div>
 
@@ -1354,6 +1383,20 @@ export default function PropertiesPage() {
               </Select>
             </div>
 
+            <div className="flex flex-col gap-1.5 min-w-[130px]">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Feature</Label>
+              <Select value={filterFeature} onValueChange={setFilterFeature}>
+                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                  <SelectValue placeholder="All Features" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Features</SelectItem>
+                  <SelectItem value="featured">Featured</SelectItem>
+                  <SelectItem value="not-featured">Not Featured</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             <Button
               variant="ghost"
               size="sm"
@@ -1363,6 +1406,7 @@ export default function PropertiesPage() {
                 setFilterListing("all");
                 setFilterCity("all");
                 setFilterDistrict("all");
+                setFilterFeature("all");
               }}
               className="text-xs font-bold text-muted-foreground h-9 hover:bg-muted"
             >
@@ -1378,7 +1422,5 @@ export default function PropertiesPage() {
             filterPlaceholder="Search properties by title..."
           />
         </div>
-      </SidebarInset>
-    </SidebarProvider>
-  )
+)
 }

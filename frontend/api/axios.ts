@@ -23,28 +23,39 @@ const api = axios.create({
   },
 });
 
-// Request interceptor
+const ADMIN_PREFIXES = ["/dashboard", "/content", "/settings", "/reports", "/communication"];
+
+function isAdminPath(path: string) {
+  return ADMIN_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+}
+
 api.interceptors.request.use(
   (config) => {
-    // You can add auth tokens here if needed
-    // const token = localStorage.getItem("token");
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`;
-    // }
+    if (typeof window !== "undefined") {
+      const token = sessionStorage.getItem("token");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response interceptor
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // Handle global errors like 401 or 500
+    if (error.response?.status === 401 && typeof window !== "undefined") {
+      sessionStorage.removeItem("user");
+      sessionStorage.removeItem("token");
+      sessionStorage.removeItem("damal_admin_nav");
+
+      const path = window.location.pathname;
+      if (isAdminPath(path)) {
+        window.location.href = "/login";
+      }
+    }
+
     if (error.response) {
       console.error("API Error:", error.response.data);
     } else {

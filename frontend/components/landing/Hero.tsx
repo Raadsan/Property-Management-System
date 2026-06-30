@@ -16,7 +16,7 @@ const PRICE_RANGES = [
 
 export default function Hero() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("all"); // all, rent, sale
+  const [activeTab, setActiveTab] = useState<"rent" | "buy">("rent");
 
   // Selection States
   const [selectedCity, setSelectedCity] = useState("");
@@ -70,9 +70,8 @@ export default function Hero() {
 
   const handleSearch = () => {
     let query = `/explore?`;
-    if (activeTab !== "all") {
-      query += `listingType=${activeTab.toUpperCase()}&`;
-    }
+    const listingType = activeTab === "buy" ? "SALE" : "RENT";
+    query += `listingType=${listingType}&`;
 
     if (selectedCity) query += `city=${encodeURIComponent(selectedCity)}&`;
     if (selectedType) query += `type=${encodeURIComponent(selectedType)}&`;
@@ -92,49 +91,44 @@ export default function Hero() {
   };
 
   return (
-    <section id="home" className="relative w-full h-[800px] bg-white">
-      {/* Background Image Container - strictly 800px */}
+    <section id="home" className="relative w-full min-h-[800px] bg-white">
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         <img
           src="/hero.jpeg"
           alt="Luxury Real Estate"
           className="w-full h-full object-cover"
         />
-        {/* Subtle overlay */}
         <div className="absolute inset-0 bg-black/30" />
       </div>
 
-      {/* Hero Text Content - Centered in the 800px height */}
-      <div className="relative z-10 w-full h-full flex flex-col items-center justify-center px-6 pb-20">
-        <div className="text-center max-w-4xl">
-          <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-[1.1] mb-6 drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
-            Find Your Perfect <br />
-            Home in Somalia
-          </h1>
-          <p className="text-white/95 text-lg md:text-xl font-medium max-w-2xl mx-auto drop-shadow-md">
-            Browse hundreds of verified properties — apartments, villas &amp; commercial spaces tailored to your lifestyle and budget.
-          </p>
+      <div className="relative z-10 flex min-h-[800px] flex-col px-4 md:px-6">
+        <div className="flex flex-1 flex-col items-center justify-center pt-24 pb-8 text-center">
+          <div className="max-w-4xl">
+            <h1 className="text-5xl md:text-7xl font-extrabold text-white leading-[1.1] mb-6 drop-shadow-[0_2px_10px_rgba(0,0,0,0.3)]">
+              Find Your Perfect <br />
+              Home in Somalia
+            </h1>
+            <p className="text-white/95 text-lg md:text-xl font-medium max-w-2xl mx-auto drop-shadow-md">
+              Browse hundreds of verified properties — apartments, villas &amp; commercial spaces tailored to your lifestyle and budget.
+            </p>
+          </div>
         </div>
-      </div>
 
-      {/* Search Bar - Positioned HALF-BETWEEN Hero and the section below */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-full max-w-7xl px-4 z-40" ref={dropdownRef}>
-
-        {/* Tabs */}
-        <div className="flex">
-          {["all", "rent", "buy"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-10 py-4 text-sm font-bold uppercase tracking-widest rounded-t-3xl transition-all ${activeTab === tab
-                  ? "bg-white text-[#214347]"
-                  : "bg-white/10 text-white backdrop-blur-md hover:bg-white/20 border-t border-x border-white/20"
-                }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
+        <div className="mx-auto w-full max-w-7xl pb-10" ref={dropdownRef}>
+          <div className="flex">
+            {(["rent", "buy"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-10 py-4 text-sm font-bold uppercase tracking-widest rounded-t-3xl transition-all ${activeTab === tab
+                    ? "bg-white text-[#214347]"
+                    : "bg-white/10 text-white backdrop-blur-md hover:bg-white/20 border-t border-x border-white/20"
+                  }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
 
         {/* Main Search Pill */}
         <div className="bg-white rounded-b-[2.5rem] rounded-tr-[2.5rem] shadow-[0_20px_60px_rgba(0,0,0,0.12)] p-3 flex flex-col md:flex-row items-center gap-2 border border-gray-100">
@@ -270,6 +264,7 @@ export default function Hero() {
             </button>
           </div>
 
+        </div>
         </div>
       </div>
     </section>

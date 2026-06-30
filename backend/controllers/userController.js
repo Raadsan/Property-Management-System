@@ -3,6 +3,38 @@ import bcrypt from "bcrypt";
 import nodemailer from "nodemailer";
 import { verifyFirebaseToken } from "../lib/firebase.js";
 import { getFileUrl, rejectLegacyUploadUrl } from "../lib/upload.js";
+import { signToken } from "../lib/jwt.js";
+import { getRoleAccess } from "../lib/permissions.js";
+
+async function issueAuthResponse(res, user, message) {
+  const { password: _, ...userWithoutPassword } = user;
+  const token = signToken({
+    userId: user.id,
+    roleId: user.roleId,
+    roleName: user.role?.name,
+  });
+
+  if (!token) {
+    return res.status(500).json({ message: "Token generation failed" });
+  }
+
+  const access = await getRoleAccess(user.roleId, user.role?.name);
+
+  return res.status(200).json({
+    message,
+    user: userWithoutPassword,
+    token,
+    menus: access.menus,
+    permissions: access.permissions,
+  });
+}
+
+async function resolveClientRoleId() {
+  const clientRole = await prisma.role.findFirst({
+    where: { name: { in: ["USER", "CLIENT", "User", "Client", "user", "client"] } },
+  });
+  return clientRole?.id ?? 3;
+}
 
 // @desc    Create a new user
 // @route   POST /api/users
@@ -10,11 +42,19 @@ export const createUser = async (req, res) => {
   console.log("📥 CREATE USER REQUEST:", { body: req.body, headers: req.headers['content-type'] });
   const { name, email, phone, roleId, password, photo, status } = req.body || {};
 
-  if (!name || !phone || !roleId || !password) {
-    return res.status(400).json({ message: "Missing required fields (name, phone, roleId, password)" });
+  if (!name || !phone || !password) {
+    return res.status(400).json({ message: "Missing required fields (name, phone, password)" });
   }
 
   try {
+    let assignedRoleId = roleId ? parseInt(roleId) : null;
+
+    // Public signup: force client role only
+    if (!req.user) {
+      assignedRoleId = await resolveClientRoleId();
+    } else if (!assignedRoleId) {
+      return res.status(400).json({ message: "Missing required field: roleId" });
+    }
     // Hash the password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
@@ -31,7 +71,7 @@ export const createUser = async (req, res) => {
         name,
         email: email && email.trim() !== "" ? email : null, // Fix: Use null instead of "" for unique field
         phone,
-        roleId: parseInt(roleId),
+        roleId: assignedRoleId,
         password: hashedPassword,
         photo: photoPath,
         status: status || "ACTIVE",
@@ -155,6 +195,17 @@ export const updateUser = async (req, res) => {
   }
 };
 
+// @desc    Get current user's menus & API permissions (same as login response)
+// @route   GET /api/users/me/access
+export const getMyAccess = async (req, res) => {
+  try {
+    const access = await getRoleAccess(req.user.roleId, req.user.role?.name);
+    res.status(200).json(access);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching access", error: error.message });
+  }
+};
+
 // @desc    Delete a user
 // @route   DELETE /api/users/:id
 export const deleteUser = async (req, res) => {
@@ -193,35 +244,7 @@ export const loginUser = async (req, res) => {
     });
 
     if (!user) {
-      // 1b. If not found in User, check Agent table
-      const agent = await prisma.agent.findUnique({
-        where: { email },
-        include: {
-          role: { select: { name: true } }
-        }
-      });
-
-      if (!agent) {
-        return res.status(401).json({ message: "Invalid email or password" });
-      }
-
-      // Check agent status
-      if (agent.status !== "ACTIVE") {
-        return res.status(403).json({ message: "Your agent account is currently disabled." });
-      }
-
-      // Compare agent password
-      const isAgentMatch = await bcrypt.compare(password, agent.password);
-      if (!isAgentMatch) {
-        return res.status(401).json({ message: "Invalid credentials" });
-      }
-
-      // Return agent success
-      const { password: _, ...agentWithoutPassword } = agent;
-      return res.status(200).json({
-        message: "Login successful (Agent)",
-        user: { ...agentWithoutPassword, name: agentWithoutPassword.fullName } // Map fullName to name for compatibility
-      });
+      return res.status(401).json({ message: "Invalid email or password" });
     }
 
     // 2. Check if user is active
@@ -235,12 +258,8 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    // 4. Return success (and user data without password)
-    const { password: _, ...userWithoutPassword } = user;
-    res.status(200).json({
-      message: "Login successful",
-      user: userWithoutPassword
-    });
+    // 4. Return success with JWT + menus + permissions
+    await issueAuthResponse(res, user, "Login successful");
 
   } catch (error) {
     res.status(500).json({ message: "Error during login process", error: error.message });
@@ -383,13 +402,14 @@ export const socialLogin = async (req, res) => {
       // We might want to use a default password or mark it as social login
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash(uid + Math.random(), salt); // Random password for social users
+      const clientRoleId = await resolveClientRoleId();
 
       user = await prisma.user.create({
         data: {
           name: name || "Social User",
           email: email,
           phone: "000000000", // Default phone for social login if required
-          roleId: 3, // Default role
+          roleId: clientRoleId,
           password: hashedPassword,
           photo: picture || null,
           status: "ACTIVE",
@@ -398,14 +418,11 @@ export const socialLogin = async (req, res) => {
           role: { select: { name: true } }
         }
       });
+    } else if (user.status !== "ACTIVE") {
+      return res.status(403).json({ message: "Your account is currently disabled. Contact administrator." });
     }
 
-    // 3. Return user
-    const { password: _, ...userWithoutPassword } = user;
-    res.status(200).json({
-      message: "Social login successful",
-      user: userWithoutPassword
-    });
+    await issueAuthResponse(res, user, "Social login successful");
 
   } catch (error) {
     console.error("Social Login Error:", error);

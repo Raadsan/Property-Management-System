@@ -18,34 +18,47 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import Image from "next/image"
-import { useTheme } from "next-themes"
 import * as Icons from "lucide-react"
 import { getPermissionMenusByRole } from "@/api/menuApi"
+import {
+  NAV_CACHE_KEY,
+  clearAuthSession,
+  menusToNavItems,
+  readNavCache,
+  type StoredNavItem,
+} from "@/lib/authSession"
 
 const DynamicIcon = ({ name }: { name?: string }) => {
   if (!name) return null;
   const LucideIcon = (Icons as any)[name];
-  return LucideIcon ? <LucideIcon /> : null;
+  return LucideIcon ? <LucideIcon strokeWidth={1.5} /> : null;
+}
+
+function toNavItems(stored: StoredNavItem[]) {
+  return stored.map((item) => ({
+    ...item,
+    icon: item.icon ? <DynamicIcon name={item.icon} /> : undefined,
+  }))
 }
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const [navMain, setNavMain] = React.useState<any[]>([])
+  const [isNavLoading, setIsNavLoading] = React.useState(true)
   const router = useRouter()
-  const { resolvedTheme, setTheme } = useTheme()
   const { state } = useSidebar()
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
     setMounted(true)
-  }, [])
 
-  const handleLogout = () => {
-    sessionStorage.removeItem("user");
-    router.push("/login");
-  };
+    const cached = readNavCache()
+    if (cached.length > 0) {
+      setNavMain(toNavItems(cached))
+      setIsNavLoading(false)
+    }
 
-  React.useEffect(() => {
     const fetchNav = async () => {
       try {
         const userStr = sessionStorage.getItem("user");
@@ -63,32 +76,34 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         }
 
         const menus = await getPermissionMenusByRole(user.roleId);
-        
-        const mapped = menus.map(m => ({
-          title: m.title,
-          url: m.url || "#",
-          icon: m.icon ? <DynamicIcon name={m.icon} /> : undefined,
-          items: m.isCollapsible && m.subMenus && m.subMenus.length > 0
-            ? m.subMenus.map(sm => ({ title: sm.title, url: sm.url }))
-            : undefined
-        }));
-        setNavMain(mapped);
+
+        const stored = menusToNavItems(menus);
+
+        sessionStorage.setItem(NAV_CACHE_KEY, JSON.stringify(stored));
+        setNavMain(toNavItems(stored));
+        setIsNavLoading(false);
       } catch (error) {
         console.error("Failed to fetch dynamic menus:", error)
+        setIsNavLoading(false)
       }
     }
     fetchNav()
   }, [router])
 
+  const handleLogout = () => {
+    clearAuthSession();
+    router.push("/login");
+  };
+
   return (
-    <Sidebar collapsible="icon" className="bg-sidebar shadow-lg border-r-0 transition-all duration-300" {...props}>
-      <SidebarHeader className="overflow-hidden">
-        <div className={`flex items-center justify-center py-2 px-2 transition-all duration-300 ${state === "collapsed" ? "w-10 h-10" : "w-full"}`}>
-          <a href="#" className="flex flex-col items-center">
-            <div className={`relative transition-all duration-300 ${state === "collapsed" ? "w-8 h-8" : "w-[120px] h-[72px]"}`}>
+    <Sidebar collapsible="icon" className="bg-sidebar text-sidebar-foreground shadow-lg dark:shadow-none border-r-0 dark:border-r dark:border-border transition-all duration-300" {...props}>
+      <SidebarHeader className="overflow-hidden px-4 pt-5 pb-3">
+        <div className={`flex items-center justify-center transition-all duration-300 ${state === "collapsed" ? "w-10 h-10" : "w-full"}`}>
+          <Link href="/dashboard" className="flex flex-col items-center">
+            <div className={`relative transition-all duration-300 ${state === "collapsed" ? "w-8 h-8" : "w-[108px] h-[64px]"}`}>
               {mounted && (
                 <Image 
-                  src={resolvedTheme === "dark" ? "/Damal-02.png" : "/logo.png"} 
+                  src="/Damal-02.png" 
                   alt="Damal Logo" 
                   fill 
                   className="object-contain" 
@@ -96,27 +111,30 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 />
               )}
             </div>
-          </a>
+          </Link>
         </div>
       </SidebarHeader>
-      <SidebarContent>
-        {navMain.length > 0 ? (
+      <SidebarContent className="px-1 pt-1">
+        {isNavLoading ? (
+          <div className="p-4 text-[13px] text-sidebar-foreground/60 flex items-center gap-2">
+            <Icons.Loader2Icon className="h-3.5 w-3.5 animate-spin" /> Loading Navigation...
+          </div>
+        ) : navMain.length > 0 ? (
           <NavMain items={navMain} />
         ) : (
-          <div className="p-4 text-xs text-muted-foreground flex items-center gap-2">
-            <Icons.Loader2Icon className="h-3 w-3 animate-spin" /> Loading Navigation...
+          <div className="p-4 text-[13px] text-sidebar-foreground/60">
+            No navigation items available.
           </div>
         )}
       </SidebarContent>
-      <SidebarFooter className="border-t p-2 overflow-hidden">
+      <SidebarFooter className="border-t border-sidebar-border px-3 py-3 overflow-hidden">
         <SidebarMenu>
-
           <SidebarMenuItem>
             <SidebarMenuButton 
               onClick={handleLogout}
-              className="text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+              className="text-sidebar-foreground/90 hover:bg-sidebar-accent hover:text-sidebar-foreground"
             >
-              <Icons.LogOutIcon className="size-4" />
+              <Icons.LogOutIcon className="size-5" strokeWidth={1.75} />
               <span>Log out</span>
             </SidebarMenuButton>
           </SidebarMenuItem>

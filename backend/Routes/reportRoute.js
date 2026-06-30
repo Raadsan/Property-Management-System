@@ -5,12 +5,16 @@ import {
   getCategoryReport, 
   getUserActivityReport 
 } from '../controllers/reportController.js';
+import { protect, requireStaff } from '../middlewares/authMiddleware.js';
+import { authorize } from '../middlewares/authorize.js';
 
 const router = express.Router();
 
-router.get('/transactions', getTransactionReport);
-router.get('/properties', getPropertyReport);
-router.get('/categories', getCategoryReport);
-router.get('/users', getUserActivityReport);
+router.use(protect, requireStaff);
+
+router.get('/transactions', authorize('/reports', 'view'), getTransactionReport);
+router.get('/properties', authorize('/reports', 'view'), getPropertyReport);
+router.get('/categories', authorize('/reports', 'view'), getCategoryReport);
+router.get('/users', authorize('/reports', 'view'), getUserActivityReport);
 
 export default router;

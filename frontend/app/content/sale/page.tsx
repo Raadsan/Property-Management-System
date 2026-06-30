@@ -1,9 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import {
   Table,
   TableBody,
@@ -160,16 +157,7 @@ export default function SalePage() {
   }
 
   return (
-    <SidebarProvider
-      style={{
-        "--sidebar-width": "calc(var(--spacing) * 72)",
-        "--header-height": "calc(var(--spacing) * 12)",
-      } as React.CSSProperties}
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset className="mt-0! mr-0!">
-        <SiteHeader />
-        <div className="flex flex-1 flex-col p-4 md:p-6">
+<div className="flex flex-1 flex-col p-4 md:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Property Sales</h1>
@@ -420,7 +408,5 @@ export default function SalePage() {
             </Table>
           </div>
         </div>
-      </SidebarInset>
-    </SidebarProvider>
-  )
+)
 }

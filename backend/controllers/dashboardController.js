@@ -4,11 +4,13 @@ import { prisma } from "../lib/prisma.js";
 // @route   GET /api/dashboard/stats
 export const getDashboardStats = async (req, res) => {
   try {
-    const [totalProperties, totalCategories, totalUsers, totalBookings, ownersData, saleCount, rentCount, recentListings, propertyCategories, blogCategories, latestUsers] = await Promise.all([
+    const [totalProperties, totalCategories, totalUsers, totalBookings, totalBlogs, totalBlogCategories, ownersData, saleCount, rentCount, recentListings, propertyCategories, blogCategories, latestUsers] = await Promise.all([
       prisma.property.count(),
       prisma.propertyType.count(),
       prisma.user.count({ where: { role: { name: 'User' } } }),
       prisma.booking.count(),
+      prisma.blog.count(),
+      prisma.blogCategory.count(),
       prisma.user.findMany({
         where: { role: { name: 'Owner' } },
         select: {
@@ -126,6 +128,8 @@ export const getDashboardStats = async (req, res) => {
       totalCategories,
       totalUsers,
       totalBookings,
+      totalBlogs,
+      totalBlogCategories,
       topUsers,
       realTotalRevenue,
       revenueCurrentMonth,

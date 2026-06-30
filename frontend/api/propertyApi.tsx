@@ -3,6 +3,7 @@ import api from "./axios";
 export interface PropertyImage {
   id: number;
   url: string;
+  type?: 'IMAGE' | 'VIDEO';
   propertyId: number;
 }
 
@@ -38,11 +39,11 @@ export interface Property {
   amenities?: PropertyFeature[];
   propertyType?: { name: string };
   owner?: { name: string; phone: string; email?: string; photo?: string };
-  agent?: { fullName: string; primaryPhone: string; secondaryPhone?: string; email?: string; photo?: string };
+  agent?: { name: string; phone: string; email?: string; photo?: string };
   bookings?: { userId: number }[];
 }
 
-export const getProperties = async (params?: { agentId?: number }): Promise<Property[]> => {
+export const getProperties = async (params?: { agentId?: number; features?: boolean }): Promise<Property[]> => {
   const response = await api.get("/properties", { params });
   return response.data;
 };

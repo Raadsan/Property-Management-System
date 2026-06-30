@@ -1,4 +1,4 @@
-import 'dotenv/config'; // Backend restart triggered - Schema Cleaned
+import 'dotenv/config'; // Backend API with JWT auth
 import express from 'express';
 import cors from 'cors';
 import { prisma } from "./lib/prisma.js";
@@ -17,8 +17,6 @@ import contactRoute from "./Routes/contactRoute.js";
 import blogRoute from "./Routes/blogRoute.js";
 import blogCategoryRoute from "./Routes/blogCategoryRoute.js";
 import reportRoute from "./Routes/reportRoute.js";
-import agentRoute from "./Routes/agentRoute.js";
-import videoRoute from "./Routes/videoRoute.js";
 import propertyInquiryRoute from "./Routes/propertyInquiryRoutes.js";
 import saleRoute from "./Routes/saleRoute.js";
 
@@ -27,7 +25,11 @@ import multerErrorHandler from "./middlewares/multerErrorHandler.js";
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-app.use(cors());
+const corsOptions = process.env.FRONTEND_URL
+  ? { origin: process.env.FRONTEND_URL.split(",").map((o) => o.trim()), credentials: true }
+  : {};
+
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '30mb' }));
 app.use(express.urlencoded({ limit: '30mb', extended: true }));
 
@@ -60,7 +62,7 @@ app.get('/', (req, res) => {
 });
 
 app.get('/health', (req, res) => {
-  res.json({ status: 'OK', message: "Property Management Backend is running!" });
+  res.json({ status: 'OK', message: "Property Management Backend is running!", auth: 'jwt' });
 });
 
 // API Routes
@@ -77,8 +79,6 @@ app.use('/api/contact', contactRoute);
 app.use('/api/blogs', blogRoute);
 app.use('/api/blog-categories', blogCategoryRoute);
 app.use('/api/reports', reportRoute);
-app.use('/api/agents', agentRoute);
-app.use('/api/videos', videoRoute);
 app.use('/api/property-inquiries', propertyInquiryRoute);
 app.use('/api/sales', saleRoute);
 

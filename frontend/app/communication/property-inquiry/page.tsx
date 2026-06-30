@@ -2,9 +2,6 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
@@ -186,16 +183,8 @@ export default function PropertyInquiryDashboardPage() {
   ]
 
   return (
-    <SidebarProvider
-      style={{
-        "--sidebar-width": "calc(var(--spacing) * 72)",
-        "--header-height": "calc(var(--spacing) * 12)",
-      } as React.CSSProperties}
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset className="mt-0! mr-0!">
-        <SiteHeader />
-        <div className="flex flex-1 flex-col p-4 md:p-6">
+    <>
+      <div className="flex flex-1 flex-col p-4 md:p-6">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Property Inquiries</h1>
@@ -222,7 +211,6 @@ export default function PropertyInquiryDashboardPage() {
             filterPlaceholder="Search by sender name or email..."
           />
         </div>
-      </SidebarInset>
 
       {/* Inquiry Detail View Modal */}
       <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
@@ -278,6 +266,6 @@ export default function PropertyInquiryDashboardPage() {
           )}
         </DialogContent>
       </Dialog>
-    </SidebarProvider>
+    </>
   )
 }

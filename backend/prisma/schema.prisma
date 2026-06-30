@@ -12,7 +12,6 @@ model Role {
   description     String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
-  agents          Agent[]
   rolePermissions RolePermissions?
   users           User[]
 }
@@ -104,35 +103,14 @@ model User {
   bookings         Booking[]
   favorites        Favorite[]
   payments         Payment[]
-  propertiesOwned  Property[]  @relation("OwnerProperties")
-  role             Role        @relation(fields: [roleId], references: [id])
+  propertiesOwned    Property[]  @relation("OwnerProperties")
+  propertiesAssigned Property[]  @relation("AgentProperties")
+  role               Role        @relation(fields: [roleId], references: [id])
   assignedVideos   Video[]     @relation("AgentVideos")
   videos           Video[]     @relation("OwnerVideos")
   videoLikes       VideoLike[]
 
   @@index([roleId], map: "User_roleId_fkey")
-}
-
-model Agent {
-  id               Int        @id @default(autoincrement())
-  fullName         String
-  email            String     @unique
-  primaryPhone     String
-  secondaryPhone   String?
-  address          String?
-  city             String?
-  district         String?
-  createdAt        DateTime   @default(now())
-  updatedAt        DateTime   @updatedAt
-  roleId           Int
-  status           String     @default("ACTIVE")
-  password         String
-  resetCode        String?
-  resetCodeExpires DateTime?
-  role             Role       @relation(fields: [roleId], references: [id])
-  properties       Property[]
-
-  @@index([roleId], map: "Agent_roleId_fkey")
 }
 
 model PropertyType {
@@ -168,7 +146,7 @@ model Property {
   favorites      Favorite[]
   amenities      Feature[]
   inquiries      PropertyInquiry[]
-  agent          Agent?          @relation(fields: [agentId], references: [id])
+  agent          User?           @relation("AgentProperties", fields: [agentId], references: [id])
   owner          User?           @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Cascade)
   propertyType   PropertyType    @relation(fields: [propertyTypeId], references: [id])
   images         PropertyImage[]
@@ -236,11 +214,17 @@ model VideoLike {
   @@index([userId])
 }
 
+enum PropertyMediaType {
+  IMAGE
+  VIDEO
+}
+
 model PropertyImage {
-  id         Int      @id @default(autoincrement())
+  id         Int               @id @default(autoincrement())
   url        String
+  type       PropertyMediaType @default(IMAGE)
   propertyId Int
-  property   Property @relation(fields: [propertyId], references: [id])
+  property   Property          @relation(fields: [propertyId], references: [id])
 
   @@index([propertyId], map: "PropertyImage_propertyId_fkey")
 }

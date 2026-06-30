@@ -1,4 +1,5 @@
 import api from "./axios";
+import type { Menu } from "./menuApi";
 
 export interface User {
   id: number;
@@ -62,7 +63,23 @@ export const deleteUser = async (id: number): Promise<void> => {
 export interface LoginResponse {
   message: string;
   user: User;
+  token: string;
+  menus?: Menu[];
+  permissions?: Record<string, { view: boolean; add: boolean; edit: boolean; delete: boolean }>;
 }
+
+export interface UserAccess {
+  roleId: number;
+  roleName: string | null;
+  isAdmin: boolean;
+  menus: Menu[];
+  permissions: Record<string, { view: boolean; add: boolean; edit: boolean; delete: boolean }>;
+}
+
+export const getMyAccess = async (): Promise<UserAccess> => {
+  const response = await api.get("/users/me/access");
+  return response.data;
+};
 
 export const loginUser = async (email: string, password: string): Promise<LoginResponse> => {
   const response = await api.post("/users/login", { email, password });

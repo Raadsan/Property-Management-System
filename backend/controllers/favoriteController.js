@@ -1,4 +1,5 @@
 import { prisma } from "../lib/prisma.js";
+import { assertSelfOrAdmin } from "../middlewares/authMiddleware.js";
 
 // @desc    Toggle a favorite (Add or Remove)
 // @route   POST /api/favorites/toggle
@@ -9,8 +10,9 @@ export const toggleFavorite = async (req, res) => {
     return res.status(400).json({ message: "userId and propertyId are required." });
   }
 
+  if (!assertSelfOrAdmin(req, res, userId)) return;
+
   try {
-    // Check if the user exists
     const userExists = await prisma.user.findUnique({ where: { id: parseInt(userId) } });
     if (!userExists) {
       return res.status(404).json({ message: "User not found. Please use a valid User ID." });
@@ -57,6 +59,8 @@ export const toggleFavorite = async (req, res) => {
 // @route   GET /api/favorites/user/:userId
 export const getUserFavorites = async (req, res) => {
   const { userId } = req.params;
+  if (!assertSelfOrAdmin(req, res, userId)) return;
+
   try {
     const favorites = await prisma.favorite.findMany({
       where: { userId: parseInt(userId) },
@@ -79,6 +83,8 @@ export const getUserFavorites = async (req, res) => {
 // @route   GET /api/favorites/check/:userId/:propertyId
 export const checkFavorite = async (req, res) => {
   const { userId, propertyId } = req.params;
+  if (!assertSelfOrAdmin(req, res, userId)) return;
+
   try {
     const favorite = await prisma.favorite.findUnique({
       where: {

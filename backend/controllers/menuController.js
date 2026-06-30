@@ -1,4 +1,5 @@
-import { prisma } from "../lib/prisma.js"; // Trigger nodemon reload
+import { prisma } from "../lib/prisma.js";
+import { getAllowedMenusForRole } from "../lib/permissions.js"; // Trigger nodemon reload
 
 export const createMenu = async (req, res) => {
     const { title, icon, url, isCollapsible, order, subMenus } = req.body;
@@ -173,40 +174,8 @@ export const getPermissionMenusByRole = async (req, res) => {
             return res.status(400).json({ message: "Invalid Role ID" });
         }
 
-        // 1. Find the RolePermissions object for this role first
-        const rolePerms = await prisma.rolePermissions.findUnique({
-            where: { roleId: id }
-        });
-
-        if (!rolePerms) {
-            return res.status(200).json([]); // No permissions defined yet
-        }
-
-        // 2. Get all menus and include their specific role permissions
-        const menus = await prisma.menu.findMany({
-            orderBy: { order: "asc" },
-            include: {
-                roleMenus: {
-                    where: { rolePermissionsId: rolePerms.id }
-                },
-                subMenus: {
-                    orderBy: { order: "asc" },
-                    include: {
-                        roleSubMenus: {
-                            where: { roleMenuAccess: { rolePermissionsId: rolePerms.id } }
-                        }
-                    }
-                }
-            }
-        });
-
-        // 3. Filter out menus and submenus based on canView
-        const allowedMenus = menus
-            .filter(m => m.roleMenus && m.roleMenus.length > 0 && m.roleMenus[0].canView)
-            .map(m => ({
-                ...m,
-                subMenus: m.subMenus.filter(sm => sm.roleSubMenus && sm.roleSubMenus.length > 0 && sm.roleSubMenus[0].canView)
-            }));
+        const role = await prisma.role.findUnique({ where: { id } });
+        const allowedMenus = await getAllowedMenusForRole(id, role?.name);
 
         res.status(200).json(allowedMenus);
 

@@ -33,6 +33,7 @@ import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogFooter, Di
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { isVideoMedia, resolveMediaUrl, sortMediaVideosFirst } from "@/lib/mediaUtils";
 
 export default function PropertyDetailPage() {
   const params = useParams();
@@ -196,15 +197,15 @@ export default function PropertyDetailPage() {
     );
   }
 
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://property-management-system-production-e024.up.railway.app/api";
-  const baseUrl = apiUrl.replace("/api", "");
-
-  const displayImages = property.images && property.images.length > 0
-    ? property.images.map(img => img.url.startsWith('http') ? img.url : `${baseUrl}/${img.url.replace(/\\/g, '/').replace(/^\//, '')}`)
-    : ["https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80"];
+  const displayMedia = property.images && property.images.length > 0
+    ? sortMediaVideosFirst(property.images).map(img => ({
+        url: resolveMediaUrl(img.url),
+        isVideo: img.type === "VIDEO" || isVideoMedia(img.url),
+      }))
+    : [{ url: "https://images.unsplash.com/photo-1560518883-ce09059eeffa?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&q=80", isVideo: false }];
 
   // Determine WhatsApp number (Agent > Owner > Default)
-  const rawPhone = property.agent?.primaryPhone || property.agent?.secondaryPhone || "252613052542";
+  const rawPhone = property.agent?.phone || "252613052542";
   let waNumber = rawPhone.replace(/\D/g, ''); // Extract only digits
   if (waNumber.startsWith('0')) waNumber = waNumber.substring(1); // Remove leading zero if present
   if (waNumber.length <= 10 && !waNumber.startsWith('252')) {
@@ -218,12 +219,19 @@ export default function PropertyDetailPage() {
   };
 
   const nextImage = () => {
-    setSelectedImgIndex((prev) => (prev + 1) % displayImages.length);
+    setSelectedImgIndex((prev) => (prev + 1) % displayMedia.length);
   };
 
   const prevImage = () => {
-    setSelectedImgIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
+    setSelectedImgIndex((prev) => (prev - 1 + displayMedia.length) % displayMedia.length);
   };
+
+  const renderMedia = (item: { url: string; isVideo: boolean }, className: string, alt?: string) =>
+    item.isVideo ? (
+      <video src={item.url} className={className} controls muted playsInline />
+    ) : (
+      <img src={item.url} className={className} alt={alt || property.title} />
+    );
 
   return (
     <main className="min-h-screen bg-white font-sans selection:bg-gray-100">
@@ -234,29 +242,24 @@ export default function PropertyDetailPage() {
         {/* Gallery Section */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-[500px] md:h-[600px] mb-10 overflow-hidden cursor-pointer" onClick={() => openGallery(0)}>
           <div className="md:col-span-3 h-full bg-gray-100 rounded-2xl overflow-hidden group">
-            <img
-              src={displayImages[0]}
-              className="w-full h-full object-cover rounded-2xl shadow-sm transition-transform duration-500 group-hover:scale-105"
-              alt={property.title}
-            />
+            {renderMedia(displayMedia[0], "w-full h-full object-cover rounded-2xl shadow-sm transition-transform duration-500 group-hover:scale-105")}
           </div>
           <div className="md:col-span-1 grid grid-rows-3 gap-4 h-full">
-            {displayImages.slice(1, 4).map((img, idx) => (
+            {displayMedia.slice(1, 4).map((item, idx) => (
               <div
                 key={idx}
                 className="h-full overflow-hidden rounded-2xl bg-gray-100 border border-gray-50 relative group"
                 onClick={(e) => { e.stopPropagation(); openGallery(idx + 1); }}
               >
-                <img src={img} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" alt={`${property.title} view ${idx + 2}`} />
-                {idx === 2 && displayImages.length > 4 && (
+                {renderMedia(item, "w-full h-full object-cover transition-transform duration-500 group-hover:scale-110", `${property.title} view ${idx + 2}`)}
+                {idx === 2 && displayMedia.length > 4 && (
                   <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-colors group-hover:bg-black/50">
-                    <span className="text-white text-3xl font-bold">{displayImages.length - 4}+</span>
+                    <span className="text-white text-3xl font-bold">{displayMedia.length - 4}+</span>
                   </div>
                 )}
               </div>
             ))}
-            {/* Fill empty slots if less than 4 images */}
-            {displayImages.length < 4 && Array(4 - displayImages.length).fill(0).map((_, idx) => (
+            {displayMedia.length < 4 && Array(4 - displayMedia.length).fill(0).map((_, idx) => (
               <div key={`placeholder-${idx}`} className="h-full overflow-hidden rounded-2xl bg-gray-50 border border-gray-100" />
             ))}
           </div>
@@ -522,16 +525,25 @@ export default function PropertyDetailPage() {
 
           {/* Main Visual Stage */}
           <div className="w-screen h-screen flex items-center justify-center p-0 md:p-8 bg-black">
-            <img
-              key={selectedImgIndex}
-              src={displayImages[selectedImgIndex]}
-              className="w-full h-full object-contain select-none transition-all duration-300 animate-in fade-in zoom-in-95"
-              alt={`Property view ${selectedImgIndex + 1}`}
-            />
+            {displayMedia[selectedImgIndex].isVideo ? (
+              <video
+                key={selectedImgIndex}
+                src={displayMedia[selectedImgIndex].url}
+                controls
+                autoPlay
+                className="w-full h-full object-contain select-none transition-all duration-300 animate-in fade-in zoom-in-95"
+              />
+            ) : (
+              <img
+                key={selectedImgIndex}
+                src={displayMedia[selectedImgIndex].url}
+                className="w-full h-full object-contain select-none transition-all duration-300 animate-in fade-in zoom-in-95"
+                alt={`Property view ${selectedImgIndex + 1}`}
+              />
+            )}
 
-            {/* Indicator Piller */}
             <div className="fixed bottom-12 left-1/2 -translate-x-1/2 bg-white/10 backdrop-blur-2xl px-12 py-4 rounded-full text-white text-xl font-bold tracking-[0.4em] border border-white/20 z-[250] shadow-2xl">
-              {selectedImgIndex + 1} / {displayImages.length}
+              {selectedImgIndex + 1} / {displayMedia.length}
             </div>
           </div>
         </DialogContent>

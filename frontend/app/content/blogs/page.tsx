@@ -1,9 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
@@ -282,16 +279,7 @@ export default function BlogsRegistrationPage() {
   ]
 
   return (
-    <SidebarProvider
-      style={{
-        "--sidebar-width": "calc(var(--spacing) * 72)",
-        "--header-height": "calc(var(--spacing) * 12)",
-      } as React.CSSProperties}
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset className="mt-0! mr-0!">
-        <SiteHeader />
-        <div className="flex flex-1 flex-col p-4 md:p-6">
+<div className="flex flex-1 flex-col p-4 md:p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Blogs</h1>
@@ -348,10 +336,21 @@ export default function BlogsRegistrationPage() {
                       id="content" 
                       value={content} 
                       onChange={(e) => setContent(e.target.value)} 
-                      placeholder="Write your article here..."
-                      rows={8}
+                      placeholder={`Write your article here...
+
+Use ## Heading for section titles (e.g. ## Enhancing Brand Awareness)
+
+Add links with [link text](https://example.com) or paste a full URL
+
+Add hashtags on the last line:
+#Damal #RealEstate #Mogadishu #Property`}
+                      rows={14}
                       required
                     />
+                    <p className="text-[11px] text-muted-foreground">
+                      Tip: Start sections with <code className="bg-muted px-1 rounded">## Title</code>, add links with{" "}
+                      <code className="bg-muted px-1 rounded">[text](url)</code>, and put hashtags on the final line.
+                    </p>
                   </div>
 
                   {/* Image Upload */}
@@ -420,7 +419,5 @@ export default function BlogsRegistrationPage() {
             filterPlaceholder="Search blogs by title..."
           />
         </div>
-      </SidebarInset>
-    </SidebarProvider>
-  )
+)
 }

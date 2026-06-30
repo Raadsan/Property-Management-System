@@ -7,13 +7,16 @@ import {
   deleteBlog 
 } from "../controllers/BlogController.js";
 import { upload } from "../lib/upload.js";
+import { protect, requireStaff } from '../middlewares/authMiddleware.js';
+import { authorize } from '../middlewares/authorize.js';
 
 const router = express.Router();
 
 router.get("/", getBlogs);
 router.get("/:id", getBlogById);
-router.post("/", upload.single('image'), createBlog);
-router.patch("/:id", upload.single('image'), updateBlog);
-router.delete("/:id", deleteBlog);
+
+router.post("/", protect, requireStaff, authorize('/content/blogs', 'add'), upload.single('image'), createBlog);
+router.patch("/:id", protect, requireStaff, authorize('/content/blogs', 'edit'), upload.single('image'), updateBlog);
+router.delete("/:id", protect, requireStaff, authorize('/content/blogs', 'delete'), deleteBlog);
 
 export default router;

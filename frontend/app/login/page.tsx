@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { EyeIcon, EyeOffIcon, Loader2Icon, Mail, Lock, CheckCircle2, AlertCircle, User } from "lucide-react"
 import { loginUser as performLogin, socialLogin } from "@/api/userApi"
+import { saveAuthSession } from "@/lib/authSession"
 import { auth, googleProvider, facebookProvider } from "@/lib/firebase"
 import { signInWithPopup } from "firebase/auth"
 
@@ -44,7 +45,7 @@ export default function LoginPage() {
         user.role?.name?.toLowerCase() === "client" || 
         user.roleId === 3
 
-      sessionStorage.setItem("user", JSON.stringify(user))
+      saveAuthSession(response)
       setSuccessStatus(response.message || "Signed in successfully")
       
       if (isRegularUser) {
@@ -77,7 +78,7 @@ export default function LoginPage() {
         user.role?.name?.toLowerCase() === "client" || 
         user.roleId === 3
 
-      sessionStorage.setItem("user", JSON.stringify(user))
+      saveAuthSession(response)
       setSuccessStatus(response.message || "Social Sign-in successful")
       
       if (isRegularUser) {

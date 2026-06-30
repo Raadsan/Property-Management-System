@@ -1,9 +1,6 @@
 "use client"
 
 import * as React from "react"
-import { AppSidebar } from "@/components/app-sidebar"
-import { SiteHeader } from "@/components/site-header"
-import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
@@ -191,16 +188,7 @@ export default function CategoriesPage() {
   ]
 
   return (
-    <SidebarProvider
-      style={{
-        "--sidebar-width": "calc(var(--spacing) * 72)",
-        "--header-height": "calc(var(--spacing) * 12)",
-      } as React.CSSProperties}
-    >
-      <AppSidebar variant="inset" />
-      <SidebarInset className="mt-0! mr-0!">
-        <SiteHeader />
-        <div className="flex flex-1 flex-col p-4 md:p-6">
+<div className="flex flex-1 flex-col p-4 md:p-6">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-2xl font-bold tracking-tight">Categories</h1>
@@ -249,7 +237,5 @@ export default function CategoriesPage() {
             filterPlaceholder="Search categories by name..."
           />
         </div>
-      </SidebarInset>
-    </SidebarProvider>
-  )
+)
 }

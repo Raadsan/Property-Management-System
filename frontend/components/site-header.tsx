@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { clearAuthSession } from "@/lib/authSession"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
@@ -24,7 +25,7 @@ export function SiteHeader() {
   }, [])
 
   const handleLogout = () => {
-    sessionStorage.removeItem("user")
+    clearAuthSession()
     setUser(null)
     router.push("/login")
   }

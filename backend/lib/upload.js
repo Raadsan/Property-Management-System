@@ -87,7 +87,7 @@ const getMulterUpload = () => {
   multerUpload = multer({
     storage,
     fileFilter,
-    limits: { fileSize: 30 * 1024 * 1024 },
+    limits: { fileSize: 100 * 1024 * 1024 },
   });
 
   console.log(`📦 Upload storage: AWS S3 (bucket: ${s3Bucket}, prefix: ${s3UploadPrefix})`);

@@ -8,6 +8,7 @@ import { Calendar, User, ArrowRight, Tag, Search, TrendingUp } from "lucide-reac
 
 import { getBlogs, getBlogCategories, Blog, BlogCategory } from "@/api/blogApi";
 import { getMediaUrl } from "@/lib/mediaUrl";
+import { getBlogExcerpt } from "@/lib/renderBlogContent";
 
 export default function BlogsPage() {
   const [blogs, setBlogs] = React.useState<Blog[]>([]);
@@ -150,16 +151,17 @@ export default function BlogsPage() {
           ) : currentItems.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-10">
               {currentItems.map((post) => (
-                <article 
-                  key={post.id} 
-                  className="group bg-white rounded-xl border border-gray-100 overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.02)] transition-all duration-500 flex flex-col h-full"
+                <Link
+                  key={post.id}
+                  href={`/blogs/${post.id}`}
+                  className="group bg-white rounded-xl border border-gray-100 overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.02)] transition-all duration-500 flex flex-col h-full hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:border-[#214347]/20 cursor-pointer"
                 >
                   {/* Image Container */}
                   <div className="relative h-64 overflow-hidden">
                     <img 
                       src={getMediaUrl(post.image)} 
                       alt={post.title} 
-                      className="w-full h-full object-cover transition-transform duration-700"
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute top-6 left-6">
                       <span className="bg-white/95 backdrop-blur-md px-4 py-1.5 rounded-full text-[#214347] text-[10px] font-black uppercase tracking-widest shadow-lg border border-white/50">
@@ -182,29 +184,24 @@ export default function BlogsPage() {
                       </span>
                     </div>
 
-                    <Link href={`/blogs/${post.id}`}>
-                      <h3 className="text-xl font-bold text-gray-900 mb-4 leading-snug cursor-pointer hover:text-[#214347] transition-colors">
-                        {post.title}
-                      </h3>
-                    </Link>
+                    <h3 className="text-xl font-bold text-gray-900 mb-4 leading-snug group-hover:text-[#214347] transition-colors">
+                      {post.title}
+                    </h3>
 
                     <p className="text-gray-500 text-[15px] leading-relaxed mb-8 flex-1 font-light line-clamp-3">
-                      {post.content.replace(/<[^>]*>/g, '').substring(0, 160)}...
+                      {getBlogExcerpt(post.content)}
                     </p>
 
-                    <Link 
-                      href={`/blogs/${post.id}`}
-                      className="inline-flex items-center justify-between w-full p-1 pl-4 rounded-xl border border-gray-100 transition-all duration-300 group/btn bg-gray-50/50 hover:bg-[#214347] hover:text-white"
-                    >
+                    <div className="inline-flex items-center justify-between w-full p-1 pl-4 rounded-xl border border-gray-100 transition-all duration-300 bg-gray-50/50 group-hover:bg-[#214347] group-hover:text-white group-hover:border-[#214347]">
                       <span className="text-sm font-bold tracking-tight">
                         Read Full Story
                       </span>
-                      <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shadow-sm transition-all bg-white text-[#214347] group-hover/btn:bg-teal-400 group-hover/btn:text-white">
-                        <ArrowRight className="w-4 h-4 transition-transform group-hover/btn:translate-x-1" />
+                      <div className="w-10 h-10 rounded-[10px] flex items-center justify-center shadow-sm transition-all bg-white text-[#214347] group-hover:bg-teal-400 group-hover:text-white">
+                        <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
                       </div>
-                    </Link>
+                    </div>
                   </div>
-                </article>
+                </Link>
               ))}
             </div>
           ) : (

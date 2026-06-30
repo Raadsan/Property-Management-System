@@ -1,6 +1,15 @@
 import { prisma } from "../lib/prisma.js"; // Restart nodemon 2
 import axios from "axios";
 import { getFileUrl, rejectLegacyUploadUrl } from "../lib/upload.js";
+import { mediaFromFile, mediaFromUrl, sortMediaVideosFirst, sortMediaPayloadVideosFirst } from "../lib/mediaUtils.js";
+import { assertSelfOrAdmin } from "../middlewares/authMiddleware.js";
+
+const withSortedImages = (property) => ({
+  ...property,
+  images: sortMediaVideosFirst(property?.images || []),
+});
+
+const withSortedImagesList = (properties) => properties.map(withSortedImages);
 
 // @desc    Create a new property
 // @route   POST /api/properties
@@ -29,17 +38,17 @@ export const createProperty = async (req, res) => {
       });
     }
 
-    // Combine images from uploaded files (S3) and optional existing S3 URLs in body
+    // Combine media from uploaded files (S3) and optional existing S3 URLs in body
     let images = [];
     if (req.files && req.files.length > 0) {
-      images = req.files.map(getFileUrl).filter(Boolean);
+      images = req.files.map(mediaFromFile).filter((m) => m.url);
     }
     if (bodyImages) {
       const bodyImageList = Array.isArray(bodyImages) ? bodyImages : [bodyImages];
       for (const imageUrl of bodyImageList) {
         if (rejectLegacyUploadUrl(imageUrl, res, 'images')) return;
       }
-      images = [...images, ...bodyImageList];
+      images = [...images, ...bodyImageList.map(mediaFromUrl)];
     }
 
     // Parse amenities (comma-separated property attributes)
@@ -98,7 +107,7 @@ export const createProperty = async (req, res) => {
         area: isNaN(parsedArea) ? null : parsedArea,
         features,
         images: images && images.length > 0 ? {
-          create: images.map(url => ({ url }))
+          create: sortMediaPayloadVideosFirst(images).map(({ url, type }) => ({ url, type }))
         } : undefined,
         amenities: amenities && amenities.length > 0 ? {
           create: amenities.map(name => ({ name }))
@@ -111,7 +120,7 @@ export const createProperty = async (req, res) => {
     });
 
     console.log("✅ Property created successfully:", property.id);
-    return res.status(201).json({ message: "Property created successfully", property });
+    return res.status(201).json({ message: "Property created successfully", property: withSortedImages(property) });
   } catch (error) {
     console.error("❌ CREATE PROPERTY ERROR:", error);
     return res.status(500).json({
@@ -126,9 +135,10 @@ export const createProperty = async (req, res) => {
 // @route   GET /api/properties
 export const getProperties = async (req, res) => {
   try {
-    const { city, country, rooms, minPrice, maxPrice, propertyTypeId, listingType, keyword, agentId } = req.query;
+    const { city, country, rooms, minPrice, maxPrice, propertyTypeId, listingType, keyword, agentId, features: featuresFilter } = req.query;
 
     const where = {};
+    if (featuresFilter === "true") where.features = true;
     if (city) {
       if (city === "Muqdisho" || city === "Mogadishu") {
         where.city = { in: ["Muqdisho", "Mogadishu"] };
@@ -163,10 +173,10 @@ export const getProperties = async (req, res) => {
         amenities: true,
         propertyType: { select: { name: true } },
         owner: { select: { name: true, phone: true } },
-        agent: { select: { fullName: true, primaryPhone: true, secondaryPhone: true } }
+        agent: { select: { name: true, phone: true, email: true } }
       }
     });
-    return res.status(200).json(properties);
+    return res.status(200).json(withSortedImagesList(properties));
   } catch (error) {
     console.error("❌ GET PROPERTIES ERROR:", error);
     return res.status(500).json({
@@ -194,7 +204,7 @@ export const getPropertyById = async (req, res) => {
         amenities: true,
         propertyType: true,
         owner: { select: { name: true, email: true, phone: true, photo: true } },
-        agent: { select: { fullName: true, email: true, primaryPhone: true, secondaryPhone: true } },
+        agent: { select: { name: true, email: true, phone: true, photo: true } },
         bookings: {
           where: {
             status: { in: ['PAID', 'PENDING'] }
@@ -210,7 +220,7 @@ export const getPropertyById = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    return res.status(200).json(property);
+    return res.status(200).json(withSortedImages(property));
   } catch (error) {
     console.error("❌ GET PROPERTY BY ID ERROR:", error);
     return res.status(500).json({
@@ -277,7 +287,12 @@ export const updateProperty = async (req, res) => {
 
     // Handle IMAGE REPLACEMENT
     if (req.files && req.files.length > 0) {
-      const newImages = req.files.map(file => ({ url: getFileUrl(file) }));
+      const newImages = sortMediaPayloadVideosFirst(
+        req.files.map((file) => {
+          const media = mediaFromFile(file);
+          return { url: media.url, type: media.type };
+        })
+      );
       updateData.images = {
         deleteMany: {},
         create: newImages
@@ -317,7 +332,7 @@ export const updateProperty = async (req, res) => {
       }
     });
 
-    return res.status(200).json({ message: "Property updated successfully", property: updatedProperty });
+    return res.status(200).json({ message: "Property updated successfully", property: withSortedImages(updatedProperty) });
   } catch (error) {
     console.error("❌ UPDATE PROPERTY ERROR:", error);
     if (error.code === 'P2025') {
@@ -346,7 +361,7 @@ export const approveProperty = async (req, res) => {
       data: { status: 'AVAILABLE' }
     });
 
-    return res.status(200).json({ message: "Property approved successfully", property: updatedProperty });
+    return res.status(200).json({ message: "Property approved successfully", property: withSortedImages(updatedProperty) });
   } catch (error) {
     console.error("❌ APPROVE PROPERTY ERROR:", error);
     if (error.code === 'P2025') {
@@ -389,6 +404,8 @@ export const bookNow = async (req, res) => {
   if (!userId || !phone) {
     return res.status(400).json({ message: "Missing required fields: userId, phone" });
   }
+
+  if (!assertSelfOrAdmin(req, res, userId)) return;
 
   try {
     const propertyId = parseInt(id);
@@ -483,6 +500,8 @@ export const bookNow = async (req, res) => {
 // @route   GET /api/properties/user/:userId/bookings
 export const getBookingsByUser = async (req, res) => {
   const { userId } = req.params;
+  if (!assertSelfOrAdmin(req, res, userId)) return;
+
   try {
     const bookings = await prisma.booking.findMany({
       where: { userId: parseInt(userId) },
@@ -510,6 +529,8 @@ export const cancelBooking = async (req, res) => {
   if (!userId) {
     return res.status(400).json({ message: "Missing required fields: userId" });
   }
+
+  if (!assertSelfOrAdmin(req, res, userId)) return;
 
   try {
     const propertyId = parseInt(id);

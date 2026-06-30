@@ -6,7 +6,7 @@ import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
 import PropertyCard from "@/components/landing/PropertyCard";
 import { getProperties, Property } from "@/api/propertyApi";
-import { Search, SlidersHorizontal, MapPin, Loader2, Home } from "lucide-react";
+import { Search, Loader2, Home } from "lucide-react";
 import {
   Select,
   SelectContent,
@@ -100,7 +100,7 @@ function ExploreContent() {
     <main className="min-h-screen bg-white">
       <Navbar />
 
-      {/* 1. Header Banner (Styled like Contact Us) */}
+      {/* 1. Header Banner */}
       <section className="relative pt-[120px] pb-16 md:pt-[140px] md:pb-20 bg-[#214347] overflow-hidden">
         {/* Subtle radial gradient and Grid Lines */}
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[#1a3538]/50 pointer-events-none"></div>
@@ -114,123 +114,119 @@ function ExploreContent() {
             )}
           </h1>
           <p className="text-white/80 text-lg max-w-xl mx-auto">
-            {selectedCity 
-              ? "Discover homes, apartments, hotels, and event venues across Somalia through a trusted platform designed to make finding your next property simple, transparent, and convenient."
-              : "Discover homes, apartments, hotels, and event venues across Somalia through a trusted platform designed to make finding your next property simple, transparent, and convenient."
-            }
+            Discover homes, apartments, hotels, and event venues across Somalia through a trusted platform designed to make finding your next property simple, transparent, and convenient.
           </p>
         </div>
       </section>
 
-      {/* 2. Interactive Search & Filter Bar */}
+      {/* 2. Search & filter bar */}
       <section className="py-8 bg-white border-b border-gray-100 sticky top-20 z-40 shadow-sm backdrop-blur-xl bg-white/90">
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col gap-6">
-            
-            {/* Search Input Row */}
+            {/* Search Input */}
             <div className="flex items-center bg-gray-50 p-1.5 rounded-2xl border border-gray-100 shadow-sm group focus-within:ring-2 focus-within:ring-[#214347]/10 transition-all">
-               <div className="pl-4">
-                 <Search className="h-5 w-5 text-gray-400 group-focus-within:text-[#214347] transition-colors" />
-               </div>
-               <input 
-                 type="text" 
-                 value={searchTerm}
-                 onChange={(e) => setSearchTerm(e.target.value)}
-                 placeholder="Search by title, location or neighborhood..."
-                 className="flex-1 py-3 px-3 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400"
-               />
-               <div className="pr-1.5 hidden sm:block">
-                  <div className="bg-[#214347]/5 text-[#214347] px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                     {filteredProperties.length} Results
-                  </div>
-               </div>
+              <div className="pl-4">
+                <Search className="h-5 w-5 text-gray-400 group-focus-within:text-[#214347] transition-colors" />
+              </div>
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Search by title, location or neighborhood..."
+                className="flex-1 py-3 px-3 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400"
+              />
+              <div className="pr-1.5 hidden sm:block">
+                <div className="bg-[#214347]/5 text-[#214347] px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                  {filteredProperties.length} Results
+                </div>
+              </div>
             </div>
 
-            {/* Advanced Filter Row */}
+            {/* Filter dropdowns */}
             <div className="flex flex-wrap items-center gap-4">
-              <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Status</Label>
-                <Select value={selectedStatus || "all"} onValueChange={setSelectedStatus}>
-                  <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-gray-50 font-medium text-sm">
-                    <SelectValue placeholder="All Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="AVAILABLE">Available</SelectItem>
-                    <SelectItem value="BOOKED">Booked</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Status</Label>
+              <Select value={selectedStatus || "all"} onValueChange={setSelectedStatus}>
+                <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-white text-black font-medium text-sm [&_svg]:text-black">
+                  <SelectValue placeholder="All Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="AVAILABLE">Available</SelectItem>
+                  <SelectItem value="BOOKED">Booked</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Prop Type</Label>
-                <Select value={selectedType || "all"} onValueChange={setSelectedType}>
-                  <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-gray-50 font-medium text-sm">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {typesList.map(t => (
-                      <SelectItem key={t!} value={t!}>{t}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Prop Type</Label>
+              <Select value={selectedType || "all"} onValueChange={setSelectedType}>
+                <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-white text-black font-medium text-sm [&_svg]:text-black">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Types</SelectItem>
+                  {typesList.map(t => (
+                    <SelectItem key={t!} value={t!}>{t}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Listing</Label>
-                <Select value={selectedListingType || "all"} onValueChange={setSelectedListingType}>
-                  <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-gray-50 font-medium text-sm">
-                    <SelectValue placeholder="All Listings" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Listings</SelectItem>
-                    <SelectItem value="RENT">Rent</SelectItem>
-                    <SelectItem value="SALE">Sale</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Listing</Label>
+              <Select value={selectedListingType || "all"} onValueChange={setSelectedListingType}>
+                <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-white text-black font-medium text-sm [&_svg]:text-black">
+                  <SelectValue placeholder="All Listings" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Listings</SelectItem>
+                  <SelectItem value="RENT">Rent</SelectItem>
+                  <SelectItem value="SALE">Sale</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">City</Label>
-                <Select value={selectedCity || "all"} onValueChange={(val) => { setSelectedCity(val === "all" ? "" : val); setSelectedDistrict(""); }}>
-                  <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-gray-50 font-medium text-sm">
-                    <SelectValue placeholder="All Cities" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Cities</SelectItem>
-                    {somaliCities.map(city => (
-                      <SelectItem key={city} value={city}>{city}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">City</Label>
+              <Select value={selectedCity || "all"} onValueChange={(val) => { setSelectedCity(val === "all" ? "" : val); setSelectedDistrict(""); }}>
+                <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-white text-black font-medium text-sm [&_svg]:text-black">
+                  <SelectValue placeholder="All Cities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Cities</SelectItem>
+                  {somaliCities.map(city => (
+                    <SelectItem key={city} value={city}>{city}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
-                <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">District</Label>
-                <Select value={selectedDistrict || "all"} onValueChange={setSelectedDistrict} disabled={!selectedCity || selectedCity === "all"}>
-                  <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-gray-50 font-medium text-sm">
-                    <SelectValue placeholder="All Districts" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Districts</SelectItem>
-                    {districtsList.map(district => (
-                      <SelectItem key={district!} value={district!}>{district}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">District</Label>
+              <Select value={selectedDistrict || "all"} onValueChange={setSelectedDistrict} disabled={!selectedCity || selectedCity === "all"}>
+                <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-white text-black font-medium text-sm disabled:opacity-60 [&_svg]:text-black">
+                  <SelectValue placeholder="All Districts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Districts</SelectItem>
+                  {districtsList.map(district => (
+                    <SelectItem key={district!} value={district!}>{district}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-              <div className="ml-auto mt-5">
-                <button 
-                  onClick={() => { setSelectedStatus(""); setSelectedType(""); setSelectedListingType(""); setSelectedCity(""); setSelectedDistrict(""); setSearchTerm(""); }}
-                  className="px-4 py-2 rounded-xl text-[13px] font-bold text-gray-500 hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200"
-                >
-                  Reset Filters
-                </button>
-              </div>
+            <div className="ml-auto mt-5">
+              <button
+                onClick={() => { setSelectedStatus(""); setSelectedType(""); setSelectedListingType(""); setSelectedCity(""); setSelectedDistrict(""); setSearchTerm(""); }}
+                className="px-4 py-2 rounded-xl text-[13px] font-bold text-gray-500 hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200"
+              >
+                Reset Filters
+              </button>
             </div>
           </div>
+        </div>
         </div>
       </section>
 

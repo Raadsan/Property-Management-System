@@ -365,7 +365,7 @@ export default function MessagesDashboardPage() {
               </Button>
               <Button
                 variant="outline"
-                onClick={fetchMessages}
+                onClick={() => fetchMessages()}
                 disabled={isLoading}
                 className="rounded-xl border-border hover:bg-muted font-bold text-xs uppercase tracking-wider h-10"
               >

@@ -202,7 +202,7 @@ export default function PropertyInquiryDashboardPage() {
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                onClick={fetchInquiries}
+                onClick={() => fetchInquiries()}
                 disabled={isLoading}
                 className="rounded-xl border-border hover:bg-muted font-bold text-xs uppercase tracking-wider h-10 px-5"
               >

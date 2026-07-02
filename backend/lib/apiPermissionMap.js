@@ -8,6 +8,7 @@ export const API_PERMISSION_MAP = {
 
   // Users
   "GET /api/users": { menuPath: "/settings/users", action: "view" },
+  "GET /api/users/by-role/:role": { menuPath: "/content/properties", action: "view" },
   "GET /api/users/:id": { menuPath: "/settings/users", action: "view" },
   "PATCH /api/users/:id": { menuPath: "/settings/users", action: "edit" },
   "DELETE /api/users/:id": { menuPath: "/settings/users", action: "delete" },

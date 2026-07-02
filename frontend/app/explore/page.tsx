@@ -80,8 +80,8 @@ function ExploreContent() {
       (selectedCity === "Galkacyo" && p.city.toLowerCase() === "galkacayo") ||
       (selectedCity === "Galkacayo" && p.city.toLowerCase() === "galkacyo");
     const matchesDistrict = !selectedDistrict || selectedDistrict === "all" || p.district === selectedDistrict;
-    const matchesSearch = !searchTerm || 
-      p.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const matchesSearch = !searchTerm ||
+      p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       p.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = !selectedType || selectedType === "all" || p.propertyType?.name.toLowerCase() === selectedType.toLowerCase();
     const matchesListingType = !selectedListingType || selectedListingType === "all" || p.listingType.toUpperCase() === selectedListingType.toUpperCase();
@@ -119,31 +119,28 @@ function ExploreContent() {
         </div>
       </section>
 
-      {/* 2. Search & filter bar */}
-      <section className="py-8 bg-white border-b border-gray-100 sticky top-20 z-40 shadow-sm backdrop-blur-xl bg-white/90">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col gap-6">
-            {/* Search Input */}
-            <div className="flex items-center bg-gray-50 p-1.5 rounded-2xl border border-gray-100 shadow-sm group focus-within:ring-2 focus-within:ring-[#214347]/10 transition-all">
-              <div className="pl-4">
-                <Search className="h-5 w-5 text-gray-400 group-focus-within:text-[#214347] transition-colors" />
-              </div>
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search by title, location or neighborhood..."
-                className="flex-1 py-3 px-3 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400"
-              />
-              <div className="pr-1.5 hidden sm:block">
-                <div className="bg-[#214347]/5 text-[#214347] px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                  {filteredProperties.length} Results
-                </div>
+      {/* Search & filters — no container background */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        <div className="flex flex-col gap-6">
+          <div className="flex items-center bg-gray-50 p-1.5 rounded-2xl border border-gray-100 shadow-sm group focus-within:ring-2 focus-within:ring-[#214347]/10 transition-all">
+            <div className="pl-4">
+              <Search className="h-5 w-5 text-gray-400 group-focus-within:text-[#214347] transition-colors" />
+            </div>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search by title, location or neighborhood..."
+              className="flex-1 py-3 px-3 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400"
+            />
+            <div className="pr-1.5 hidden sm:block">
+              <div className="bg-[#214347]/5 text-[#214347] px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest">
+                {filteredProperties.length} Results
               </div>
             </div>
+          </div>
 
-            {/* Filter dropdowns */}
-            <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-end gap-4">
             <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Status</Label>
               <Select value={selectedStatus || "all"} onValueChange={setSelectedStatus}>
@@ -182,7 +179,7 @@ function ExploreContent() {
                 <SelectContent>
                   <SelectItem value="all">All Listings</SelectItem>
                   <SelectItem value="RENT">Rent</SelectItem>
-                  <SelectItem value="SALE">Sale</SelectItem>
+                  <SelectItem value="SALE">Buy</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -217,7 +214,7 @@ function ExploreContent() {
               </Select>
             </div>
 
-            <div className="ml-auto mt-5">
+            <div className="ml-auto">
               <button
                 onClick={() => { setSelectedStatus(""); setSelectedType(""); setSelectedListingType(""); setSelectedCity(""); setSelectedDistrict(""); setSearchTerm(""); }}
                 className="px-4 py-2 rounded-xl text-[13px] font-bold text-gray-500 hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200"
@@ -227,8 +224,7 @@ function ExploreContent() {
             </div>
           </div>
         </div>
-        </div>
-      </section>
+      </div>
 
       {/* Main Results Container */}
       <section className="py-16 md:py-24">

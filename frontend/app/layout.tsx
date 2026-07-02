@@ -17,11 +17,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "damal property",
+  title: "Somalia Real Estate | Buy, Sell & Rent Homes and Properties",
   description:
-    "Damal Property is Somalia's trusted digital platform for discovering, booking, renting, and managing homes, apartments, hotels, and event venues. Verified listings, smart owner tools, and local expertise in one place.",
+    "Somalia Real Estate is Somalia's trusted digital platform for discovering, booking, buying, renting, and managing homes, apartments, hotels, and event venues. Verified listings, smart owner tools, and local expertise in one place.",
   keywords: [
-    "Damal Property",
+    "Somalia Real Estate",
     "Somalia real estate",
     "rent property Somalia",
     "buy property Mogadishu",
@@ -30,24 +30,24 @@ export const metadata: Metadata = {
     "verified property listings",
   ],
   openGraph: {
-    title: "damal property",
+    title: "Somalia Real Estate | Buy, Sell & Rent Homes and Properties",
     description:
       "Discover, book, rent, and manage properties across Somalia. Verified listings, smart owner dashboards, and trusted local expertise.",
     type: "website",
     locale: "en_US",
-    siteName: "damal property",
+    siteName: "Somalia Real Estate",
     images: [
       {
         url: "/logo-production.jpeg",
         width: 512,
         height: 512,
-        alt: "Damal Property logo",
+        alt: "Somalia Real Estate logo",
       },
     ],
   },
   twitter: {
     card: "summary",
-    title: "damal property",
+    title: "Somalia Real Estate | Buy, Sell & Rent Homes and Properties",
     description:
       "Somalia's trusted platform to discover, book, rent, and manage properties with verified listings and local expertise.",
     images: ["/logo-production.jpeg"],

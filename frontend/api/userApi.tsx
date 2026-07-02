@@ -16,8 +16,14 @@ export interface User {
   };
 }
 
-export const getUsers = async (): Promise<User[]> => {
-  const response = await api.get("/users");
+export const getUsers = async (params?: { role?: string }): Promise<User[]> => {
+  const response = await api.get("/users", { params });
+  return response.data;
+};
+
+/** Active users with a given role — for property/sale/lease forms (no Users menu permission needed) */
+export const getUsersByRole = async (role: string): Promise<User[]> => {
+  const response = await api.get(`/users/by-role/${encodeURIComponent(role)}`);
   return response.data;
 };
 

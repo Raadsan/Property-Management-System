@@ -4,12 +4,12 @@ import * as React from "react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon, ImageIcon, HomeIcon, EyeIcon, ShieldCheckIcon, VideoIcon } from "lucide-react"
+import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon, ImageIcon, HomeIcon, EyeIcon, ShieldCheckIcon, VideoIcon, MessageSquare, XIcon } from "lucide-react"
 import { getRolePermissionsById } from "@/api/rolePermissionsApi"
 import { MAX_PROPERTY_MEDIA, isVideoMedia, resolveMediaUrl, sortMediaVideosFirst } from "@/lib/mediaUtils"
 
 import { getPropertyTypes, Category } from "@/api/propertyTypeApi"
-import { getUsers, User } from "@/api/userApi"
+import { getUsersByRole, User } from "@/api/userApi"
 import {
   getProperties,
   createProperty,
@@ -40,8 +40,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
 const ROOM_BATH_OPTIONS = ["1", "2", "3", "4", "5", "6"] as const
+const PROPERTY_FORM_TABS = ["basic", "specs", "amenities", "media"] as const
+type PropertyFormTab = (typeof PROPERTY_FORM_TABS)[number]
 
 const toCountSelectValue = (count?: number) => {
   if (!count || count === 0) return ""
@@ -221,8 +224,10 @@ export default function PropertiesPage() {
   const [bathrooms, setBathrooms] = React.useState("")
   const [selectedAmenities, setSelectedAmenities] = React.useState<string[]>([])
   const [features, setFeatures] = React.useState(false)
+  const [internalMessage, setInternalMessage] = React.useState("")
   const [selectedDistrict, setSelectedDistrict] = React.useState("")
   const [addressDetails, setAddressDetails] = React.useState("")
+  const [activePropertyTab, setActivePropertyTab] = React.useState<PropertyFormTab>("basic")
 
   // File State
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -242,20 +247,17 @@ export default function PropertiesPage() {
       const isAdmin = loggedInUser?.role?.name?.toLowerCase() === "admin"
       const isAgent = loggedInUser?.role?.name?.toLowerCase() === "agent"
 
-      const [propsData, catsData, usersData] = await Promise.all([
+      const [propsData, catsData, ownersData, agentsData] = await Promise.all([
         getProperties(isAgent && loggedInUser ? { agentId: loggedInUser.id } : {}),
         getPropertyTypes(),
-        getUsers(),
+        getUsersByRole("Owner"),
+        getUsersByRole("Agent"),
       ])
       setProperties(propsData)
       setCategories(catsData)
+      setOwners(ownersData)
 
-      // Filter users to only show those with the 'Owner' role
-      const ownersOnly = usersData.filter(user => user.role?.name === "Owner")
-      setOwners(ownersOnly)
-
-      // Agents are users with the Agent role
-      let agentsList = usersData.filter(user => user.role?.name === "Agent" || user.roleId === 4)
+      let agentsList = agentsData
 
       if (isAgent && loggedInUser) {
         agentsList = agentsList.filter(u => u.id === loggedInUser.id)
@@ -329,6 +331,30 @@ export default function PropertiesPage() {
     }
   }
 
+  const removeSelectedFile = (indexToRemove: number) => {
+    setSelectedFiles((prev) => {
+      const nextFiles = prev.filter((_, index) => index !== indexToRemove)
+      if (nextFiles.length === 0 && fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+      return nextFiles
+    })
+  }
+
+  const goToNextPropertyTab = () => {
+    const currentIndex = PROPERTY_FORM_TABS.indexOf(activePropertyTab)
+    if (currentIndex < PROPERTY_FORM_TABS.length - 1) {
+      setActivePropertyTab(PROPERTY_FORM_TABS[currentIndex + 1])
+    }
+  }
+
+  const goToPreviousPropertyTab = () => {
+    const currentIndex = PROPERTY_FORM_TABS.indexOf(activePropertyTab)
+    if (currentIndex > 0) {
+      setActivePropertyTab(PROPERTY_FORM_TABS[currentIndex - 1])
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -360,6 +386,7 @@ export default function PropertiesPage() {
       if (bathrooms) formData.append("Bathrooms", bathrooms)
 
       formData.append("features", features ? "true" : "false")
+      formData.append("internalMessage", internalMessage)
 
       if (selectedAmenities.length > 0) {
         formData.append("amenities", JSON.stringify(selectedAmenities))
@@ -448,6 +475,7 @@ export default function PropertiesPage() {
   }
 
   const openEditModal = (prop: Property) => {
+    setActivePropertyTab("basic")
     if (prop) {
       setCurrentProperty(prop)
       setTitle(prop.title)
@@ -467,6 +495,7 @@ export default function PropertiesPage() {
       setBathrooms(toCountSelectValue(prop.Bathrooms))
       setSelectedAmenities(prop.amenities?.map(f => f.name) || [])
       setFeatures(prop.features ?? false)
+      setInternalMessage(prop.internalMessage || "")
     } else {
       setCurrentProperty(null)
       setTitle("")
@@ -485,6 +514,7 @@ export default function PropertiesPage() {
       setBathrooms("")
       setSelectedAmenities([])
       setFeatures(false)
+      setInternalMessage("")
     }
 
     setSelectedFiles([])
@@ -493,6 +523,7 @@ export default function PropertiesPage() {
 
   const openCreateModal = () => {
     resetForm()
+    setActivePropertyTab("basic")
     setIsModalOpen(true)
   }
 
@@ -527,7 +558,9 @@ export default function PropertiesPage() {
     setBathrooms("")
     setSelectedAmenities([])
     setFeatures(false)
+    setInternalMessage("")
     setSelectedFiles([])
+    setActivePropertyTab("basic")
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -755,7 +788,7 @@ export default function PropertiesPage() {
                   </Button>
                 </DialogTrigger>
                 <DialogContent
-                  className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto"
+                  className="sm:max-w-[820px] max-h-[85vh] overflow-y-auto"
                   onPointerDownOutside={(e) => {
                     const target = e.target as Element;
                     if (target.closest('.react-select__menu')) {
@@ -766,370 +799,409 @@ export default function PropertiesPage() {
                   <DialogHeader>
                     <DialogTitle>{currentProperty ? "Edit Property Parameters" : "Add New Property"}</DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+                  <form onSubmit={handleSubmit} className="py-4">
+                    <Tabs value={activePropertyTab} onValueChange={(value) => setActivePropertyTab(value as PropertyFormTab)} className="gap-4">
+                      <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
+                        <TabsTrigger value="basic">Basic Info</TabsTrigger>
+                        <TabsTrigger value="specs">Pricing & Specs</TabsTrigger>
+                        <TabsTrigger value="amenities">Amenities</TabsTrigger>
+                        <TabsTrigger value="media">Media & Notes</TabsTrigger>
+                      </TabsList>
 
-                    {/* Title */}
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="title"> Title <span className="text-red-500">*</span></Label>
-                      <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Luxurious Downtown Apartment" required />
-                    </div>
+                      <TabsContent value="basic" className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2 md:col-span-2">
+                            <Label htmlFor="title"> Title <span className="text-red-500">*</span></Label>
+                            <Input id="title" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="e.g. Luxurious Downtown Apartment" required />
+                          </div>
 
-                    {/* City */}
-                    <div className="space-y-2">
-                      <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
-                      <ReactSelect
-                        instanceId="reg-city-select"
-                        options={somaliCities}
-                        value={selectedCity ? { value: selectedCity, label: selectedCity } : { value: "Mogadishu", label: "Mogadishu" }}
-                        onChange={(opt: any) => {
-                          setSelectedCity(opt?.value || "");
-                          setSelectedDistrict("");
-                        }}
-                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                        classNamePrefix="react-select"
-                        styles={{
-                          control: (base) => ({
-                            ...base,
-                            borderRadius: 'calc(var(--radius) - 2px)',
-                            borderColor: 'var(--border)',
-                            backgroundColor: 'var(--background)',
-                            color: 'var(--foreground)',
-                            boxShadow: 'none',
-                            '&:hover': { borderColor: 'var(--border)' }
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            backgroundColor: 'var(--background)',
-                            border: '1px solid var(--border)',
-                            color: 'var(--foreground)',
-                            zIndex: 9999
-                          }),
-                          menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
-                          option: (base, state) => ({
-                            ...base,
-                            backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
-                            color: state.isFocused ? 'var(--accent-foreground)' : 'var(--foreground)',
-                            '&:active': {
-                              backgroundColor: 'var(--accent)',
-                            }
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            color: 'var(--foreground)',
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            color: 'var(--foreground)',
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            color: 'var(--muted-foreground)',
-                          })
-                        }}
-                      />
-                    </div>
-
-                    {/* Searchable District / Degmo */}
-                    <div className="space-y-2">
-                      <Label htmlFor="district">District / Degmo {["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) && <span className="text-red-500">*</span>}</Label>
-                      <ReactSelect
-                        instanceId="reg-district-select"
-                        options={getDistrictOptions(selectedCity)}
-                        value={selectedDistrict ? { value: selectedDistrict, label: selectedDistrict } : null}
-                        onChange={(opt: any) => setSelectedDistrict(opt?.value || "")}
-                        isDisabled={!["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity)}
-                        placeholder={["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) ? "Select District..." : "N/A (Somali Cities Only)"}
-                        menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
-                        classNamePrefix="react-select"
-                        styles={{
-                          control: (base, state) => ({
-                            ...base,
-                            borderRadius: 'calc(var(--radius) - 2px)',
-                            borderColor: 'var(--border)',
-                            backgroundColor: state.isDisabled ? 'rgba(var(--muted), 0.1)' : 'var(--background)',
-                            color: 'var(--foreground)',
-                            opacity: state.isDisabled ? 0.65 : 1,
-                            boxShadow: 'none',
-                            '&:hover': { borderColor: 'var(--border)' }
-                          }),
-                          menu: (base) => ({
-                            ...base,
-                            backgroundColor: 'var(--background)',
-                            border: '1px solid var(--border)',
-                            color: 'var(--foreground)',
-                            zIndex: 9999
-                          }),
-                          menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
-                          option: (base, state) => ({
-                            ...base,
-                            backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
-                            color: state.isFocused ? 'var(--accent-foreground)' : 'var(--foreground)',
-                            '&:active': {
-                              backgroundColor: 'var(--accent)',
-                            }
-                          }),
-                          singleValue: (base) => ({
-                            ...base,
-                            color: 'var(--foreground)',
-                          }),
-                          input: (base) => ({
-                            ...base,
-                            color: 'var(--foreground)',
-                          }),
-                          placeholder: (base) => ({
-                            ...base,
-                            color: 'var(--muted-foreground)',
-                          })
-                        }}
-                      />
-                    </div>
-
-                    {/* Area */}
-                    <div className="space-y-2">
-                      <Label htmlFor="location">Area</Label>
-                      <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Area" />
-                    </div>
-
-                    {/* Price */}
-                    <div className="space-y-2">
-                      <Label htmlFor="price">Price ($) <span className="text-red-500">*</span></Label>
-                      <Input id="price" type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" required />
-                    </div>
-
-                    {/* Category / Type */}
-                    <div className="space-y-2">
-                      <Label htmlFor="propertyTypeId">Property Type <span className="text-red-500">*</span></Label>
-                      <Select
-                        value={propertyTypeId || ""}
-                        onValueChange={(val) => setPropertyTypeId(val)}
-                      >
-                        <SelectTrigger id="propertyTypeId">
-                          <SelectValue placeholder="Select Category" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((cat) => (
-                            <SelectItem key={`cat-${cat.id}`} value={cat.id.toString()}>{cat.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Owner */}
-                    <div className="space-y-2">
-                      <Label htmlFor="ownerId">Owner</Label>
-                      <Select
-                        value={ownerId || ""}
-                        onValueChange={(val) => setOwnerId(val)}
-                      >
-                        <SelectTrigger id="ownerId">
-                          <SelectValue placeholder="Assign an Owner" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None / Unassigned</SelectItem>
-                          {owners.map((user) => (
-                            <SelectItem key={`owner-${user.id}`} value={user.id.toString()}>{user.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Agent */}
-                    <div className="space-y-2">
-                      <Label htmlFor="agentId">Agent <span className="text-red-500">*</span></Label>
-                      <Select
-                        value={agentId || ""}
-                        onValueChange={(val) => setAgentId(val)}
-                      >
-                        <SelectTrigger id="agentId">
-                          <SelectValue placeholder="Assign an Agent" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="none">None / Unassigned</SelectItem>
-                          {agents.map((agent) => (
-                            <SelectItem key={`agent-${agent.id}`} value={agent.id.toString()}>{agent.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Listing Type */}
-                    <div className="space-y-2">
-                      <Label htmlFor="listingType">Listing Type <span className="text-red-500">*</span></Label>
-                      <Select
-                        value={listingType || "RENT"}
-                        onValueChange={(val) => setListingType(val)}
-                      >
-                        <SelectTrigger id="listingType">
-                          <SelectValue placeholder="Select Listing Type" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="RENT">RENT</SelectItem>
-                          <SelectItem value="SALE">SALE</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Size Label */}
-                    <div className="space-y-2">
-                      <Label htmlFor="sizeLabel">Size Label (e.g. 20x30)</Label>
-                      <Input id="sizeLabel" value={sizeLabel} onChange={(e) => setSizeLabel(e.target.value)} placeholder="Dimensions" />
-                    </div>
-
-                    {/* Area */}
-                    <div className="space-y-2">
-                      <Label htmlFor="area">Numerical Area (sq ft/m)</Label>
-                      <Input id="area" type="number" value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. 600" />
-                    </div>
-
-                    {/* Rooms */}
-                    <div className="space-y-2">
-                      <Label htmlFor="rooms">Rooms</Label>
-                      <Select value={rooms || undefined} onValueChange={setRooms}>
-                        <SelectTrigger id="rooms">
-                          <SelectValue placeholder="Select rooms" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ROOM_BATH_OPTIONS.map((n) => (
-                            <SelectItem key={`rooms-${n}`} value={n}>
-                              {n === "6" ? "6+" : n}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Bathrooms */}
-                    <div className="space-y-2">
-                      <Label htmlFor="bathrooms">Bathrooms</Label>
-                      <Select value={bathrooms || undefined} onValueChange={setBathrooms}>
-                        <SelectTrigger id="bathrooms">
-                          <SelectValue placeholder="Select bathrooms" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ROOM_BATH_OPTIONS.map((n) => (
-                            <SelectItem key={`baths-${n}`} value={n}>
-                              {n === "6" ? "6+" : n}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Status */}
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Current Status <span className="text-red-500">*</span></Label>
-                      <Select value={status} onValueChange={setStatus}>
-                        <SelectTrigger id="status">
-                          <SelectValue placeholder="Status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="CREATED">CREATED</SelectItem>
-                          <SelectItem value="AVAILABLE">AVAILABLE</SelectItem>
-                          <SelectItem value="BOOKED">BOOKED</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Features toggle */}
-                    <div className="space-y-2 md:col-span-2">
-                      <div className="flex items-center gap-3">
-                        <Checkbox
-                          id="features"
-                          checked={features}
-                          onCheckedChange={(checked) => setFeatures(checked === true)}
-                        />
-                        <Label htmlFor="features" className="cursor-pointer">
-                          Features
-                        </Label>
-                      </div>
-                    </div>
-
-                    {/* Amenities */}
-                    <div className="space-y-3 md:col-span-2">
-                      <Label className="text-base font-semibold">Amenities</Label>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3 rounded-md border border-input bg-muted/10 p-4">
-                        {AMENITY_OPTIONS.map((amenity) => (
-                          <div key={amenity} className="flex items-center gap-2.5">
-                            <Checkbox
-                              id={`amenity-${amenity}`}
-                              checked={selectedAmenities.includes(amenity)}
-                              onCheckedChange={(checked) => {
-                                setSelectedAmenities((prev) =>
-                                  checked === true
-                                    ? [...prev, amenity]
-                                    : prev.filter((a) => a !== amenity)
-                                )
+                          <div className="space-y-2">
+                            <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
+                            <ReactSelect
+                              instanceId="reg-city-select"
+                              options={somaliCities}
+                              value={selectedCity ? { value: selectedCity, label: selectedCity } : { value: "Mogadishu", label: "Mogadishu" }}
+                              onChange={(opt: any) => {
+                                setSelectedCity(opt?.value || "");
+                                setSelectedDistrict("");
+                              }}
+                              menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                              classNamePrefix="react-select"
+                              styles={{
+                                control: (base) => ({
+                                  ...base,
+                                  borderRadius: 'calc(var(--radius) - 2px)',
+                                  borderColor: 'var(--border)',
+                                  backgroundColor: 'var(--background)',
+                                  color: 'var(--foreground)',
+                                  boxShadow: 'none',
+                                  '&:hover': { borderColor: 'var(--border)' }
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  backgroundColor: 'var(--background)',
+                                  border: '1px solid var(--border)',
+                                  color: 'var(--foreground)',
+                                  zIndex: 9999
+                                }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
+                                  color: state.isFocused ? 'var(--accent-foreground)' : 'var(--foreground)',
+                                  '&:active': {
+                                    backgroundColor: 'var(--accent)',
+                                  }
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  color: 'var(--foreground)',
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  color: 'var(--foreground)',
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  color: 'var(--muted-foreground)',
+                                })
                               }}
                             />
-                            <Label
-                              htmlFor={`amenity-${amenity}`}
-                              className="text-sm font-normal cursor-pointer leading-tight"
-                            >
-                              {amenity}
-                            </Label>
                           </div>
-                        ))}
-                      </div>
-                    </div>
 
-                    {/* Description */}
-                    <div className="space-y-2 md:col-span-2">
-                      <Label htmlFor="description">Detailed Description</Label>
-                      <textarea
-                        id="description"
-                        rows={3}
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
-                        className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                        placeholder="Describe the property highlights, rules, and benefits."
-                      />
-                    </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="district">District / Degmo {["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) && <span className="text-red-500">*</span>}</Label>
+                            <ReactSelect
+                              instanceId="reg-district-select"
+                              options={getDistrictOptions(selectedCity)}
+                              value={selectedDistrict ? { value: selectedDistrict, label: selectedDistrict } : null}
+                              onChange={(opt: any) => setSelectedDistrict(opt?.value || "")}
+                              isDisabled={!["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity)}
+                              placeholder={["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) ? "Select District..." : "N/A (Somali Cities Only)"}
+                              menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                              classNamePrefix="react-select"
+                              styles={{
+                                control: (base, state) => ({
+                                  ...base,
+                                  borderRadius: 'calc(var(--radius) - 2px)',
+                                  borderColor: 'var(--border)',
+                                  backgroundColor: state.isDisabled ? 'rgba(var(--muted), 0.1)' : 'var(--background)',
+                                  color: 'var(--foreground)',
+                                  opacity: state.isDisabled ? 0.65 : 1,
+                                  boxShadow: 'none',
+                                  '&:hover': { borderColor: 'var(--border)' }
+                                }),
+                                menu: (base) => ({
+                                  ...base,
+                                  backgroundColor: 'var(--background)',
+                                  border: '1px solid var(--border)',
+                                  color: 'var(--foreground)',
+                                  zIndex: 9999
+                                }),
+                                menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
+                                option: (base, state) => ({
+                                  ...base,
+                                  backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
+                                  color: state.isFocused ? 'var(--accent-foreground)' : 'var(--foreground)',
+                                  '&:active': {
+                                    backgroundColor: 'var(--accent)',
+                                  }
+                                }),
+                                singleValue: (base) => ({
+                                  ...base,
+                                  color: 'var(--foreground)',
+                                }),
+                                input: (base) => ({
+                                  ...base,
+                                  color: 'var(--foreground)',
+                                }),
+                                placeholder: (base) => ({
+                                  ...base,
+                                  color: 'var(--muted-foreground)',
+                                })
+                              }}
+                            />
+                          </div>
 
-                    {/* Media upload */}
-                    <div className="space-y-2 md:col-span-2 p-4 border rounded-md bg-muted/20">
-                      <Label htmlFor="images" className="flex items-center gap-2 text-sm font-semibold mb-2">
-                        <ImageIcon className="h-4 w-4" /> Media Upload (max {MAX_PROPERTY_MEDIA})
-                      </Label>
-                      <Input
-                        id="images"
-                        type="file"
-                        ref={fileInputRef}
-                        multiple
-                        accept="image/*,video/*"
-                        onChange={handleFileChange}
-                        className="cursor-pointer file:cursor-pointer"
-                      />
-                      <p className="text-[10px] text-muted-foreground mt-1">
-                        {currentProperty?.images && currentProperty.images.length > 0
-                          ? `This property has ${currentProperty.images.length} file(s). Uploading new ones will replace them.`
-                          : "Select images and/or videos (MP4, MOV, WebM). Max 100MB per file."}
-                      </p>
-                      {selectedFiles.length > 0 && (
-                        <div className="flex flex-wrap gap-2 pt-2">
-                          {selectedFiles.map((file, idx) => (
-                            <div key={`${file.name}-${idx}`} className="relative w-20 h-20 rounded-md border overflow-hidden bg-muted flex items-center justify-center">
-                              {isVideoMedia(file) ? (
-                                <>
-                                  <VideoIcon className="h-8 w-8 text-muted-foreground" />
-                                  <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] px-1 truncate">{file.name}</span>
-                                </>
-                              ) : (
-                                <img
-                                  src={URL.createObjectURL(file)}
-                                  alt={file.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              )}
-                            </div>
-                          ))}
+                          <div className="space-y-2">
+                            <Label htmlFor="location">Area</Label>
+                            <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Area" />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="propertyTypeId">Property Type <span className="text-red-500">*</span></Label>
+                            <Select
+                              value={propertyTypeId || ""}
+                              onValueChange={(val) => setPropertyTypeId(val)}
+                            >
+                              <SelectTrigger id="propertyTypeId">
+                                <SelectValue placeholder="Select Category" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {categories.map((cat) => (
+                                  <SelectItem key={`cat-${cat.id}`} value={cat.id.toString()}>{cat.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="ownerId">Owner</Label>
+                            <Select
+                              value={ownerId || ""}
+                              onValueChange={(val) => setOwnerId(val)}
+                            >
+                              <SelectTrigger id="ownerId">
+                                <SelectValue placeholder="Assign an Owner" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="none">None / Unassigned</SelectItem>
+                                {owners.map((user) => (
+                                  <SelectItem key={`owner-${user.id}`} value={user.id.toString()}>{user.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="agentId">Agent <span className="text-red-500">*</span></Label>
+                            <Select
+                              value={agentId || ""}
+                              onValueChange={(val) => setAgentId(val)}
+                            >
+                              <SelectTrigger id="agentId">
+                                <SelectValue placeholder="Assign an Agent" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {agents.map((agent) => (
+                                  <SelectItem key={`agent-${agent.id}`} value={agent.id.toString()}>{agent.name}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
-                      )}
-                    </div>
+                      </TabsContent>
 
-                    <DialogFooter className="md:col-span-2 mt-4">
-                      <Button type="submit" className="btn-category w-full md:w-auto">
-                        {currentProperty ? "Update Listing" : "Create Property"}
-                      </Button>
+                      <TabsContent value="specs" className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="price">Price ($) <span className="text-red-500">*</span></Label>
+                            <Input id="price" type="number" min="0" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="0.00" required />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="listingType">Listing Type <span className="text-red-500">*</span></Label>
+                            <Select
+                              value={listingType || "RENT"}
+                              onValueChange={(val) => setListingType(val)}
+                            >
+                              <SelectTrigger id="listingType">
+                                <SelectValue placeholder="Select Listing Type" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="RENT">Rent</SelectItem>
+                                <SelectItem value="SALE">Buy</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="sizeLabel">Size Label (e.g. 20x30)</Label>
+                            <Input id="sizeLabel" value={sizeLabel} onChange={(e) => setSizeLabel(e.target.value)} placeholder="Dimensions" />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="area">Numerical Area (sq ft/m)</Label>
+                            <Input id="area" type="number" value={area} onChange={(e) => setArea(e.target.value)} placeholder="e.g. 600" />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="rooms">Rooms</Label>
+                            <Select value={rooms || undefined} onValueChange={setRooms}>
+                              <SelectTrigger id="rooms">
+                                <SelectValue placeholder="Select rooms" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ROOM_BATH_OPTIONS.map((n) => (
+                                  <SelectItem key={`rooms-${n}`} value={n}>
+                                    {n === "6" ? "6+" : n}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="bathrooms">Bathrooms</Label>
+                            <Select value={bathrooms || undefined} onValueChange={setBathrooms}>
+                              <SelectTrigger id="bathrooms">
+                                <SelectValue placeholder="Select bathrooms" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ROOM_BATH_OPTIONS.map((n) => (
+                                  <SelectItem key={`baths-${n}`} value={n}>
+                                    {n === "6" ? "6+" : n}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="status">Current Status <span className="text-red-500">*</span></Label>
+                            <Select value={status} onValueChange={setStatus}>
+                              <SelectTrigger id="status">
+                                <SelectValue placeholder="Status" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="CREATED">CREATED</SelectItem>
+                                <SelectItem value="AVAILABLE">AVAILABLE</SelectItem>
+                                <SelectItem value="BOOKED">BOOKED</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div className="space-y-2 md:col-span-2">
+                            <div className="flex items-center gap-3 rounded-md border border-input bg-muted/10 px-4 py-3">
+                              <Checkbox
+                                id="features"
+                                checked={features}
+                                onCheckedChange={(checked) => setFeatures(checked === true)}
+                              />
+                              <Label htmlFor="features" className="cursor-pointer">
+                                Mark this property as featured
+                              </Label>
+                            </div>
+                          </div>
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="amenities" className="space-y-4">
+                        <div className="space-y-3">
+                          <Label className="text-base font-semibold">Amenities</Label>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-3 rounded-md border border-input bg-muted/10 p-4">
+                            {AMENITY_OPTIONS.map((amenity) => (
+                              <div key={amenity} className="flex items-center gap-2.5">
+                                <Checkbox
+                                  id={`amenity-${amenity}`}
+                                  checked={selectedAmenities.includes(amenity)}
+                                  onCheckedChange={(checked) => {
+                                    setSelectedAmenities((prev) =>
+                                      checked === true
+                                        ? [...prev, amenity]
+                                        : prev.filter((a) => a !== amenity)
+                                    )
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`amenity-${amenity}`}
+                                  className="text-sm font-normal cursor-pointer leading-tight"
+                                >
+                                  {amenity}
+                                </Label>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="description">Detailed Description</Label>
+                          <textarea
+                            id="description"
+                            rows={5}
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            className="flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            placeholder="Describe the property highlights, rules, and benefits."
+                          />
+                        </div>
+                      </TabsContent>
+
+                      <TabsContent value="media" className="space-y-4">
+                        <div className="space-y-2 p-4 border rounded-md bg-muted/20">
+                          <Label htmlFor="images" className="flex items-center gap-2 text-sm font-semibold mb-2">
+                            <ImageIcon className="h-4 w-4" /> Media Upload (max {MAX_PROPERTY_MEDIA})
+                          </Label>
+                          <Input
+                            id="images"
+                            type="file"
+                            ref={fileInputRef}
+                            multiple
+                            accept="image/*,video/*"
+                            onChange={handleFileChange}
+                            className="cursor-pointer file:cursor-pointer"
+                          />
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {currentProperty?.images && currentProperty.images.length > 0
+                              ? `This property has ${currentProperty.images.length} file(s). Uploading new ones will replace them.`
+                              : "Select images and/or videos (MP4, MOV, WebM). Max 100MB per file."}
+                          </p>
+                          {selectedFiles.length > 0 && (
+                            <div className="flex flex-wrap gap-2 pt-2">
+                              {selectedFiles.map((file, idx) => (
+                                <div key={`${file.name}-${idx}`} className="relative w-20 h-20 rounded-md border overflow-hidden bg-muted flex items-center justify-center">
+                              <button
+                                type="button"
+                                onClick={() => removeSelectedFile(idx)}
+                                className="absolute right-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-black"
+                                aria-label={`Remove ${file.name}`}
+                              >
+                                <XIcon className="h-3 w-3" />
+                              </button>
+                                  {isVideoMedia(file) ? (
+                                    <>
+                                      <VideoIcon className="h-8 w-8 text-muted-foreground" />
+                                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] px-1 truncate">{file.name}</span>
+                                    </>
+                                  ) : (
+                                    <img
+                                      src={URL.createObjectURL(file)}
+                                      alt={file.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-2 p-4 border rounded-md bg-muted/20">
+                          <Label htmlFor="internalMessage" className="flex items-center gap-2 text-sm font-semibold">
+                            <MessageSquare className="h-4 w-4" /> Comments / Internal Message
+                          </Label>
+                          <textarea
+                            id="internalMessage"
+                            rows={5}
+                            value={internalMessage}
+                            onChange={(e) => setInternalMessage(e.target.value)}
+                            className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                            placeholder="Add any internal comments or notes about this property. This will only be visible to admin and team members."
+                          />
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+
+                    <DialogFooter className="mt-6 flex w-full flex-col-reverse gap-2 sm:flex-row sm:justify-between">
+                      <div>
+                        {activePropertyTab !== "basic" && (
+                          <Button type="button" variant="outline" onClick={goToPreviousPropertyTab} className="w-full sm:w-auto">
+                            Previous
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row">
+                        {activePropertyTab !== "media" ? (
+                          <Button type="button" onClick={goToNextPropertyTab} className="btn-category w-full sm:w-auto">
+                            Next
+                          </Button>
+                        ) : (
+                          <Button type="submit" className="btn-category w-full sm:w-auto">
+                            {currentProperty ? "Update Listing" : "Create Property"}
+                          </Button>
+                        )}
+                      </div>
                     </DialogFooter>
                   </form>
                 </DialogContent>
@@ -1274,6 +1346,17 @@ export default function PropertiesPage() {
                         {viewProperty.description || <span className="italic">No description provided for this listing.</span>}
                       </div>
                     </div>
+
+                    {viewProperty.internalMessage && (
+                      <div className="col-span-1 md:col-span-2 mt-2">
+                        <span className="font-semibold text-muted-foreground flex items-center gap-2 mb-2">
+                          <MessageSquare className="h-4 w-4" /> Comments / Internal Message
+                        </span>
+                        <div className="bg-muted/20 border p-3 rounded-md text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                          {viewProperty.internalMessage}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1348,7 +1431,7 @@ export default function PropertiesPage() {
                 <SelectContent>
                   <SelectItem value="all">All Listings</SelectItem>
                   <SelectItem value="RENT">Rent</SelectItem>
-                  <SelectItem value="SALE">Sale</SelectItem>
+                  <SelectItem value="SALE">Buy</SelectItem>
                 </SelectContent>
               </Select>
             </div>

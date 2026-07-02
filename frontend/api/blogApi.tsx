@@ -1,4 +1,5 @@
 import api from "./axios";
+import { slugify } from "@/lib/slugify";
 
 export interface BlogCategory {
   id: number;
@@ -33,6 +34,30 @@ export const getBlogById = async (id: number): Promise<Blog> => {
   const response = await api.get(`/blogs/${id}`);
   return response.data;
 };
+
+/** Resolve blog by slugified title or numeric id (legacy links) */
+export const getBlogBySlug = async (slug: string): Promise<Blog> => {
+  if (/^\d+$/.test(slug.trim())) {
+    const numericId = parseInt(slug, 10);
+    return getBlogById(numericId);
+  }
+
+  const blogs = await getBlogs();
+  const normalized = slug.toLowerCase();
+  const found = blogs.find(
+    (blog) => slugify(blog.title) === normalized || slugify(blog.title) === slugify(slug)
+  );
+
+  if (!found) {
+    throw new Error("Blog not found");
+  }
+
+  return getBlogById(found.id);
+};
+
+export function getBlogUrl(blog: Pick<Blog, "id" | "title">) {
+  return `/blogs/${slugify(blog.title)}`;
+}
 
 export const getBlogCategories = async (): Promise<BlogCategory[]> => {
   const response = await api.get("/blog-categories");

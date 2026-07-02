@@ -32,6 +32,7 @@ export interface Property {
   agentId?: number;
   propertyTypeId: number;
   features?: boolean;
+  internalMessage?: string | null;
   createdAt: string;
   updatedAt: string;
 

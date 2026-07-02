@@ -10,11 +10,11 @@ export default function Footer() {
           <div className="flex flex-col items-center md:items-start text-center md:text-left gap-6">
             <div className="flex justify-center md:justify-start">
               <Link href="/#home" className="flex items-center">
-                <img src="/Damal-02.png" alt="Damal Logo" className="h-24 w-auto" />
+                <img src="/Damal-02.png" alt="Somalia Real Estate Logo" className="h-24 w-auto" />
               </Link>
             </div>
             <p className="text-gray-400 text-[15px] leading-relaxed max-w-sm">
-              Damal Property Management is a leading innovative digital property service
+              Somalia Real Estate is a leading innovative digital property service
               provider in Somalia, offering a wide range of premium real estate
               solutions for modern living.
             </p>
@@ -97,7 +97,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="py-8 flex flex-col md:flex-row justify-between items-center gap-4 text-[13px] text-gray-400 font-medium">
           <p>
-            Copyright © {new Date().getFullYear()}{" "} Damal Property. All rights reserved.
+            Copyright © {new Date().getFullYear()}{" "} Somalia Real Estate. All rights reserved.
           </p>
           <p>
             Powered by Raadsan Teach.

@@ -117,7 +117,7 @@ export default function UsersPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name.trim() || !phone.trim() || !roleId) {
+    if (!name.trim() || !email.trim() || !phone.trim() || !roleId) {
       return toast.error("Please fill in all required fields.")
     }
 
@@ -125,7 +125,7 @@ export default function UsersPage() {
       if (currentUser) {
         await updateUser(currentUser.id, { 
           name, 
-          email: email || undefined, 
+          email, 
           phone, 
           roleId: parseInt(roleId), 
           password: password || undefined,
@@ -136,7 +136,7 @@ export default function UsersPage() {
         if (!password) return toast.error("Password is required for new users.")
         await createUser({ 
           name, 
-          email: email || undefined, 
+          email, 
           phone, 
           roleId: parseInt(roleId), 
           password,
@@ -300,8 +300,8 @@ export default function UsersPage() {
                   </div>
 
                   <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="email" className="text-right">Email</Label>
-                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" placeholder="Optional email" autoComplete="off" />
+                    <Label htmlFor="email" className="text-right">Email <span className="text-red-500">*</span></Label>
+                    <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="col-span-3" placeholder="user@example.com" autoComplete="off" required />
                   </div>
 
                   <div className="grid grid-cols-4 items-center gap-4">

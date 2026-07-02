@@ -4,22 +4,22 @@ import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
-import { getBlogById, Blog } from "@/api/blogApi";
+import { getBlogBySlug, Blog } from "@/api/blogApi";
 import { getMediaUrl } from "@/lib/mediaUrl";
 import { BlogContent } from "@/lib/renderBlogContent";
 import { Calendar, ArrowLeft, Loader2 } from "lucide-react";
 
 export default function SingleBlogPage() {
-  const { id } = useParams();
+  const { id: slug } = useParams();
   const router = useRouter();
   const [blog, setBlog] = useState<Blog | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchBlog = async () => {
-      if (!id) return;
+      if (!slug) return;
       try {
-        const data = await getBlogById(Number(id));
+        const data = await getBlogBySlug(String(slug));
         setBlog(data);
       } catch (error) {
         console.error("Failed to fetch blog", error);
@@ -28,7 +28,7 @@ export default function SingleBlogPage() {
       }
     };
     fetchBlog();
-  }, [id]);
+  }, [slug]);
 
   if (isLoading) {
     return (

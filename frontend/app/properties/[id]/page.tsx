@@ -282,12 +282,14 @@ export default function PropertyDetailPage() {
               <div className="flex items-center gap-5 text-[13px] text-gray-500 font-medium whitespace-nowrap">
                 <div className="flex items-center gap-1.5">
                   <MapPin className="h-4 w-4 text-gray-400" />
-                  <span>{property.city}, {property.location}</span>
+                  <span>{[property.city, property.district, property.location].filter(Boolean).join(", ")}</span>
                 </div>
-                <div className="flex items-center gap-1.5">
-                  <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                  <span className="font-bold text-black">5.0</span>
-                </div>
+                {property.features && (
+                  <div className="flex items-center gap-1.5">
+                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                    <span className="font-bold text-black">5.0</span>
+                  </div>
+                )}
               </div>
              
               

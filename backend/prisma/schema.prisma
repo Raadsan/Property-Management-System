@@ -142,6 +142,7 @@ model Property {
   country        String?
   agentId        Int?
   features       Boolean         @default(false)
+  internalMessage String?        @db.Text
   bookings       Booking[]
   favorites      Favorite[]
   amenities      Feature[]

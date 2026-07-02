@@ -2,7 +2,7 @@ import { prisma } from "../lib/prisma.js"; // Restart nodemon 2
 import axios from "axios";
 import { getFileUrl, rejectLegacyUploadUrl } from "../lib/upload.js";
 import { mediaFromFile, mediaFromUrl, sortMediaVideosFirst, sortMediaPayloadVideosFirst } from "../lib/mediaUtils.js";
-import { assertSelfOrAdmin } from "../middlewares/authMiddleware.js";
+import { assertSelfOrAdmin, sanitizePropertyForAudience, sanitizePropertiesForAudience } from "../middlewares/authMiddleware.js";
 
 const withSortedImages = (property) => ({
   ...property,
@@ -21,7 +21,7 @@ export const createProperty = async (req, res) => {
       title, description, location, city, district, country, price,
       ownerId, propertyTypeId, images: bodyImages, amenities: bodyAmenities,
       features: bodyFeatures, sizeLabel, area, listingType: bodyListingType,
-      status: bodyStatus, Rooms, Bathrooms, agentId
+      status: bodyStatus, Rooms, Bathrooms, agentId, internalMessage
     } = req.body || {};
 
     console.log("Parsed fields:", { title, city, country, price, propertyTypeId, status: bodyStatus, agentId });
@@ -106,6 +106,7 @@ export const createProperty = async (req, res) => {
         sizeLabel,
         area: isNaN(parsedArea) ? null : parsedArea,
         features,
+        internalMessage: internalMessage || null,
         images: images && images.length > 0 ? {
           create: sortMediaPayloadVideosFirst(images).map(({ url, type }) => ({ url, type }))
         } : undefined,
@@ -176,7 +177,7 @@ export const getProperties = async (req, res) => {
         agent: { select: { name: true, phone: true, email: true } }
       }
     });
-    return res.status(200).json(withSortedImagesList(properties));
+    return res.status(200).json(sanitizePropertiesForAudience(withSortedImagesList(properties), req));
   } catch (error) {
     console.error("❌ GET PROPERTIES ERROR:", error);
     return res.status(500).json({
@@ -220,7 +221,7 @@ export const getPropertyById = async (req, res) => {
       return res.status(404).json({ message: "Property not found" });
     }
 
-    return res.status(200).json(withSortedImages(property));
+    return res.status(200).json(sanitizePropertyForAudience(withSortedImages(property), req));
   } catch (error) {
     console.error("❌ GET PROPERTY BY ID ERROR:", error);
     return res.status(500).json({
@@ -253,6 +254,7 @@ export const updateProperty = async (req, res) => {
     const updateData = {};
     if (updateFields.title) updateData.title = updateFields.title;
     if (updateFields.description !== undefined) updateData.description = updateFields.description;
+    if (updateFields.internalMessage !== undefined) updateData.internalMessage = updateFields.internalMessage || null;
     if (updateFields.location) updateData.location = updateFields.location;
     if (updateFields.city) updateData.city = updateFields.city;
     if (updateFields.district !== undefined) updateData.district = updateFields.district;

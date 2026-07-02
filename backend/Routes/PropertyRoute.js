@@ -12,15 +12,15 @@ import {
   approveProperty
 } from '../controllers/PropertyController.js';
 import { upload } from '../lib/upload.js';
-import { protect, requireStaff } from '../middlewares/authMiddleware.js';
+import { protect, requireStaff, optionalProtect } from '../middlewares/authMiddleware.js';
 import { authorize } from '../middlewares/authorize.js';
 
 const router = express.Router();
 
-// Public read routes
-router.get('/', getProperties);
+// Public read routes (optional auth so staff can see internal notes)
+router.get('/', optionalProtect, getProperties);
 router.get('/stats/cities', getCityStats);
-router.get('/:id', getPropertyById);
+router.get('/:id', optionalProtect, getPropertyById);
 
 // Authenticated user actions
 router.get('/user/:userId/bookings', protect, getBookingsByUser);

@@ -6,7 +6,7 @@ import Footer from "@/components/landing/Footer";
 import Link from "next/link";
 import { Calendar, User, ArrowRight, Tag, Search, TrendingUp } from "lucide-react";
 
-import { getBlogs, getBlogCategories, Blog, BlogCategory } from "@/api/blogApi";
+import { getBlogs, getBlogCategories, getBlogUrl, Blog, BlogCategory } from "@/api/blogApi";
 import { getMediaUrl } from "@/lib/mediaUrl";
 import { getBlogExcerpt } from "@/lib/renderBlogContent";
 
@@ -153,7 +153,7 @@ export default function BlogsPage() {
               {currentItems.map((post) => (
                 <Link
                   key={post.id}
-                  href={`/blogs/${post.id}`}
+                  href={getBlogUrl(post)}
                   className="group bg-white rounded-xl border border-gray-100 overflow-hidden shadow-[0_10px_30px_rgba(0,0,0,0.02)] transition-all duration-500 flex flex-col h-full hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:border-[#214347]/20 cursor-pointer"
                 >
                   {/* Image Container */}

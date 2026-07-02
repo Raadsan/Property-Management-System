@@ -119,8 +119,8 @@ export default function PropertyCard({ prop }: PropertyCardProps) {
           </h3>
         </Link>
         <div className="flex items-center gap-1.5 text-gray-500 mb-4 text-sm truncate">
-          <MapPin className="h-4 w-4" />
-          {prop.city}, {prop.location}
+          <MapPin className="h-4 w-4 shrink-0" />
+          {[prop.city, prop.district, prop.location].filter(Boolean).join(", ")}
         </div>
  
         <div className="flex flex-wrap gap-x-4 gap-y-2 pt-4 border-t border-gray-50 text-[12px] text-gray-500 font-medium">

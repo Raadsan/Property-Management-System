@@ -1,6 +1,6 @@
 import express from 'express';
 import { 
-  createUser, getUsers, getUserById, updateUser, deleteUser, loginUser,
+  createUser, getUsers, getUsersByRole, getUserById, updateUser, deleteUser, loginUser,
   forgotPassword, verifyCode, resetPassword, socialLogin, getMyAccess
 } from '../controllers/userController.js';
 import { upload } from '../lib/upload.js';
@@ -20,6 +20,7 @@ router.post('/', upload.single('image'), createUser);
 router.get('/me/access', protect, getMyAccess);
 
 // Protected staff routes
+router.get('/by-role/:role', protect, requireStaff, authorize('/content/properties', 'view'), getUsersByRole);
 router.get('/', protect, requireStaff, authorize('/settings/users', 'view'), getUsers);
 router.get('/:id', protect, requireStaff, authorize('/settings/users', 'view'), getUserById);
 router.patch('/:id', protect, requireStaff, authorize('/settings/users', 'edit'), upload.single('image'), updateUser);

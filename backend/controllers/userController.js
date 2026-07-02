@@ -36,6 +36,13 @@ async function resolveClientRoleId() {
   return clientRole?.id ?? 3;
 }
 
+async function resolveRoleIdByName(roleName) {
+  const roles = await prisma.role.findMany({ select: { id: true, name: true } });
+  const normalized = roleName.trim().toLowerCase();
+  const match = roles.find((r) => r.name.toLowerCase() === normalized);
+  return match?.id ?? null;
+}
+
 // @desc    Create a new user
 // @route   POST /api/users
 export const createUser = async (req, res) => {
@@ -44,6 +51,10 @@ export const createUser = async (req, res) => {
 
   if (!name || !phone || !password) {
     return res.status(400).json({ message: "Missing required fields (name, phone, password)" });
+  }
+
+  if (req.user && (!email || !email.trim())) {
+    return res.status(400).json({ message: "Email is required" });
   }
 
   try {
@@ -97,12 +108,25 @@ export const createUser = async (req, res) => {
 // @route   GET /api/users
 export const getUsers = async (req, res) => {
   try {
+    const { role } = req.query;
+
+    const where = {};
+    if (role && typeof role === "string" && role.trim()) {
+      const roleId = await resolveRoleIdByName(role);
+      if (!roleId) {
+        return res.status(200).json([]);
+      }
+      where.roleId = roleId;
+    }
+
     const users = await prisma.user.findMany({
+      where,
       include: {
         role: {
           select: { name: true }
         }
       },
+      orderBy: { name: "asc" },
     });
 
     // Remove passwords from response
@@ -114,6 +138,45 @@ export const getUsers = async (req, res) => {
     res.status(200).json(usersWithoutPasswords);
   } catch (error) {
     res.status(500).json({ message: "Error fetching users", error: error.message });
+  }
+};
+
+// @desc    Get active users by role (for property/sale/lease forms)
+// @route   GET /api/users/by-role/:role
+export const getUsersByRole = async (req, res) => {
+  try {
+    const { role } = req.params;
+    if (!role?.trim()) {
+      return res.status(400).json({ message: "Role is required" });
+    }
+
+    const roleId = await resolveRoleIdByName(role);
+    if (!roleId) {
+      return res.status(200).json([]);
+    }
+
+    const users = await prisma.user.findMany({
+      where: {
+        status: "ACTIVE",
+        roleId,
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        roleId: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        role: { select: { name: true } },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching users by role", error: error.message });
   }
 };
 

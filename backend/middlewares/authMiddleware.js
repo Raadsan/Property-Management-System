@@ -64,6 +64,51 @@ export function requireSelfRoleOrAdmin(req, res, next) {
   return res.status(403).json({ message: "Access denied" });
 }
 
+/** Attach user when a valid token is sent; does not reject anonymous requests */
+export async function optionalProtect(req, res, next) {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith("Bearer ")) {
+      return next();
+    }
+
+    const token = authHeader.split(" ")[1];
+    const decoded = verifyToken(token);
+
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: { role: { select: { id: true, name: true } } },
+    });
+
+    if (user && user.status === "ACTIVE") {
+      req.user = user;
+    }
+  } catch {
+    // ignore invalid tokens on public routes
+  }
+
+  next();
+}
+
+function isStaffUser(user) {
+  if (!user) return false;
+  const roleName = user.role?.name?.toLowerCase() ?? "";
+  return roleName !== "user" && roleName !== "client" && user.roleId !== 3;
+}
+
+/** Hide internal notes from public property responses */
+export function sanitizePropertyForAudience(property, req) {
+  if (!property || isStaffUser(req.user)) {
+    return property;
+  }
+  const { internalMessage, ...publicProperty } = property;
+  return publicProperty;
+}
+
+export function sanitizePropertiesForAudience(properties, req) {
+  return properties.map((p) => sanitizePropertyForAudience(p, req));
+}
+
 /** Ensure the authenticated user can only act on their own userId (ADMIN bypass) */
 export function assertSelfOrAdmin(req, res, userId) {
   if (req.user?.role?.name?.toUpperCase() === "ADMIN") {

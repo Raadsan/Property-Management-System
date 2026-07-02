@@ -93,97 +93,90 @@ const AMENITY_OPTIONS = [
   "Private Bathroom",
   "Mosque Nearby",
 ] as const
+
 import { Checkbox } from "@/components/ui/checkbox"
 import { toast } from "sonner"
+import { useLocations } from "@/hooks/useLocations"
 
-const somaliCities = [
-  { value: "Mogadishu", label: "Mogadishu" },
-  { value: "Hargeisa", label: "Hargeisa" },
-  { value: "Galkacyo", label: "Galkacyo" },
-  { value: "Garowe", label: "Garowe" },
-  { value: "Kismayo", label: "Kismayo" },
-  { value: "Bosaso", label: "Bosaso" }
-]
+const PROPERTY_LOCATION_MENU_HEIGHT = 220
 
-const mogadishuDistricts = [
-  { value: "Cabdi Casiis", label: "Cabdi Casiis" },
-  { value: "Boondheere", label: "Boondheere" },
-  { value: "Dayniile", label: "Dayniile" },
-  { value: "Dharkeenley", label: "Dharkeenley" },
-  { value: "Gubadley", label: "Gubadley" },
-  { value: "Heliwaa", label: "Heliwaa" },
-  { value: "Hodan", label: "Hodan" },
-  { value: "Howlwadaag", label: "Howlwadaag" },
-  { value: "Kaaraan", label: "Kaaraan" },
-  { value: "Kaxda", label: "Kaxda" },
-  { value: "Shangaani", label: "Shangaani" },
-  { value: "Shibis", label: "Shibis" },
-  { value: "Waaberi", label: "Waaberi" },
-  { value: "Wadajir", label: "Wadajir" },
-  { value: "Wardhiigley", label: "Wardhiigley" },
-  { value: "Xamar Jajab", label: "Xamar Jajab" },
-  { value: "Xamar Weyne", label: "Xamar Weyne" },
-  { value: "Yaaqshiid", label: "Yaaqshiid" }
-]
-
-const hargeisaDistricts = [
-  { value: "26 June", label: "26 June" },
-  { value: "Ahmed Dhagax", label: "Ahmed Dhagax" },
-  { value: "Gacan Libaax", label: "Gacan Libaax" },
-  { value: "Ibraahim Koodbuur", label: "Ibraahim Koodbuur" },
-  { value: "Maxamuud Haybe", label: "Maxamuud Haybe" },
-  { value: "Mohamed Mooge", label: "Mohamed Mooge" }
-]
-
-const garoweDistricts = [
-  { value: "1da Agoosto", label: "1da Agoosto" },
-  { value: "Hantiwadaag", label: "Hantiwadaag" },
-  { value: "Horseed", label: "Horseed" },
-  { value: "Waaberi", label: "Waaberi" },
-  { value: "Wadajir", label: "Wadajir" }
-]
-
-const kismayoDistricts = [
-  { value: "Calanley", label: "Calanley" },
-  { value: "Farjano", label: "Farjano" },
-  { value: "Faanoole", label: "Faanoole" },
-  { value: "Shaqaalaha", label: "Shaqaalaha" },
-  { value: "Siinaay", label: "Siinaay" }
-]
-
-const galkacayoDistricts = [
-  { value: "Garsoor", label: "Garsoor" },
-  { value: "Horumar", label: "Horumar" },
-  { value: "Israac", label: "Israac" },
-  { value: "Wadajir", label: "Wadajir" }
-]
-
-const bosasoDistricts = [
-  { value: "1st July", label: "1st July" },
-  { value: "Hawlwadag", label: "Hawlwadag" },
-  { value: "Grible", label: "Grible" },
-  { value: "Ubah", label: "Ubah" },
-  { value: "Karin", label: "Karin" },
-  { value: "Dayaha", label: "Dayaha" }
-]
-
-const getDistrictOptions = (city: string) => {
-  if (city === "Mogadishu") return mogadishuDistricts
-  if (city === "Hargeisa") return hargeisaDistricts
-  if (city === "Galkacyo" || city === "Galkacayo") return galkacayoDistricts
-  if (city === "Garowe") return garoweDistricts
-  if (city === "Kismayo") return kismayoDistricts
-  if (city === "Bosaso") return bosasoDistricts
-  return []
+const propertyLocationSelectStyles = {
+  control: (base: Record<string, unknown>, state?: { isDisabled?: boolean }) => ({
+    ...base,
+    minHeight: "40px",
+    borderRadius: "calc(var(--radius) - 2px)",
+    borderColor: "var(--border)",
+    backgroundColor: state?.isDisabled ? "rgba(var(--muted), 0.1)" : "var(--background)",
+    color: "var(--foreground)",
+    opacity: state?.isDisabled ? 0.65 : 1,
+    boxShadow: "none",
+    "&:hover": { borderColor: "var(--border)" },
+  }),
+  menu: (base: Record<string, unknown>) => ({
+    ...base,
+    backgroundColor: "var(--background)",
+    border: "1px solid var(--border)",
+    borderRadius: "calc(var(--radius) - 2px)",
+    color: "var(--foreground)",
+    zIndex: 9999,
+    overflow: "hidden",
+    boxShadow: "0 10px 30px rgba(0, 0, 0, 0.12)",
+  }),
+  menuList: (base: Record<string, unknown>) => ({
+    ...base,
+    maxHeight: `${PROPERTY_LOCATION_MENU_HEIGHT}px`,
+    padding: "4px",
+  }),
+  menuPortal: (base: Record<string, unknown>) => ({
+    ...base,
+    zIndex: 9999,
+    pointerEvents: "auto" as const,
+  }),
+  option: (base: Record<string, unknown>, state: { isFocused: boolean }) => ({
+    ...base,
+    borderRadius: "calc(var(--radius) - 4px)",
+    fontSize: "14px",
+    padding: "8px 12px",
+    backgroundColor: state.isFocused ? "var(--accent)" : "transparent",
+    color: state.isFocused ? "var(--accent-foreground)" : "var(--foreground)",
+    "&:active": {
+      backgroundColor: "var(--accent)",
+    },
+  }),
+  singleValue: (base: Record<string, unknown>) => ({
+    ...base,
+    color: "var(--foreground)",
+    fontSize: "14px",
+  }),
+  input: (base: Record<string, unknown>) => ({
+    ...base,
+    color: "var(--foreground)",
+  }),
+  placeholder: (base: Record<string, unknown>) => ({
+    ...base,
+    color: "var(--muted-foreground)",
+    fontSize: "14px",
+  }),
+  valueContainer: (base: Record<string, unknown>) => ({
+    ...base,
+    padding: "2px 8px",
+  }),
+  indicatorsContainer: (base: Record<string, unknown>) => ({
+    ...base,
+    height: "40px",
+  }),
 }
 
 export default function PropertiesPage() {
+  const { cityOptions, defaultCity, getDistrictOptions, cityHasDistricts, cityNames } = useLocations()
   const [properties, setProperties] = React.useState<Property[]>([])
   const [categories, setCategories] = React.useState<Category[]>([])
   const [owners, setOwners] = React.useState<User[]>([])
   const [agents, setAgents] = React.useState<User[]>([])
 
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentProperty, setCurrentProperty] = React.useState<Property | null>(null)
 
@@ -212,6 +205,12 @@ export default function PropertiesPage() {
   const [description, setDescription] = React.useState("")
   const [location, setLocation] = React.useState("")
   const [selectedCity, setSelectedCity] = React.useState("Mogadishu")
+  React.useEffect(() => {
+    if (defaultCity) {
+      setSelectedCity((prev) => (prev === "Mogadishu" ? defaultCity : prev))
+    }
+  }, [defaultCity])
+
   const [price, setPrice] = React.useState("")
   const [status, setStatus] = React.useState<string>("CREATED")
   const [propertyTypeId, setPropertyTypeId] = React.useState<string>("")
@@ -238,8 +237,8 @@ export default function PropertiesPage() {
   const [bookingProperty, setBookingProperty] = React.useState<Property | null>(null)
   const [wafiPhone, setWafiPhone] = React.useState("")
 
-  const loadData = async () => {
-    setIsLoading(true)
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       // Get the logged in user from session to check role
       const userStr = sessionStorage.getItem("user")
@@ -271,7 +270,7 @@ export default function PropertiesPage() {
     } catch (error) {
       toast.error("Failed to load property data")
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -365,7 +364,7 @@ export default function PropertiesPage() {
     if (!propertyTypeId.trim()) missingFields.push("Property Type")
     if (!agentId.trim()) missingFields.push("Agent")
 
-    const cityNeedsDistrict = ["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity)
+    const cityNeedsDistrict = cityHasDistricts(selectedCity)
     if (cityNeedsDistrict && !selectedDistrict.trim()) {
       missingFields.push("District / Degmo")
     }
@@ -382,12 +381,13 @@ export default function PropertiesPage() {
     }
 
     try {
+      setIsSaving(true)
       const formData = new FormData()
       formData.append("title", title)
       formData.append("description", description)
       formData.append("location", location)
       formData.append("city", selectedCity)
-      formData.append("district", ["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) ? selectedDistrict : "")
+      formData.append("district", cityHasDistricts(selectedCity) ? selectedDistrict : "")
       formData.append("country", "Somalia")
       formData.append("price", price)
       formData.append("listingType", listingType)
@@ -424,10 +424,12 @@ export default function PropertiesPage() {
 
       setIsModalOpen(false)
       resetForm()
-      loadData()
+      await loadData(true)
     } catch (error: any) {
       const errMsg = error.response?.data?.message || "An error occurred while saving"
       toast.error(errMsg)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -435,11 +437,14 @@ export default function PropertiesPage() {
     if (!confirm("Are you sure you want to delete this property? This action is permanent!")) return
 
     try {
+      setDeletingId(id)
       await deleteProperty(id)
       toast.success("Property deleted successfully")
-      loadData()
+      await loadData(true)
     } catch (error) {
       toast.error("Failed to delete property")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -464,7 +469,7 @@ export default function PropertiesPage() {
 
       toast.success("Payment successful via Wafi! Property is secured.")
       setIsBookingModalOpen(false)
-      loadData() // Refresh status to BOOKED
+      await loadData(true) // Refresh status to BOOKED
     } catch (error: any) {
       const errMsg = error.response?.data?.message || "An error occurred while booking"
       toast.error(`Booking Failed: ${errMsg}`)
@@ -483,7 +488,7 @@ export default function PropertiesPage() {
     try {
       await approveProperty(id)
       toast.success("Property approved and is now live!")
-      loadData()
+      await loadData(true)
     } catch (error) {
       toast.error("Failed to approve property")
     }
@@ -516,7 +521,7 @@ export default function PropertiesPage() {
       setTitle("")
       setDescription("")
       setLocation("")
-      setSelectedCity("Mogadishu")
+      setSelectedCity(defaultCity || "Mogadishu")
       setPrice("")
       setListingType("RENT")
       setStatus("CREATED")
@@ -553,7 +558,7 @@ export default function PropertiesPage() {
     setDescription("")
     setLocation("")
     setSelectedDistrict("")
-    setSelectedCity("Mogadishu")
+    setSelectedCity(defaultCity || "Mogadishu")
     setPrice("")
     setStatus("CREATED")
     setPropertyTypeId("")
@@ -606,10 +611,10 @@ export default function PropertiesPage() {
   }, [properties, filterStatus, filterType, filterListing, filterCity, filterDistrict, filterFeature])
 
   const citiesList = React.useMemo(() => {
-    const normalized = properties.map(p => p.city === "Muqdisho" ? "Mogadishu" : p.city).filter(Boolean)
-    const uniqueCities = new Set(normalized)
-    return Array.from(uniqueCities)
-  }, [properties])
+    const fromApi = cityNames
+    const fromDb = properties.map(p => p.city === "Muqdisho" ? "Mogadishu" : p.city).filter(Boolean)
+    return Array.from(new Set([...fromApi, ...fromDb]))
+  }, [properties, cityNames])
 
 
   const districtsList = React.useMemo(() => {
@@ -764,6 +769,7 @@ export default function PropertiesPage() {
               variant="ghost"
               size="icon"
               onClick={() => openEditModal(row.original)}
+              disabled={isSaving || deletingId !== null}
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
             >
               <PencilIcon className="h-4 w-4" />
@@ -774,9 +780,14 @@ export default function PropertiesPage() {
               variant="ghost"
               size="icon"
               onClick={() => handleDelete(row.original.id)}
+              disabled={isSaving || deletingId === row.original.id}
               className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
             >
-              <TrashIcon className="h-4 w-4" />
+              {deletingId === row.original.id ? (
+                <Loader2Icon className="h-4 w-4 animate-spin" />
+              ) : (
+                <TrashIcon className="h-4 w-4" />
+              )}
             </Button>
           )}
         </div>
@@ -793,6 +804,7 @@ export default function PropertiesPage() {
             </div>
             {permissions.canAdd && (
               <Dialog open={isModalOpen} onOpenChange={(open) => {
+                if (!open && isSaving) return;
                 if (!open) resetForm();
                 setIsModalOpen(open);
               }}>
@@ -839,107 +851,38 @@ export default function PropertiesPage() {
                             <Label htmlFor="city">City <span className="text-red-500">*</span></Label>
                             <ReactSelect
                               instanceId="reg-city-select"
-                              options={somaliCities}
-                              value={selectedCity ? { value: selectedCity, label: selectedCity } : { value: "Mogadishu", label: "Mogadishu" }}
+                              options={cityOptions}
+                              value={selectedCity ? { value: selectedCity, label: selectedCity } : (defaultCity ? { value: defaultCity, label: defaultCity } : null)}
                               onChange={(opt: any) => {
                                 setSelectedCity(opt?.value || "");
                                 setSelectedDistrict("");
                               }}
-                              menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                              placeholder="Select City..."
+                              isSearchable
+                              maxMenuHeight={PROPERTY_LOCATION_MENU_HEIGHT}
+                              menuPlacement="auto"
+                              menuPortalTarget={typeof document !== "undefined" ? document.body : null}
                               classNamePrefix="react-select"
-                              styles={{
-                                control: (base) => ({
-                                  ...base,
-                                  borderRadius: 'calc(var(--radius) - 2px)',
-                                  borderColor: 'var(--border)',
-                                  backgroundColor: 'var(--background)',
-                                  color: 'var(--foreground)',
-                                  boxShadow: 'none',
-                                  '&:hover': { borderColor: 'var(--border)' }
-                                }),
-                                menu: (base) => ({
-                                  ...base,
-                                  backgroundColor: 'var(--background)',
-                                  border: '1px solid var(--border)',
-                                  color: 'var(--foreground)',
-                                  zIndex: 9999
-                                }),
-                                menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
-                                option: (base, state) => ({
-                                  ...base,
-                                  backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
-                                  color: state.isFocused ? 'var(--accent-foreground)' : 'var(--foreground)',
-                                  '&:active': {
-                                    backgroundColor: 'var(--accent)',
-                                  }
-                                }),
-                                singleValue: (base) => ({
-                                  ...base,
-                                  color: 'var(--foreground)',
-                                }),
-                                input: (base) => ({
-                                  ...base,
-                                  color: 'var(--foreground)',
-                                }),
-                                placeholder: (base) => ({
-                                  ...base,
-                                  color: 'var(--muted-foreground)',
-                                })
-                              }}
+                              styles={propertyLocationSelectStyles}
                             />
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="district">District / Degmo {["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) && <span className="text-red-500">*</span>}</Label>
+                            <Label htmlFor="district">District / Degmo {cityHasDistricts(selectedCity) && <span className="text-red-500">*</span>}</Label>
                             <ReactSelect
                               instanceId="reg-district-select"
                               options={getDistrictOptions(selectedCity)}
                               value={selectedDistrict ? { value: selectedDistrict, label: selectedDistrict } : null}
                               onChange={(opt: any) => setSelectedDistrict(opt?.value || "")}
-                              isDisabled={!["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity)}
-                              placeholder={["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) ? "Select District..." : "N/A (Somali Cities Only)"}
-                              menuPortalTarget={typeof document !== 'undefined' ? document.body : null}
+                              isDisabled={!cityHasDistricts(selectedCity)}
+                              placeholder={cityHasDistricts(selectedCity) ? "Select District..." : "No districts for this city"}
+                              isSearchable
+                              isClearable
+                              maxMenuHeight={PROPERTY_LOCATION_MENU_HEIGHT}
+                              menuPlacement="auto"
+                              menuPortalTarget={typeof document !== "undefined" ? document.body : null}
                               classNamePrefix="react-select"
-                              styles={{
-                                control: (base, state) => ({
-                                  ...base,
-                                  borderRadius: 'calc(var(--radius) - 2px)',
-                                  borderColor: 'var(--border)',
-                                  backgroundColor: state.isDisabled ? 'rgba(var(--muted), 0.1)' : 'var(--background)',
-                                  color: 'var(--foreground)',
-                                  opacity: state.isDisabled ? 0.65 : 1,
-                                  boxShadow: 'none',
-                                  '&:hover': { borderColor: 'var(--border)' }
-                                }),
-                                menu: (base) => ({
-                                  ...base,
-                                  backgroundColor: 'var(--background)',
-                                  border: '1px solid var(--border)',
-                                  color: 'var(--foreground)',
-                                  zIndex: 9999
-                                }),
-                                menuPortal: (base) => ({ ...base, zIndex: 9999, pointerEvents: 'auto' }),
-                                option: (base, state) => ({
-                                  ...base,
-                                  backgroundColor: state.isFocused ? 'var(--accent)' : 'transparent',
-                                  color: state.isFocused ? 'var(--accent-foreground)' : 'var(--foreground)',
-                                  '&:active': {
-                                    backgroundColor: 'var(--accent)',
-                                  }
-                                }),
-                                singleValue: (base) => ({
-                                  ...base,
-                                  color: 'var(--foreground)',
-                                }),
-                                input: (base) => ({
-                                  ...base,
-                                  color: 'var(--foreground)',
-                                }),
-                                placeholder: (base) => ({
-                                  ...base,
-                                  color: 'var(--muted-foreground)',
-                                })
-                              }}
+                              styles={propertyLocationSelectStyles}
                             />
                           </div>
 
@@ -1217,8 +1160,20 @@ export default function PropertiesPage() {
                             Next
                           </Button>
                         ) : (
-                          <Button type="button" onClick={handleSubmit} className="btn-category w-full sm:w-auto">
-                            {currentProperty ? "Update Listing" : "Create Property"}
+                          <Button
+                            type="button"
+                            onClick={handleSubmit}
+                            disabled={isSaving}
+                            className="btn-category w-full sm:w-auto"
+                          >
+                            {isSaving ? (
+                              <>
+                                <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                                {currentProperty ? "Updating..." : "Creating..."}
+                              </>
+                            ) : (
+                              currentProperty ? "Update Listing" : "Create Property"
+                            )}
                           </Button>
                         )}
                       </div>

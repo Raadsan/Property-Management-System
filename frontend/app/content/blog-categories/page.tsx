@@ -27,20 +27,22 @@ import { toast } from "sonner"
 export default function BlogCategoriesPage() {
   const [categories, setCategories] = React.useState<BlogCategory[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentCategory, setCurrentCategory] = React.useState<BlogCategory | null>(null)
   const [newName, setNewName] = React.useState("")
   const [newDescription, setNewDescription] = React.useState("")
 
-  const fetchCategories = async () => {
-    setIsLoading(true)
+  const fetchCategories = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const data = await getBlogCategories()
       setCategories(data)
     } catch (error) {
       toast.error("Failed to fetch categories")
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -53,6 +55,7 @@ export default function BlogCategoriesPage() {
     if (!newName.trim()) return
 
     try {
+      setIsSaving(true)
       if (currentCategory) {
         await api.patch(`/blog-categories/${currentCategory.id}`, { name: newName, description: newDescription })
         toast.success("Category updated successfully")
@@ -64,9 +67,11 @@ export default function BlogCategoriesPage() {
       setNewName("")
       setNewDescription("")
       setCurrentCategory(null)
-      fetchCategories()
+      await fetchCategories(true)
     } catch (error) {
       toast.error("An error occurred")
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -74,11 +79,14 @@ export default function BlogCategoriesPage() {
     if (!confirm("Are you sure you want to delete this category?")) return
 
     try {
+      setDeletingId(id)
       await api.delete(`/blog-categories/${id}`)
       toast.success("Category deleted successfully")
-      fetchCategories()
+      await fetchCategories(true)
     } catch (error) {
       toast.error("Failed to delete category")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -133,6 +141,7 @@ export default function BlogCategoriesPage() {
             variant="ghost" 
             size="icon" 
             onClick={() => openEditModal(row.original)}
+            disabled={isSaving || deletingId !== null}
             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
           >
             <PencilIcon className="h-4 w-4" />
@@ -141,9 +150,14 @@ export default function BlogCategoriesPage() {
             variant="ghost" 
             size="icon" 
             onClick={() => handleDelete(row.original.id)}
+            disabled={isSaving || deletingId === row.original.id}
             className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
-            <TrashIcon className="h-4 w-4" />
+            {deletingId === row.original.id ? (
+              <Loader2Icon className="h-4 w-4 animate-spin" />
+            ) : (
+              <TrashIcon className="h-4 w-4" />
+            )}
           </Button>
         </div>
       ),
@@ -157,7 +171,10 @@ export default function BlogCategoriesPage() {
               <h1 className="text-2xl font-bold tracking-tight">Blog Categories</h1>
               <p className="text-muted-foreground">Manage categories for your blog articles.</p>
             </div>
-            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+            <Dialog open={isModalOpen} onOpenChange={(open) => {
+              if (!open && isSaving) return;
+              setIsModalOpen(open);
+            }}>
               <DialogTrigger asChild>
                 <Button onClick={openCreateModal} className="btn-category">
                   <PlusIcon className="mr-2 h-4 w-4" />
@@ -190,8 +207,15 @@ export default function BlogCategoriesPage() {
                     />
                   </div>
                   <DialogFooter>
-                    <Button type="submit" className="btn-category">
-                      {currentCategory ? "Update" : "Save"}
+                    <Button type="submit" disabled={isSaving} className="btn-category">
+                      {isSaving ? (
+                        <>
+                          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                          {currentCategory ? "Updating..." : "Saving..."}
+                        </>
+                      ) : (
+                        currentCategory ? "Update" : "Save"
+                      )}
                     </Button>
                   </DialogFooter>
                 </form>

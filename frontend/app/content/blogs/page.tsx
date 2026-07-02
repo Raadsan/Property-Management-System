@@ -4,7 +4,7 @@ import * as React from "react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { PlusIcon, PencilIcon, TrashIcon, ImageIcon } from "lucide-react"
+import { PlusIcon, PencilIcon, TrashIcon, ImageIcon, Loader2Icon } from "lucide-react"
 import { 
   getBlogs, 
   getBlogCategories,
@@ -34,6 +34,8 @@ export default function BlogsRegistrationPage() {
   const [blogs, setBlogs] = React.useState<Blog[]>([])
   const [categories, setCategories] = React.useState<BlogCategory[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentBlog, setCurrentBlog] = React.useState<Blog | null>(null)
   
@@ -58,8 +60,8 @@ export default function BlogsRegistrationPage() {
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [selectedFile, setSelectedFile] = React.useState<File | null>(null)
 
-  const fetchData = async () => {
-    setIsLoading(true)
+  const fetchData = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const [blogsData, catsData] = await Promise.all([
         getBlogs(),
@@ -70,7 +72,7 @@ export default function BlogsRegistrationPage() {
     } catch (error) {
       toast.error("Failed to load blog data")
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -126,6 +128,7 @@ export default function BlogsRegistrationPage() {
     }
 
     try {
+      setIsSaving(true)
       const formData = new FormData()
       formData.append("title", title)
       formData.append("content", content)
@@ -146,10 +149,12 @@ export default function BlogsRegistrationPage() {
 
       setIsModalOpen(false)
       resetForm()
-      fetchData()
+      await fetchData(true)
     } catch (error: any) {
       const errMsg = error.response?.data?.message || "An error occurred while saving"
       toast.error(errMsg)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -157,11 +162,14 @@ export default function BlogsRegistrationPage() {
     if (!confirm("Are you sure you want to delete this blog post?")) return
 
     try {
+      setDeletingId(id)
       await deleteBlog(id)
       toast.success("Blog deleted successfully")
-      fetchData()
+      await fetchData(true)
     } catch (error) {
       toast.error("Failed to delete blog")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -258,6 +266,7 @@ export default function BlogsRegistrationPage() {
               variant="ghost" 
               size="icon" 
               onClick={() => openEditModal(row.original)}
+              disabled={isSaving || deletingId !== null}
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
             >
               <PencilIcon className="h-4 w-4" />
@@ -268,9 +277,14 @@ export default function BlogsRegistrationPage() {
               variant="ghost" 
               size="icon" 
               onClick={() => handleDelete(row.original.id)}
+              disabled={isSaving || deletingId === row.original.id}
               className="text-red-600 hover:text-red-700 hover:bg-red-50"
             >
-              <TrashIcon className="h-4 w-4" />
+              {deletingId === row.original.id ? (
+                <Loader2Icon className="h-4 w-4 animate-spin" />
+              ) : (
+                <TrashIcon className="h-4 w-4" />
+              )}
             </Button>
           )}
         </div>
@@ -287,6 +301,7 @@ export default function BlogsRegistrationPage() {
             </div>
             {permissions.canAdd && (
               <Dialog open={isModalOpen} onOpenChange={(open) => {
+                if (!open && isSaving) return;
                 if (!open) resetForm();
                 setIsModalOpen(open);
               }}>
@@ -374,8 +389,15 @@ Add hashtags on the last line:
                   </div>
 
                   <DialogFooter className="md:col-span-2 mt-4">
-                    <Button type="submit" className="btn-category w-full md:w-auto">
-                      {currentBlog ? "Update Post" : "Publish Post"}
+                    <Button type="submit" disabled={isSaving} className="btn-category w-full md:w-auto">
+                      {isSaving ? (
+                        <>
+                          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                          {currentBlog ? "Updating..." : "Publishing..."}
+                        </>
+                      ) : (
+                        currentBlog ? "Update Post" : "Publish Post"
+                      )}
                     </Button>
                   </DialogFooter>
                 </form>

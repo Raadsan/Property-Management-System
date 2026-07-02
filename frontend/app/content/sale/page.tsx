@@ -42,6 +42,8 @@ export default function SalePage() {
   const [buyers, setBuyers] = React.useState<User[]>([])
   
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentSale, setCurrentSale] = React.useState<Sale | null>(null)
   
@@ -56,8 +58,8 @@ export default function SalePage() {
   const [document, setDocument] = React.useState<File | null>(null)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
 
-  const loadData = async () => {
-    setIsLoading(true)
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const [salesData, propsData, usersData] = await Promise.all([
         getSales(),
@@ -70,7 +72,7 @@ export default function SalePage() {
     } catch (error) {
       toast.error("Failed to load property sales data")
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -91,6 +93,7 @@ export default function SalePage() {
     }
 
     try {
+      setIsSaving(true)
       const formData = new FormData()
       formData.append("propertyId", propertyId)
       formData.append("buyerId", buyerId)
@@ -109,10 +112,12 @@ export default function SalePage() {
       
       setIsModalOpen(false)
       resetForm()
-      loadData()
+      await loadData(true)
     } catch (error: any) {
       const errMsg = error.response?.data?.message || "An error occurred while saving"
       toast.error(errMsg)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -120,11 +125,14 @@ export default function SalePage() {
     if (!confirm("Are you sure you want to remove this sale record? This action is permanent!")) return
 
     try {
+      setDeletingId(id)
       await deleteSale(id)
       toast.success("Sales record deleted successfully")
-      loadData()
+      await loadData(true)
     } catch (error) {
       toast.error("Failed to delete sales record")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -164,6 +172,7 @@ export default function SalePage() {
               <p className="text-muted-foreground">Register and track property sales, buyers and legal documentation.</p>
             </div>
             <Dialog open={isModalOpen} onOpenChange={(open) => {
+              if (!open && isSaving) return;
               if (!open) resetForm();
               setIsModalOpen(open);
             }}>
@@ -232,8 +241,15 @@ export default function SalePage() {
                   </div>
                   
                   <DialogFooter className="md:col-span-2 mt-4">
-                    <Button type="submit" className="btn-category w-full">
-                      {currentSale ? "Update Transaction" : "Confirm Property Sale"}
+                    <Button type="submit" disabled={isSaving} className="btn-category w-full">
+                      {isSaving ? (
+                        <>
+                          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                          {currentSale ? "Updating..." : "Saving..."}
+                        </>
+                      ) : (
+                        currentSale ? "Update Transaction" : "Confirm Property Sale"
+                      )}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -387,6 +403,7 @@ export default function SalePage() {
                             variant="ghost" 
                             size="icon" 
                             onClick={() => openEditModal(sale)}
+                            disabled={isSaving || deletingId !== null}
                             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
                           >
                             <PencilIcon className="h-4 w-4" />
@@ -395,9 +412,14 @@ export default function SalePage() {
                             variant="ghost" 
                             size="icon" 
                             onClick={() => handleDelete(sale.id)}
+                            disabled={isSaving || deletingId === sale.id}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
                           >
-                            <TrashIcon className="h-4 w-4" />
+                            {deletingId === sale.id ? (
+                              <Loader2Icon className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <TrashIcon className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>

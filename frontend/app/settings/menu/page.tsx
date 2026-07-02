@@ -30,6 +30,8 @@ import { toast } from "sonner"
 export default function MenuConfigurationPage() {
   const [menus, setMenus] = React.useState<Menu[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [deletingId, setDeletingId] = React.useState<number | null>(null)
   
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentMenu, setCurrentMenu] = React.useState<Menu | null>(null)
@@ -44,15 +46,15 @@ export default function MenuConfigurationPage() {
   // Dynamic SubMenu State
   const [subMenus, setSubMenus] = React.useState<{ id?: number, title: string, url: string, order: number }[]>([])
 
-  const loadData = async () => {
-    setIsLoading(true)
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const data = await getMenus()
       setMenus(data)
     } catch (error) {
       toast.error("Failed to load menus")
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -87,6 +89,7 @@ export default function MenuConfigurationPage() {
       .map(sm => ({ id: sm.id, title: sm.title, url: sm.url, order: sm.order }))
 
     try {
+      setIsSaving(true)
       const payload = {
         title,
         icon: icon || undefined,
@@ -106,9 +109,11 @@ export default function MenuConfigurationPage() {
       
       setIsModalOpen(false)
       resetForm()
-      loadData()
+      await loadData(true)
     } catch (error: any) {
       toast.error(error.response?.data?.message || "An error occurred while saving the menu")
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -116,11 +121,14 @@ export default function MenuConfigurationPage() {
     if (!confirm("Are you sure you want to delete this menu hierarchy? This action cannot be undone.")) return
 
     try {
+      setDeletingId(id)
       await deleteMenu(id)
       toast.success("Menu deleted successfully")
-      loadData()
+      await loadData(true)
     } catch (error) {
       toast.error("Failed to delete menu")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -165,6 +173,7 @@ export default function MenuConfigurationPage() {
             </div>
             
             <Dialog open={isModalOpen} onOpenChange={(open) => {
+              if (!open && isSaving) return;
               if (!open) resetForm();
               setIsModalOpen(open);
             }}>
@@ -241,8 +250,15 @@ export default function MenuConfigurationPage() {
                   </div>
                   
                   <DialogFooter>
-                    <Button type="submit" className="btn-category w-full md:w-auto">
-                      {currentMenu ? "Update Navigation" : "Build Navigation Node"}
+                    <Button type="submit" disabled={isSaving} className="btn-category w-full md:w-auto">
+                      {isSaving ? (
+                        <>
+                          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                          {currentMenu ? "Updating..." : "Creating..."}
+                        </>
+                      ) : (
+                        currentMenu ? "Update Navigation" : "Build Navigation Node"
+                      )}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -329,6 +345,7 @@ export default function MenuConfigurationPage() {
                             variant="ghost" 
                             size="icon" 
                             onClick={() => openEditModal(menu)}
+                            disabled={isSaving || deletingId !== null}
                             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
                           >
                             <PencilIcon className="h-4 w-4" />
@@ -338,9 +355,14 @@ export default function MenuConfigurationPage() {
                             variant="ghost" 
                             size="icon" 
                             onClick={() => handleDelete(menu.id)}
+                            disabled={isSaving || deletingId === menu.id}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
                           >
-                            <TrashIcon className="h-4 w-4" />
+                            {deletingId === menu.id ? (
+                              <Loader2Icon className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <TrashIcon className="h-4 w-4" />
+                            )}
                             <span className="sr-only">Delete</span>
                           </Button>
                         </div>

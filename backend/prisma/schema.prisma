@@ -309,6 +309,29 @@ model BlogCategory {
   blogs       Blog[]
 }
 
+model City {
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  order     Int        @default(0)
+  isDefault Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  districts District[]
+}
+
+model District {
+  id        Int      @id @default(autoincrement())
+  name      String
+  cityId    Int
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  city      City     @relation(fields: [cityId], references: [id], onDelete: Cascade)
+
+  @@unique([cityId, name])
+  @@index([cityId])
+}
+
 model Blog {
   id         Int          @id @default(autoincrement())
   title      String

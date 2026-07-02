@@ -27,6 +27,8 @@ import { toast } from "sonner"
 export default function RolesPage() {
   const [roles, setRoles] = React.useState<Role[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentRole, setCurrentRole] = React.useState<Role | null>(null)
   
@@ -34,15 +36,15 @@ export default function RolesPage() {
   const [name, setName] = React.useState("")
   const [description, setDescription] = React.useState("")
 
-  const fetchRoles = async () => {
-    setIsLoading(true)
+  const fetchRoles = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const data = await getRoles()
       setRoles(data)
     } catch (error) {
       toast.error("Failed to fetch roles")
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -55,6 +57,7 @@ export default function RolesPage() {
     if (!name.trim()) return
 
     try {
+      setIsSaving(true)
       if (currentRole) {
         await updateRole(currentRole.id, { name, description })
         toast.success("Role updated successfully")
@@ -64,9 +67,11 @@ export default function RolesPage() {
       }
       setIsModalOpen(false)
       resetForm()
-      fetchRoles()
+      await fetchRoles(true)
     } catch (error) {
       toast.error("An error occurred")
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -74,11 +79,14 @@ export default function RolesPage() {
     if (!confirm("Are you sure you want to delete this role?")) return
 
     try {
+      setDeletingId(id)
       await deleteRole(id)
       toast.success("Role deleted successfully")
-      fetchRoles()
+      await fetchRoles(true)
     } catch (error) {
       toast.error("Failed to delete role")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -134,6 +142,7 @@ export default function RolesPage() {
             variant="ghost" 
             size="icon" 
             onClick={() => openEditModal(row.original)}
+            disabled={isSaving || deletingId !== null}
             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
           >
             <PencilIcon className="h-4 w-4" />
@@ -142,9 +151,14 @@ export default function RolesPage() {
             variant="ghost" 
             size="icon" 
             onClick={() => handleDelete(row.original.id)}
+            disabled={isSaving || deletingId === row.original.id}
             className="text-red-600 hover:text-red-700 hover:bg-red-50"
           >
-            <TrashIcon className="h-4 w-4" />
+            {deletingId === row.original.id ? (
+              <Loader2Icon className="h-4 w-4 animate-spin" />
+            ) : (
+              <TrashIcon className="h-4 w-4" />
+            )}
           </Button>
         </div>
       ),
@@ -159,6 +173,7 @@ export default function RolesPage() {
               <p className="text-muted-foreground">Manage system roles and their descriptions.</p>
             </div>
             <Dialog open={isModalOpen} onOpenChange={(open) => {
+              if (!open && isSaving) return;
               if (!open) resetForm();
               setIsModalOpen(open);
             }}>
@@ -198,8 +213,15 @@ export default function RolesPage() {
                     />
                   </div>
                   <DialogFooter>
-                    <Button type="submit" className="btn-category">
-                      {currentRole ? "Update" : "Save"}
+                    <Button type="submit" disabled={isSaving} className="btn-category">
+                      {isSaving ? (
+                        <>
+                          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                          {currentRole ? "Updating..." : "Saving..."}
+                        </>
+                      ) : (
+                        currentRole ? "Update" : "Save"
+                      )}
                     </Button>
                   </DialogFooter>
                 </form>

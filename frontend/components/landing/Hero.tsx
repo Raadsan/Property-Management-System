@@ -3,8 +3,8 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Search, MapPin, ChevronDown, Check, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { getCityStats, getPropertyTypes } from "@/api/propertyApi";
-import { Country, City } from "country-state-city";
+import { getPropertyTypes } from "@/api/propertyApi";
+import { useLocations } from "@/hooks/useLocations";
 import ReactSelect from "react-select";
 
 const PRICE_RANGES = [
@@ -18,28 +18,27 @@ export default function Hero() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"rent" | "buy">("rent");
 
+  const { cityOptions, defaultCity, getDistrictOptions, citiesWithDistricts } = useLocations();
+
   // Selection States
-  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedCity, setSelectedCity] = useState("Mogadishu");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedType, setSelectedType] = useState("");
   const [selectedPrice, setSelectedPrice] = useState<any>(null);
   const [keyword, setKeyword] = useState("");
   const [selectedCountry, setSelectedCountry] = useState("Somalia");
 
   // Data States
-  const [cities, setCities] = useState<string[]>([
-    "Mogadishu",
-    "Hargeisa",
-    "Galkacayo",
-    "Garowe",
-    "Kismayo",
-    "Bosaso"  
-  ]);
   const [types, setTypes] = useState<{ id: number; name: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   // UI States (Dropdowns)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (defaultCity) setSelectedCity(defaultCity);
+  }, [defaultCity]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -74,6 +73,7 @@ export default function Hero() {
     query += `listingType=${listingType}&`;
 
     if (selectedCity) query += `city=${encodeURIComponent(selectedCity)}&`;
+    if (selectedDistrict) query += `district=${encodeURIComponent(selectedDistrict)}&`;
     if (selectedType) query += `type=${encodeURIComponent(selectedType)}&`;
     if (keyword) query += `keyword=${encodeURIComponent(keyword)}&`;
     if (selectedCountry) query += `country=${encodeURIComponent(selectedCountry)}&`;
@@ -135,14 +135,16 @@ export default function Hero() {
 
           <div className="flex-1 w-full border-r border-gray-100 relative">
             <div className="px-6 py-1 transition-all group relative">
-              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-0.5 block ml-2">Location</span>
+              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-0.5 block ml-2">City</span>
               <ReactSelect
                 instanceId="hero-city-select"
-                options={cities.map(c => ({ value: c, label: c }))}
+                options={cityOptions}
                 value={selectedCity ? { value: selectedCity, label: selectedCity } : null}
-                onChange={(opt: any) => setSelectedCity(opt?.value || "")}
+                onChange={(opt: any) => {
+                  setSelectedCity(opt?.value || "Mogadishu");
+                  setSelectedDistrict("");
+                }}
                 placeholder="City..."
-                isClearable
                 className="react-select-container"
                 classNamePrefix="react-select"
                 styles={{
@@ -161,6 +163,56 @@ export default function Hero() {
                   menu: (base) => ({
                     ...base, 
                     borderRadius: '1.5rem', 
+                    padding: '0.5rem',
+                    boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
+                    border: '1px solid rgb(243 244 246)',
+                    zIndex: 100
+                  }),
+                  option: (base, state) => ({
+                    ...base,
+                    borderRadius: '0.75rem',
+                    margin: '2px 0',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    backgroundColor: state.isSelected ? '#214347' : state.isFocused ? 'rgb(243 244 246)' : 'transparent',
+                    color: state.isSelected ? 'white' : 'rgb(55 65 81)',
+                    cursor: 'pointer'
+                  })
+                }}
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 w-full border-r border-gray-100 relative">
+            <div className="px-6 py-1 transition-all group relative">
+              <span className="text-[11px] font-bold text-black uppercase tracking-wider mb-0.5 block ml-2">District / Degmo</span>
+              <ReactSelect
+                instanceId="hero-district-select"
+                options={getDistrictOptions(selectedCity)}
+                value={selectedDistrict ? { value: selectedDistrict, label: selectedDistrict } : null}
+                onChange={(opt: any) => setSelectedDistrict(opt?.value || "")}
+                placeholder="District..."
+                isClearable
+                isDisabled={!citiesWithDistricts.includes(selectedCity)}
+                className="react-select-container"
+                classNamePrefix="react-select"
+                styles={{
+                  control: (base, state) => ({
+                    ...base,
+                    border: 'none',
+                    boxShadow: 'none',
+                    background: 'transparent',
+                    minHeight: '32px',
+                    cursor: state.isDisabled ? 'not-allowed' : 'pointer',
+                    opacity: state.isDisabled ? 0.6 : 1,
+                  }),
+                  valueContainer: (base) => ({ ...base, padding: '0 8px' }),
+                  input: (base) => ({ ...base, margin: 0, padding: 0 }),
+                  placeholder: (base) => ({ ...base, fontSize: '14px', fontWeight: 'bold', color: 'rgb(156 163 175)' }),
+                  singleValue: (base) => ({ ...base, fontSize: '14px', fontWeight: 'bold', color: 'black' }),
+                  menu: (base) => ({
+                    ...base,
+                    borderRadius: '1.5rem',
                     padding: '0.5rem',
                     boxShadow: '0 25px 50px -12px rgb(0 0 0 / 0.25)',
                     border: '1px solid rgb(243 244 246)',

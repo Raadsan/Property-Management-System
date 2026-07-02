@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { getPropertyInquiries, deletePropertyInquiry } from "@/api/propertyInquiryApi"
 import { toast } from "sonner"
 import { format } from "date-fns"
-import { RefreshCcwIcon, PhoneIcon, CalendarIcon, Trash2Icon, MailIcon, UserIcon, HomeIcon, EyeIcon } from "lucide-react"
+import { RefreshCcwIcon, PhoneIcon, CalendarIcon, Trash2Icon, MailIcon, UserIcon, HomeIcon, EyeIcon, Loader2Icon } from "lucide-react"
 import { Dialog, DialogContent, DialogTitle, DialogDescription, DialogHeader } from "@/components/ui/dialog"
 
 export type PropertyInquiry = {
@@ -30,13 +30,14 @@ export type PropertyInquiry = {
 export default function PropertyInquiryDashboardPage() {
   const [inquiries, setInquiries] = React.useState<PropertyInquiry[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [deletingId, setDeletingId] = React.useState<number | null>(null)
 
   // Message View Modal States
   const [selectedInquiry, setSelectedInquiry] = React.useState<PropertyInquiry | null>(null)
   const [isViewOpen, setIsViewOpen] = React.useState(false)
 
-  const fetchInquiries = async () => {
-    setIsLoading(true)
+  const fetchInquiries = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const response = await getPropertyInquiries()
       const list = Array.isArray(response) ? response : (response as any)?.data || []
@@ -45,19 +46,22 @@ export default function PropertyInquiryDashboardPage() {
       console.error("Fetch inquiries error:", error)
       toast.error("Could not fetch property inquiries.")
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this inquiry?")) return
     try {
+      setDeletingId(id)
       await deletePropertyInquiry(id)
       setInquiries(prev => prev.filter(inq => inq.id !== id))
       toast.success("Property inquiry deleted successfully!")
     } catch (error) {
       console.error("Delete inquiry error:", error)
       toast.error("Failed to delete inquiry.")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -172,10 +176,15 @@ export default function PropertyInquiryDashboardPage() {
             variant="ghost"
             size="icon"
             onClick={() => handleDelete(row.original.id)}
+            disabled={deletingId === row.original.id}
             className="h-8 w-8 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
             title="Delete Inquiry"
           >
-            <Trash2Icon className="h-4 w-4" />
+            {deletingId === row.original.id ? (
+              <Loader2Icon className="h-4 w-4 animate-spin" />
+            ) : (
+              <Trash2Icon className="h-4 w-4" />
+            )}
           </Button>
         </div>
       ),

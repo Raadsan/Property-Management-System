@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { getContactMessages, updateContactStatus, updateContactPriority, deleteContact, createContactAdmin } from "@/api/contactApi"
 import { toast } from "sonner"
 import { format } from "date-fns"
-import { CheckCircle2Icon, ClockIcon, RefreshCcwIcon, PhoneIcon, CalendarIcon, ChevronDownIcon, Trash2Icon, AlertCircleIcon, ArrowRightIcon, MessageSquareIcon, UserMinusIcon, FilterIcon, PlusIcon } from "lucide-react"
+import { CheckCircle2Icon, ClockIcon, RefreshCcwIcon, PhoneIcon, CalendarIcon, ChevronDownIcon, Trash2Icon, AlertCircleIcon, ArrowRightIcon, MessageSquareIcon, UserMinusIcon, FilterIcon, PlusIcon, Loader2Icon } from "lucide-react"
 import {
   Select,
   SelectContent,
@@ -43,6 +43,7 @@ export type Message = {
 export default function MessagesDashboardPage() {
   const [messages, setMessages] = React.useState<Message[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [deletingId, setDeletingId] = React.useState<number | null>(null)
 
   // Add Lead Modal State
   const [isAddOpen, setIsAddOpen] = React.useState(false)
@@ -80,7 +81,7 @@ export default function MessagesDashboardPage() {
           status: "NEW",
           priority: "UNKNOWN"
         })
-        fetchMessages()
+        fetchMessages(true)
       } else {
         toast.error(response.message || "Failed to create lead.")
       }
@@ -97,8 +98,8 @@ export default function MessagesDashboardPage() {
   const [filterPriority, setFilterPriority] = React.useState<string>("all")
   const [filterType, setFilterType] = React.useState<string>("all")
 
-  const fetchMessages = async () => {
-    setIsLoading(true)
+  const fetchMessages = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const response = await getContactMessages()
       setMessages(response.data || [])
@@ -106,7 +107,7 @@ export default function MessagesDashboardPage() {
       console.error("Fetch messages error:", error)
       toast.error("Network Error: Could not connect to server.")
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -135,12 +136,15 @@ export default function MessagesDashboardPage() {
   const handleDelete = async (id: number) => {
     if (!confirm("Are you sure you want to delete this inquiry?")) return
     try {
+      setDeletingId(id)
       await deleteContact(id)
       setMessages(prev => prev.filter(msg => msg.id !== id))
       toast.success("Inquiry deleted")
     } catch (error) {
       console.error("Delete error:", error)
       toast.error("Failed to delete")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -330,9 +334,14 @@ export default function MessagesDashboardPage() {
           variant="ghost"
           size="icon"
           onClick={() => handleDelete(row.original.id)}
+          disabled={deletingId === row.original.id}
           className="h-8 w-8 rounded-full text-muted-foreground hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
         >
-          <Trash2Icon className="h-4 w-4" />
+          {deletingId === row.original.id ? (
+            <Loader2Icon className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2Icon className="h-4 w-4" />
+          )}
         </Button>
       ),
     }
@@ -604,7 +613,14 @@ export default function MessagesDashboardPage() {
                   disabled={isSubmitting}
                   className="bg-[#214347] dark:bg-emerald-600 text-white hover:bg-[#163033] dark:hover:bg-emerald-500 rounded-xl font-bold uppercase tracking-wider px-6 h-10 text-xs"
                 >
-                  {isSubmitting ? "Creating..." : "Save Lead"}
+                  {isSubmitting ? (
+                    <>
+                      <Loader2Icon className="mr-2 h-4 w-4 animate-spin inline" />
+                      Creating...
+                    </>
+                  ) : (
+                    "Save Lead"
+                  )}
                 </Button>
               </DialogFooter>
             </form>

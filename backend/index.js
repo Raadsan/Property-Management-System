@@ -19,6 +19,7 @@ import blogCategoryRoute from "./Routes/blogCategoryRoute.js";
 import reportRoute from "./Routes/reportRoute.js";
 import propertyInquiryRoute from "./Routes/propertyInquiryRoutes.js";
 import saleRoute from "./Routes/saleRoute.js";
+import cityRoute from "./Routes/cityRoute.js";
 
 import multerErrorHandler from "./middlewares/multerErrorHandler.js";
 
@@ -81,6 +82,7 @@ app.use('/api/blog-categories', blogCategoryRoute);
 app.use('/api/reports', reportRoute);
 app.use('/api/property-inquiries', propertyInquiryRoute);
 app.use('/api/sales', saleRoute);
+app.use('/api/cities', cityRoute);
 
 // Error Handling Middleware
 app.use(multerErrorHandler);

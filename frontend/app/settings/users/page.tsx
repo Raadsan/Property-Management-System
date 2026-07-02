@@ -37,6 +37,8 @@ export default function UsersPage() {
   const [users, setUsers] = React.useState<User[]>([])
   const [roles, setRoles] = React.useState<Role[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentUser, setCurrentUser] = React.useState<User | null>(null)
   
@@ -60,8 +62,8 @@ export default function UsersPage() {
   const [password, setPassword] = React.useState("")
   const [status, setStatus] = React.useState("ACTIVE")
 
-  const loadData = async () => {
-    setIsLoading(true)
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const [usersData, rolesData] = await Promise.all([
         getUsers(),
@@ -72,7 +74,7 @@ export default function UsersPage() {
     } catch (error) {
       toast.error("Failed to load dashboard data")
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -122,6 +124,7 @@ export default function UsersPage() {
     }
 
     try {
+      setIsSaving(true)
       if (currentUser) {
         await updateUser(currentUser.id, { 
           name, 
@@ -146,10 +149,12 @@ export default function UsersPage() {
       }
       setIsModalOpen(false)
       resetForm()
-      loadData()
+      await loadData(true)
     } catch (error: any) {
       const errMsg = error.response?.data?.message || "An error occurred"
       toast.error(errMsg)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -157,11 +162,14 @@ export default function UsersPage() {
     if (!confirm("Are you sure you want to delete this user?")) return
 
     try {
+      setDeletingId(id)
       await deleteUser(id)
       toast.success("User deleted successfully")
-      loadData()
+      await loadData(true)
     } catch (error) {
       toast.error("Failed to delete user")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -250,6 +258,7 @@ export default function UsersPage() {
               variant="ghost" 
               size="icon" 
               onClick={() => openEditModal(row.original)}
+              disabled={isSaving || deletingId !== null}
               className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
             >
               <PencilIcon className="h-4 w-4" />
@@ -260,9 +269,14 @@ export default function UsersPage() {
               variant="ghost" 
               size="icon" 
               onClick={() => handleDelete(row.original.id)}
+              disabled={isSaving || deletingId === row.original.id}
               className="text-red-600 hover:text-red-700 hover:bg-red-50"
             >
-              <TrashIcon className="h-4 w-4" />
+              {deletingId === row.original.id ? (
+                <Loader2Icon className="h-4 w-4 animate-spin" />
+              ) : (
+                <TrashIcon className="h-4 w-4" />
+              )}
             </Button>
           )}
         </div>
@@ -279,6 +293,7 @@ export default function UsersPage() {
             </div>
             {permissions.canAdd && (
               <Dialog open={isModalOpen} onOpenChange={(open) => {
+                if (!open && isSaving) return;
                 if (!open) resetForm();
                 setIsModalOpen(open);
               }}>
@@ -355,8 +370,15 @@ export default function UsersPage() {
                   </div>
                   
                   <DialogFooter>
-                    <Button type="submit" className="btn-category mt-4">
-                      {currentUser ? "Update User" : "Save User"}
+                    <Button type="submit" disabled={isSaving} className="btn-category mt-4">
+                      {isSaving ? (
+                        <>
+                          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                          {currentUser ? "Updating..." : "Saving..."}
+                        </>
+                      ) : (
+                        currentUser ? "Update User" : "Save User"
+                      )}
                     </Button>
                   </DialogFooter>
                 </form>

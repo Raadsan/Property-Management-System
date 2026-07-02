@@ -15,10 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useLocations } from "@/hooks/useLocations";
 
 function ExploreContent() {
   const searchParams = useSearchParams();
-  const initialCity = searchParams.get("city") || "";
+  const { cityOptions, defaultCity, getDistrictOptions } = useLocations();
+
+  const initialCity = searchParams.get("city") || defaultCity || "Mogadishu";
+  const initialDistrict = searchParams.get("district") || "";
   const initialType = searchParams.get("type") || "";
   const initialListingType = searchParams.get("listingType") || "";
   const initialMinPrice = searchParams.get("minPrice") ? parseInt(searchParams.get("minPrice")!) : null;
@@ -28,7 +32,7 @@ function ExploreContent() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [searchTerm, setSearchTerm] = React.useState("");
   const [selectedCity, setSelectedCity] = React.useState(initialCity);
-  const [selectedDistrict, setSelectedDistrict] = React.useState("");
+  const [selectedDistrict, setSelectedDistrict] = React.useState(initialDistrict);
   const [selectedType, setSelectedType] = React.useState(initialType);
   const [selectedListingType, setSelectedListingType] = React.useState(initialListingType);
   const [selectedStatus, setSelectedStatus] = React.useState("");
@@ -47,23 +51,25 @@ function ExploreContent() {
     fetchProps();
   }, []);
 
-  const somaliCities = [
-    "Mogadishu",
-    "Hargeisa",
-    "Galkacyo",
-    "Garowe",
-    "Kismayo",
-    "Bosaso"
-  ];
+  const somaliCities = cityOptions.map((c) => c.value);
 
   const districtsList = React.useMemo(() => {
     if (!selectedCity || selectedCity === "all") return [];
-    const targetCity = (selectedCity === "Muqdisho" || selectedCity === "Mogadishu") ? "Mogadishu" : selectedCity;
-    const unique = new Set(properties
-      .filter(p => p.city === selectedCity || (targetCity === "Mogadishu" && (p.city === "Mogadishu" || p.city === "Muqdisho")))
-      .map(p => p.district)
-      .filter(Boolean));
-    return Array.from(unique);
+    const predefined = getDistrictOptions(selectedCity).map((d) => d.value);
+    const targetCity =
+      selectedCity === "Muqdisho" || selectedCity === "Mogadishu"
+        ? "Mogadishu"
+        : selectedCity;
+    const fromDb = properties
+      .filter(
+        (p) =>
+          p.city === selectedCity ||
+          (targetCity === "Mogadishu" &&
+            (p.city === "Mogadishu" || p.city === "Muqdisho"))
+      )
+      .map((p) => p.district)
+      .filter(Boolean) as string[];
+    return Array.from(new Set([...predefined, ...fromDb]));
   }, [properties, selectedCity]);
 
   const typesList = React.useMemo(() => {
@@ -201,7 +207,7 @@ function ExploreContent() {
 
             <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">District</Label>
-              <Select value={selectedDistrict || "all"} onValueChange={setSelectedDistrict} disabled={!selectedCity || selectedCity === "all"}>
+              <Select value={selectedDistrict || "all"} onValueChange={(val) => setSelectedDistrict(val === "all" ? "" : val)} disabled={!selectedCity || selectedCity === "all"}>
                 <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-white text-black font-medium text-sm disabled:opacity-60 [&_svg]:text-black">
                   <SelectValue placeholder="All Districts" />
                 </SelectTrigger>
@@ -216,7 +222,7 @@ function ExploreContent() {
 
             <div className="ml-auto">
               <button
-                onClick={() => { setSelectedStatus(""); setSelectedType(""); setSelectedListingType(""); setSelectedCity(""); setSelectedDistrict(""); setSearchTerm(""); }}
+                onClick={() => { setSelectedStatus(""); setSelectedType(""); setSelectedListingType(""); setSelectedCity("Mogadishu"); setSelectedDistrict(""); setSearchTerm(""); }}
                 className="px-4 py-2 rounded-xl text-[13px] font-bold text-gray-500 hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200"
               >
                 Reset Filters

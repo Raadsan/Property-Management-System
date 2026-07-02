@@ -50,6 +50,10 @@ export const API_PERMISSION_MAP = {
   "PATCH /api/blog-categories/:id": { menuPath: "/content/blog-categories", action: "edit" },
   "DELETE /api/blog-categories/:id": { menuPath: "/content/blog-categories", action: "delete" },
 
+  "POST /api/cities": { menuPath: "/content/city-distract", action: "add" },
+  "PATCH /api/cities/:id": { menuPath: "/content/city-distract", action: "edit" },
+  "DELETE /api/cities/:id": { menuPath: "/content/city-distract", action: "delete" },
+
   "POST /api/sales": { menuPath: "/content/sales", action: "add" },
   "GET /api/sales": { menuPath: "/content/sales", action: "view" },
   "GET /api/sales/:id": { menuPath: "/content/sales", action: "view" },
@@ -77,4 +81,9 @@ export const API_PERMISSION_MAP = {
   "GET /api/payments/:id": { menuPath: "/settings/payments", action: "view" },
   "PATCH /api/payments/:id": { menuPath: "/settings/payments", action: "edit" },
   "DELETE /api/payments/:id": { menuPath: "/settings/payments", action: "delete" },
+
+  // Locations (cities & districts)
+  "POST /api/cities": { menuPath: "/settings/locations", action: "add" },
+  "PATCH /api/cities/:id": { menuPath: "/settings/locations", action: "edit" },
+  "DELETE /api/cities/:id": { menuPath: "/settings/locations", action: "delete" },
 };

@@ -42,6 +42,8 @@ export default function LeasePage() {
   const [tenants, setTenants] = React.useState<User[]>([])
   
   const [isLoading, setIsLoading] = React.useState(true)
+  const [isSaving, setIsSaving] = React.useState(false)
+  const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentLease, setCurrentLease] = React.useState<Lease | null>(null)
   
@@ -56,8 +58,8 @@ export default function LeasePage() {
   const [endDate, setEndDate] = React.useState("")
   const [rentAmount, setRentAmount] = React.useState("")
 
-  const loadData = async () => {
-    setIsLoading(true)
+  const loadData = async (silent = false) => {
+    if (!silent) setIsLoading(true)
     try {
       const [leasesData, propsData, usersData] = await Promise.all([
         getLeases(),
@@ -70,7 +72,7 @@ export default function LeasePage() {
     } catch (error) {
       toast.error("Failed to load lease management data")
     } finally {
-      setIsLoading(false)
+      if (!silent) setIsLoading(false)
     }
   }
 
@@ -85,6 +87,7 @@ export default function LeasePage() {
     }
 
     try {
+      setIsSaving(true)
       const payload = {
         propertyId: parseInt(propertyId),
         tenantId: parseInt(tenantId),
@@ -103,10 +106,12 @@ export default function LeasePage() {
       
       setIsModalOpen(false)
       resetForm()
-      loadData()
+      await loadData(true)
     } catch (error: any) {
       const errMsg = error.response?.data?.message || "An error occurred while saving"
       toast.error(errMsg)
+    } finally {
+      setIsSaving(false)
     }
   }
 
@@ -114,11 +119,14 @@ export default function LeasePage() {
     if (!confirm("Are you sure you want to terminate this lease? This action is permanent!")) return
 
     try {
+      setDeletingId(id)
       await deleteLease(id)
       toast.success("Lease record deleted successfully")
-      loadData()
+      await loadData(true)
     } catch (error) {
       toast.error("Failed to delete lease record")
+    } finally {
+      setDeletingId(null)
     }
   }
 
@@ -159,6 +167,7 @@ export default function LeasePage() {
               <p className="text-muted-foreground">Track property rentals, tenant agreements, and rent schedules.</p>
             </div>
             <Dialog open={isModalOpen} onOpenChange={(open) => {
+              if (!open && isSaving) return;
               if (!open) resetForm();
               setIsModalOpen(open);
             }}>
@@ -227,8 +236,15 @@ export default function LeasePage() {
                   </div>
                   
                   <DialogFooter className="md:col-span-2 mt-4">
-                    <Button type="submit" className="btn-category w-full">
-                      {currentLease ? "Update Agreement" : "Execute Lease Agreement"}
+                    <Button type="submit" disabled={isSaving} className="btn-category w-full">
+                      {isSaving ? (
+                        <>
+                          <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
+                          {currentLease ? "Updating..." : "Saving..."}
+                        </>
+                      ) : (
+                        currentLease ? "Update Agreement" : "Execute Lease Agreement"
+                      )}
                     </Button>
                   </DialogFooter>
                 </form>
@@ -372,6 +388,7 @@ export default function LeasePage() {
                             variant="ghost" 
                             size="icon" 
                             onClick={() => openEditModal(lease)}
+                            disabled={isSaving || deletingId !== null}
                             className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 h-8 w-8"
                           >
                             <PencilIcon className="h-4 w-4" />
@@ -380,9 +397,14 @@ export default function LeasePage() {
                             variant="ghost" 
                             size="icon" 
                             onClick={() => handleDelete(lease.id)}
+                            disabled={isSaving || deletingId === lease.id}
                             className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
                           >
-                            <TrashIcon className="h-4 w-4" />
+                            {deletingId === lease.id ? (
+                              <Loader2Icon className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <TrashIcon className="h-4 w-4" />
+                            )}
                           </Button>
                         </div>
                       </TableCell>

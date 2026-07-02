@@ -355,15 +355,30 @@ export default function PropertiesPage() {
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async () => {
 
-    if (!title || !selectedCity || !price || !propertyTypeId || !agentId) {
-      return toast.error("Please fill in all strictly required fields.")
+    const missingFields: string[] = []
+
+    if (!title.trim()) missingFields.push("Title")
+    if (!selectedCity.trim()) missingFields.push("City")
+    if (!price.trim()) missingFields.push("Price")
+    if (!propertyTypeId.trim()) missingFields.push("Property Type")
+    if (!agentId.trim()) missingFields.push("Agent")
+
+    const cityNeedsDistrict = ["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity)
+    if (cityNeedsDistrict && !selectedDistrict.trim()) {
+      missingFields.push("District / Degmo")
     }
 
-    if (["Mogadishu", "Hargeisa", "Galkacyo", "Galkacayo", "Garowe", "Kismayo", "Bosaso"].includes(selectedCity) && !selectedDistrict) {
-      return toast.error(`Please select a District / Degmo for ${selectedCity}.`)
+    if (missingFields.length > 0) {
+      const firstMissing = missingFields[0]
+      if (["Title", "City", "Property Type", "Agent", "District / Degmo"].includes(firstMissing)) {
+        setActivePropertyTab("basic")
+      } else if (["Price"].includes(firstMissing)) {
+        setActivePropertyTab("specs")
+      }
+
+      return toast.error(`Please fill in: ${missingFields.join(", ")}`)
     }
 
     try {
@@ -799,7 +814,12 @@ export default function PropertiesPage() {
                   <DialogHeader>
                     <DialogTitle>{currentProperty ? "Edit Property Parameters" : "Add New Property"}</DialogTitle>
                   </DialogHeader>
-                  <form onSubmit={handleSubmit} className="py-4">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault()
+                    }}
+                    className="py-4"
+                  >
                     <Tabs value={activePropertyTab} onValueChange={(value) => setActivePropertyTab(value as PropertyFormTab)} className="gap-4">
                       <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 h-auto">
                         <TabsTrigger value="basic">Basic Info</TabsTrigger>
@@ -1197,7 +1217,7 @@ export default function PropertiesPage() {
                             Next
                           </Button>
                         ) : (
-                          <Button type="submit" className="btn-category w-full sm:w-auto">
+                          <Button type="button" onClick={handleSubmit} className="btn-category w-full sm:w-auto">
                             {currentProperty ? "Update Listing" : "Create Property"}
                           </Button>
                         )}

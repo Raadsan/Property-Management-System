@@ -13,7 +13,7 @@ import {
   User 
 } from "@/api/userApi"
 import { getRoles, Role } from "@/api/rolesApi"
-import { getRolePermissionsById } from "@/api/rolePermissionsApi"
+import { usePagePermissions } from "@/hooks/usePagePermissions"
 import { 
   Dialog, 
   DialogContent, 
@@ -34,6 +34,7 @@ import {
 import { toast } from "sonner"
 
 export default function UsersPage() {
+  const permissions = usePagePermissions("/settings/users")
   const [users, setUsers] = React.useState<User[]>([])
   const [roles, setRoles] = React.useState<Role[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -41,14 +42,6 @@ export default function UsersPage() {
   const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentUser, setCurrentUser] = React.useState<User | null>(null)
-  
-  // Permissions State
-  const [permissions, setPermissions] = React.useState({
-    canAdd: false,
-    canEdit: false,
-    canDelete: false,
-    isLoaded: false
-  })
   
   // Filtering State
   const [filterStatus, setFilterStatus] = React.useState<string>("all")
@@ -78,43 +71,8 @@ export default function UsersPage() {
     }
   }
 
-  const checkPermissions = async () => {
-    try {
-      const userStr = sessionStorage.getItem("user")
-      if (!userStr) return
-      const user = JSON.parse(userStr)
-      if (!user.roleId) return
-
-      const permsData = await getRolePermissionsById(user.roleId)
-      
-      // Find the System Settings menu and Users submenu
-      const settingsMenu = permsData.menus.find(m => m.menu?.title === "System Settings")
-      const userSubMenu = settingsMenu?.subMenus?.find(sm => sm.subMenu?.title === "Users")
-
-      if (userSubMenu) {
-        setPermissions({
-          canAdd: userSubMenu.canAdd,
-          canEdit: userSubMenu.canEdit,
-          canDelete: userSubMenu.canDelete,
-          isLoaded: true
-        })
-      } else {
-        // Fallback for Admin
-        setPermissions({
-          canAdd: true,
-          canEdit: true,
-          canDelete: true,
-          isLoaded: true
-        })
-      }
-    } catch (error) {
-      console.error("Error checking permissions:", error)
-    }
-  }
-
   React.useEffect(() => {
     loadData()
-    checkPermissions()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {

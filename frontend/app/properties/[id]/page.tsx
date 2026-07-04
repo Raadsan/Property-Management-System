@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { getUser } from "@/lib/authSession";
 import { useParams, useRouter } from "next/navigation";
 import Navbar from "@/components/landing/Navbar";
 import Footer from "@/components/landing/Footer";
@@ -110,13 +111,9 @@ export default function PropertyDetailPage() {
     if (!id) return;
 
     // Check for user session
-    const savedUser = sessionStorage.getItem("user");
+    const savedUser = getUser();
     if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error("Failed to parse user");
-      }
+      setUser(savedUser);
     }
 
     const fetchProperty = async () => {

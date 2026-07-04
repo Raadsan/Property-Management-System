@@ -13,6 +13,15 @@ router.use(protect, requireStaff);
 
 router.post('/', authorize('/settings/role-permissions', 'edit'), syncRolePermissions);
 router.get('/', authorize('/settings/role-permissions', 'view'), getRolePermissions);
-router.get('/:id', authorize('/settings/role-permissions', 'view'), getRolePermissionsById);
+
+router.get('/:id', (req, res, next) => {
+  const requestedId = parseInt(req.params.id, 10);
+  const isAdmin = req.user?.role?.name?.toUpperCase() === 'ADMIN';
+  const isSelf = req.user?.roleId === requestedId;
+  if (isSelf || isAdmin) {
+    return getRolePermissionsById(req, res, next);
+  }
+  return authorize('/settings/role-permissions', 'view')(req, res, next);
+});
 
 export default router;

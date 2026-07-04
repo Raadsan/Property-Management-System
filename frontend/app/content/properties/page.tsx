@@ -5,8 +5,9 @@ import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
 import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon, ImageIcon, HomeIcon, EyeIcon, ShieldCheckIcon, VideoIcon, MessageSquare, XIcon } from "lucide-react"
-import { getRolePermissionsById } from "@/api/rolePermissionsApi"
 import { MAX_PROPERTY_MEDIA, isVideoMedia, resolveMediaUrl, sortMediaVideosFirst } from "@/lib/mediaUtils"
+import { usePagePermissions } from "@/hooks/usePagePermissions"
+import { getUser } from "@/lib/authSession"
 
 import { getPropertyTypes, Category } from "@/api/propertyTypeApi"
 import { getUsersByRole, User } from "@/api/userApi"
@@ -169,6 +170,7 @@ const propertyLocationSelectStyles = {
 
 export default function PropertiesPage() {
   const { cityOptions, defaultCity, getDistrictOptions, cityHasDistricts, cityNames } = useLocations()
+  const permissions = usePagePermissions("/content/properties")
   const [properties, setProperties] = React.useState<Property[]>([])
   const [categories, setCategories] = React.useState<Category[]>([])
   const [owners, setOwners] = React.useState<User[]>([])
@@ -191,14 +193,6 @@ export default function PropertiesPage() {
   const [filterCity, setFilterCity] = React.useState<string>("all")
   const [filterDistrict, setFilterDistrict] = React.useState<string>("all")
   const [filterFeature, setFilterFeature] = React.useState<string>("all")
-
-  // Permissions State
-  const [permissions, setPermissions] = React.useState({
-    canAdd: false,
-    canEdit: false,
-    canDelete: false,
-    isLoaded: false
-  })
 
   // Form State
   const [title, setTitle] = React.useState("")
@@ -241,8 +235,7 @@ export default function PropertiesPage() {
     if (!silent) setIsLoading(true)
     try {
       // Get the logged in user from session to check role
-      const userStr = sessionStorage.getItem("user")
-      const loggedInUser = userStr ? JSON.parse(userStr) : null
+      const loggedInUser = getUser<{ id?: number; role?: { name?: string } }>()
       const isAdmin = loggedInUser?.role?.name?.toLowerCase() === "admin"
       const isAgent = loggedInUser?.role?.name?.toLowerCase() === "agent"
 
@@ -274,44 +267,8 @@ export default function PropertiesPage() {
     }
   }
 
-  const checkPermissions = async () => {
-    try {
-      const userStr = sessionStorage.getItem("user")
-      if (!userStr) return
-      const user = JSON.parse(userStr)
-      if (!user.roleId) return
-
-      const permsData = await getRolePermissionsById(user.roleId)
-
-      // Find the Content Management menu and Properties submenu
-      const contentMenu = permsData.menus.find(m => m.menu?.title === "Content Management")
-      const propSubMenu = contentMenu?.subMenus?.find(sm => sm.subMenu?.title === "Properties")
-
-      if (propSubMenu) {
-        setPermissions({
-          canAdd: propSubMenu.canAdd,
-          canEdit: propSubMenu.canEdit,
-          canDelete: propSubMenu.canDelete,
-          isLoaded: true
-        })
-      } else {
-        // Fallback for full access if no specific permissions found (e.g. for Admin if not explicitly in matrix)
-        // Or if the user is a super admin
-        setPermissions({
-          canAdd: true,
-          canEdit: true,
-          canDelete: true,
-          isLoaded: true
-        })
-      }
-    } catch (error) {
-      console.error("Error checking permissions:", error)
-    }
-  }
-
   React.useEffect(() => {
     loadData()
-    checkPermissions()
   }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -455,15 +412,19 @@ export default function PropertiesPage() {
     }
 
     try {
-      const userStr = sessionStorage.getItem("user")
-      if (!userStr) {
+      const loggedInUser = getUser<{ id?: number; role?: { name?: string } }>()
+      if (!loggedInUser) {
         toast.error("You must be logged in to book.")
         return
       }
-      const user = JSON.parse(userStr)
+      const userId = loggedInUser.id ?? (loggedInUser as { userId?: number }).userId
+      if (!userId) {
+        toast.error("You must be logged in to book.")
+        return
+      }
 
       await bookProperty(bookingProperty.id, {
-        userId: user.id || user.userId, // fallback in case
+        userId,
         phone: wafiPhone
       })
 
@@ -549,8 +510,7 @@ export default function PropertiesPage() {
 
   const resetForm = () => {
     // Check if the current user is an agent to preserve their ID
-    const userStr = sessionStorage.getItem("user")
-    const loggedInUser = userStr ? JSON.parse(userStr) : null
+    const loggedInUser = getUser<{ id?: number; role?: { name?: string } }>()
     const isAgent = loggedInUser?.role?.name?.toLowerCase() === "agent"
 
     setCurrentProperty(null)
@@ -565,8 +525,9 @@ export default function PropertiesPage() {
     setOwnerId("")
 
     // 🛡️ Preserve Agent ID if user is an agent
-    if (isAgent && loggedInUser) {
-      setAgentId(loggedInUser.id.toString())
+    const agentUserId = loggedInUser?.id
+    if (isAgent && agentUserId) {
+      setAgentId(agentUserId.toString())
     } else {
       setAgentId("")
     }

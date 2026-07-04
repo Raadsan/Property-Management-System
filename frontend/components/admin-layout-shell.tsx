@@ -2,6 +2,7 @@
 
 import { usePathname } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
+import { AdminRouteGuard } from "@/components/admin-route-guard"
 import { SiteHeader } from "@/components/site-header"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
 
@@ -38,7 +39,7 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
       <AppSidebar variant="inset" />
       <SidebarInset className="mt-0! mr-0!">
         <SiteHeader />
-        {children}
+        <AdminRouteGuard>{children}</AdminRouteGuard>
       </SidebarInset>
     </SidebarProvider>
   )

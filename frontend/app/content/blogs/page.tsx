@@ -15,7 +15,7 @@ import {
   BlogCategory 
 } from "@/api/blogApi"
 import { getMediaUrl } from "@/lib/mediaUrl"
-import { getRolePermissionsById } from "@/api/rolePermissionsApi"
+import { usePagePermissions } from "@/hooks/usePagePermissions"
 import { 
   Dialog, 
   DialogContent, 
@@ -31,6 +31,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner"
 
 export default function BlogsRegistrationPage() {
+  const permissions = usePagePermissions("/content/blogs")
   const [blogs, setBlogs] = React.useState<Blog[]>([])
   const [categories, setCategories] = React.useState<BlogCategory[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
@@ -38,14 +39,6 @@ export default function BlogsRegistrationPage() {
   const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentBlog, setCurrentBlog] = React.useState<Blog | null>(null)
-  
-  // Permissions State
-  const [permissions, setPermissions] = React.useState({
-    canAdd: false,
-    canEdit: false,
-    canDelete: false,
-    isLoaded: false
-  })
   
   // Filtering State
   const [filterCategory, setFilterCategory] = React.useState<string>("all")
@@ -76,43 +69,8 @@ export default function BlogsRegistrationPage() {
     }
   }
 
-  const checkPermissions = async () => {
-    try {
-      const userStr = sessionStorage.getItem("user")
-      if (!userStr) return
-      const user = JSON.parse(userStr)
-      if (!user.roleId) return
-
-      const permsData = await getRolePermissionsById(user.roleId)
-      
-      // Find the Content Management menu and Blogs submenu
-      const contentMenu = permsData.menus.find(m => m.menu?.title === "Content Management")
-      const blogSubMenu = contentMenu?.subMenus?.find(sm => sm.subMenu?.title === "Blogs")
-
-      if (blogSubMenu) {
-        setPermissions({
-          canAdd: blogSubMenu.canAdd,
-          canEdit: blogSubMenu.canEdit,
-          canDelete: blogSubMenu.canDelete,
-          isLoaded: true
-        })
-      } else {
-        // Fallback for Admin
-        setPermissions({
-          canAdd: true,
-          canEdit: true,
-          canDelete: true,
-          isLoaded: true
-        })
-      }
-    } catch (error) {
-      console.error("Error checking permissions:", error)
-    }
-  }
-
   React.useEffect(() => {
     fetchData()
-    checkPermissions()
   }, [])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {

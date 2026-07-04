@@ -12,20 +12,21 @@ import {
   deletePropertyType,
   Category 
 } from "@/api/propertyTypeApi"
-import { getRolePermissionsById } from "@/api/rolePermissionsApi"
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
+import { usePagePermissions } from "@/hooks/usePagePermissions"
 
 export default function CategoriesPage() {
+  const permissions = usePagePermissions("/content/categories")
   const [categories, setCategories] = React.useState<Category[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
@@ -33,14 +34,6 @@ export default function CategoriesPage() {
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentCategory, setCurrentCategory] = React.useState<Category | null>(null)
   const [newName, setNewName] = React.useState("")
-
-  // Permissions State
-  const [permissions, setPermissions] = React.useState({
-    canAdd: false,
-    canEdit: false,
-    canDelete: false,
-    isLoaded: false
-  })
 
   const fetchCategories = async (silent = false) => {
     if (!silent) setIsLoading(true)
@@ -54,43 +47,8 @@ export default function CategoriesPage() {
     }
   }
 
-  const checkPermissions = async () => {
-    try {
-      const userStr = sessionStorage.getItem("user")
-      if (!userStr) return
-      const user = JSON.parse(userStr)
-      if (!user.roleId) return
-
-      const permsData = await getRolePermissionsById(user.roleId)
-      
-      // Find the Content Management menu and Categories submenu
-      const contentMenu = permsData.menus.find(m => m.menu?.title === "Content Management")
-      const catSubMenu = contentMenu?.subMenus?.find(sm => sm.subMenu?.title === "Categories")
-
-      if (catSubMenu) {
-        setPermissions({
-          canAdd: catSubMenu.canAdd,
-          canEdit: catSubMenu.canEdit,
-          canDelete: catSubMenu.canDelete,
-          isLoaded: true
-        })
-      } else {
-        // Fallback for Admin
-        setPermissions({
-          canAdd: true,
-          canEdit: true,
-          canDelete: true,
-          isLoaded: true
-        })
-      }
-    } catch (error) {
-      console.error("Error checking permissions:", error)
-    }
-  }
-
   React.useEffect(() => {
     fetchCategories()
-    checkPermissions()
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {

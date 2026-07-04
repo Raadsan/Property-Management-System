@@ -1,4 +1,5 @@
 import axios from "axios";
+import { clearAuthSession, getToken } from "@/lib/authSession";
 
 const getBaseURL = () => {
   if (typeof window !== "undefined") {
@@ -32,7 +33,7 @@ function isAdminPath(path: string) {
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
-      const token = sessionStorage.getItem("token");
+      const token = getToken();
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
@@ -46,9 +47,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401 && typeof window !== "undefined") {
-      sessionStorage.removeItem("user");
-      sessionStorage.removeItem("token");
-      sessionStorage.removeItem("damal_admin_nav");
+      clearAuthSession();
 
       const path = window.location.pathname;
       if (isAdminPath(path)) {

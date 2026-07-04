@@ -23,10 +23,11 @@ import Image from "next/image"
 import * as Icons from "lucide-react"
 import { getPermissionMenusByRole } from "@/api/menuApi"
 import {
-  NAV_CACHE_KEY,
   clearAuthSession,
+  getUser,
   menusToNavItems,
   readNavCache,
+  writeNavCache,
   type StoredNavItem,
 } from "@/lib/authSession"
 
@@ -61,16 +62,15 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
     const fetchNav = async () => {
       try {
-        const userStr = sessionStorage.getItem("user");
-        if (!userStr) {
+        const user = getUser<{ roleId?: number }>();
+        if (!user) {
           router.push("/login");
           return;
         }
 
-        const user = JSON.parse(userStr);
-        if (!user || !user.roleId) {
+        if (!user.roleId) {
           console.warn("User roleId not found, redirecting to login");
-          sessionStorage.removeItem("user");
+          clearAuthSession();
           router.push("/login");
           return;
         }
@@ -79,7 +79,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
         const stored = menusToNavItems(menus);
 
-        sessionStorage.setItem(NAV_CACHE_KEY, JSON.stringify(stored));
+        writeNavCache(stored);
         setNavMain(toNavItems(stored));
         setIsNavLoading(false);
       } catch (error) {

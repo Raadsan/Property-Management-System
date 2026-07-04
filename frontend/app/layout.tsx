@@ -3,6 +3,7 @@ import { Montserrat, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AdminLayoutShell } from "@/components/admin-layout-shell";
+import { AuthSessionSync } from "@/components/auth-session-sync";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Toaster } from "@/components/ui/sonner";
 
@@ -81,6 +82,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <TooltipProvider>
+            <AuthSessionSync />
             <AdminLayoutShell>{children}</AdminLayoutShell>
             <Toaster />
           </TooltipProvider>

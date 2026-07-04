@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { clearAuthSession } from "@/lib/authSession"
+import { clearAuthSession, getUser } from "@/lib/authSession"
 import { ModeToggle } from "@/components/mode-toggle"
 import { Separator } from "@/components/ui/separator"
 import { SidebarTrigger } from "@/components/ui/sidebar"
@@ -14,13 +14,9 @@ export function SiteHeader() {
   const [dropdownOpen, setDropdownOpen] = useState(false)
 
   useEffect(() => {
-    const savedUser = sessionStorage.getItem("user")
+    const savedUser = getUser()
     if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser))
-      } catch (e) {
-        console.error("Failed to parse user from localStorage")
-      }
+      setUser(savedUser)
     }
   }, [])
 

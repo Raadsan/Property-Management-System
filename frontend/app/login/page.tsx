@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Checkbox } from "@/components/ui/checkbox"
 import { EyeIcon, EyeOffIcon, Loader2Icon, Mail, Lock, CheckCircle2, AlertCircle, User } from "lucide-react"
 import { loginUser as performLogin, socialLogin } from "@/api/userApi"
-import { saveAuthSession } from "@/lib/authSession"
+import { saveAuthSession, isLoggedIn, getUser } from "@/lib/authSession"
 import { auth, googleProvider, facebookProvider } from "@/lib/firebase"
 import { signInWithPopup } from "firebase/auth"
 
@@ -29,6 +29,16 @@ export default function LoginPage() {
   const [password, setPassword] = React.useState("")
   const [errorStatus, setErrorStatus] = React.useState<string | null>(null)
   const [successStatus, setSuccessStatus] = React.useState<string | null>(null)
+
+  React.useEffect(() => {
+    if (!isLoggedIn()) return
+    const user = getUser<{ role?: { name?: string }; roleId?: number }>()
+    const isRegularUser =
+      user?.role?.name?.toLowerCase() === "user" ||
+      user?.role?.name?.toLowerCase() === "client" ||
+      user?.roleId === 3
+    router.replace(isRegularUser ? "/" : "/dashboard")
+  }, [router])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

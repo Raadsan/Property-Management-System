@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { clearAuthSession, getUser } from "@/lib/authSession";
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Menu, X, ChevronDown, Home as HomeIcon, Key, LayoutDashboard, User, LogOut } from "lucide-react";
@@ -24,19 +25,14 @@ export default function Navbar() {
   }, []);
 
   useEffect(() => {
-    const savedUser = sessionStorage.getItem("user");
+    const savedUser = getUser();
     if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error("Failed to parse user from localStorage");
-      }
+      setUser(savedUser);
     }
   }, []);
 
   const handleLogout = () => {
-    sessionStorage.removeItem("user");
-    sessionStorage.removeItem("token");
+    clearAuthSession();
     setUser(null);
     window.location.reload();
   };

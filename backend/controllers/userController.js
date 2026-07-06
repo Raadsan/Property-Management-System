@@ -29,6 +29,12 @@ async function issueAuthResponse(res, user, message) {
   });
 }
 
+function isStaffUser(user) {
+  if (!user) return false;
+  const roleName = user.role?.name?.toLowerCase() ?? "";
+  return roleName !== "user" && roleName !== "client" && user.roleId !== 3;
+}
+
 async function resolveClientRoleId() {
   const clientRole = await prisma.role.findFirst({
     where: { name: { in: ["USER", "CLIENT", "User", "Client", "user", "client"] } },
@@ -47,7 +53,7 @@ async function resolveRoleIdByName(roleName) {
 // @route   POST /api/users
 export const createUser = async (req, res) => {
   console.log("📥 CREATE USER REQUEST:", { body: req.body, headers: req.headers['content-type'] });
-  const { name, email, phone, roleId, password, photo, status } = req.body || {};
+  const { name, email, phone, secondaryPhone, city, district, roleId, password, photo, status } = req.body || {};
 
   if (!name || !phone || !password) {
     return res.status(400).json({ message: "Missing required fields (name, phone, password)" });
@@ -58,12 +64,12 @@ export const createUser = async (req, res) => {
   }
 
   try {
-    let assignedRoleId = roleId ? parseInt(roleId) : null;
+    let assignedRoleId = roleId != null && roleId !== "" ? parseInt(roleId, 10) : null;
 
-    // Public signup: force client role only
-    if (!req.user) {
+    // Public signup: force client role only. Staff (logged-in admin) may assign any role.
+    if (!isStaffUser(req.user)) {
       assignedRoleId = await resolveClientRoleId();
-    } else if (!assignedRoleId) {
+    } else if (!assignedRoleId || Number.isNaN(assignedRoleId)) {
       return res.status(400).json({ message: "Missing required field: roleId" });
     }
     // Hash the password
@@ -82,10 +88,16 @@ export const createUser = async (req, res) => {
         name,
         email: email && email.trim() !== "" ? email : null, // Fix: Use null instead of "" for unique field
         phone,
+        secondaryPhone: secondaryPhone?.trim() || null,
+        city: city?.trim() || null,
+        district: district?.trim() || null,
         roleId: assignedRoleId,
         password: hashedPassword,
         photo: photoPath,
         status: status || "ACTIVE",
+      },
+      include: {
+        role: { select: { name: true } },
       },
     });
 
@@ -211,13 +223,16 @@ export const getUserById = async (req, res) => {
 export const updateUser = async (req, res) => {
   const { id } = req.params;
   console.log("📥 UPDATE USER REQUEST:", { id, body: req.body, file: req.file });
-  const { name, email, phone, roleId, password, photo, status } = req.body || {};
+  const { name, email, phone, secondaryPhone, city, district, roleId, password, photo, status } = req.body || {};
 
   try {
     const updateData = {};
     if (name) updateData.name = name;
     if (email !== undefined) updateData.email = email && email.trim() !== "" ? email : null;
     if (phone) updateData.phone = phone;
+    if (secondaryPhone !== undefined) updateData.secondaryPhone = secondaryPhone?.trim() || null;
+    if (city !== undefined) updateData.city = city?.trim() || null;
+    if (district !== undefined) updateData.district = district?.trim() || null;
     if (status) updateData.status = status;
     if (roleId) updateData.roleId = parseInt(roleId);
 

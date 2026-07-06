@@ -6,6 +6,9 @@ export interface User {
   name: string;
   email?: string | null;
   phone: string;
+  secondaryPhone?: string | null;
+  city?: string | null;
+  district?: string | null;
   roleId: number;
   photo?: string | null;
   status: string;
@@ -36,6 +39,9 @@ export interface CreateUserData {
   name: string;
   email?: string;
   phone: string;
+  secondaryPhone?: string | null;
+  city?: string | null;
+  district?: string | null;
   roleId: number;
   password?: string;
   photo?: string;
@@ -51,6 +57,9 @@ export interface UpdateUserData {
   name?: string;
   email?: string;
   phone?: string;
+  secondaryPhone?: string | null;
+  city?: string | null;
+  district?: string | null;
   roleId?: number;
   password?: string; // If left empty, avoid sending it for updates
   photo?: string;

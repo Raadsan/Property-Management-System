@@ -4,7 +4,7 @@ import {
   forgotPassword, verifyCode, resetPassword, socialLogin, getMyAccess
 } from '../controllers/userController.js';
 import { upload } from '../lib/upload.js';
-import { protect, requireStaff } from '../middlewares/authMiddleware.js';
+import { protect, requireStaff, optionalProtect } from '../middlewares/authMiddleware.js';
 import { authorize } from '../middlewares/authorize.js';
 
 const router = express.Router();
@@ -15,7 +15,7 @@ router.post('/social-login', socialLogin);
 router.post('/forgot-password', forgotPassword);
 router.post('/verify-code', verifyCode);
 router.post('/reset-password', resetPassword);
-router.post('/', upload.single('image'), createUser);
+router.post('/', optionalProtect, upload.single('image'), createUser);
 
 router.get('/me/access', protect, getMyAccess);
 

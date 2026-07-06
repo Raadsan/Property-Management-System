@@ -4,12 +4,13 @@ import * as React from "react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon } from "lucide-react"
+import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon, EyeIcon } from "lucide-react"
 import { 
   getUsers, 
   createUser, 
   updateUser, 
   deleteUser,
+  getUserById,
   User 
 } from "@/api/userApi"
 import { getRoles, Role } from "@/api/rolesApi"
@@ -32,28 +33,66 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
+import { useLocations } from "@/hooks/useLocations"
+import ReactSelect from "react-select"
+import { locationSelectStyles, LOCATION_SELECT_MENU_HEIGHT } from "@/lib/locationSelectStyles"
 
 export default function UsersPage() {
   const permissions = usePagePermissions("/settings/users")
+  const { cityOptions, cityNames, getDistrictOptions, cityHasDistricts } = useLocations()
   const [users, setUsers] = React.useState<User[]>([])
   const [roles, setRoles] = React.useState<Role[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
   const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
+  const [isViewModalOpen, setIsViewModalOpen] = React.useState(false)
+  const [viewUser, setViewUser] = React.useState<User | null>(null)
   const [currentUser, setCurrentUser] = React.useState<User | null>(null)
   
   // Filtering State
   const [filterStatus, setFilterStatus] = React.useState<string>("all")
   const [filterRole, setFilterRole] = React.useState<string>("all")
+  const [filterCity, setFilterCity] = React.useState<string>("all")
+  const [filterDistrict, setFilterDistrict] = React.useState<string>("all")
   
   // Form State
   const [name, setName] = React.useState("")
   const [email, setEmail] = React.useState("")
   const [phone, setPhone] = React.useState("")
+  const [secondaryPhone, setSecondaryPhone] = React.useState("")
+  const [city, setCity] = React.useState("")
+  const [district, setDistrict] = React.useState("")
   const [roleId, setRoleId] = React.useState<string>("")
   const [password, setPassword] = React.useState("")
   const [status, setStatus] = React.useState("ACTIVE")
+
+  const agentRoleId = React.useMemo(
+    () => roles.find((r) => r.name.toLowerCase() === "agent")?.id,
+    [roles]
+  )
+
+  const isAgentRole = agentRoleId != null && roleId === agentRoleId.toString()
+
+  const isAgentUser = React.useCallback(
+    (user: User) => agentRoleId != null && user.roleId === agentRoleId,
+    [agentRoleId]
+  )
+
+  const agentPayload = React.useMemo(() => {
+    if (isAgentRole) {
+      return {
+        secondaryPhone: secondaryPhone.trim() || null,
+        city: city.trim() || null,
+        district: district.trim() || null,
+      }
+    }
+    return {
+      secondaryPhone: null,
+      city: null,
+      district: null,
+    }
+  }, [isAgentRole, secondaryPhone, city, district])
 
   const loadData = async (silent = false) => {
     if (!silent) setIsLoading(true)
@@ -90,7 +129,8 @@ export default function UsersPage() {
           phone, 
           roleId: parseInt(roleId), 
           password: password || undefined,
-          status
+          status,
+          ...agentPayload,
         })
         toast.success("User updated successfully")
       } else {
@@ -101,7 +141,8 @@ export default function UsersPage() {
           phone, 
           roleId: parseInt(roleId), 
           password,
-          status
+          status,
+          ...agentPayload,
         })
         toast.success("User created successfully")
       }
@@ -136,10 +177,24 @@ export default function UsersPage() {
     setName(user.name)
     setEmail(user.email || "")
     setPhone(user.phone)
+    setSecondaryPhone(user.secondaryPhone || "")
+    setCity(user.city || "")
+    setDistrict(user.district || "")
     setRoleId(user.roleId.toString())
     setStatus(user.status)
     setPassword("") // Clear password field for empty-patch intent
     setIsModalOpen(true)
+  }
+
+  const openViewModal = async (user: User) => {
+    setViewUser(user)
+    setIsViewModalOpen(true)
+    try {
+      const fresh = await getUserById(user.id)
+      setViewUser(fresh)
+    } catch {
+      // Keep list row data if detail fetch fails
+    }
   }
 
   const openCreateModal = () => {
@@ -152,19 +207,52 @@ export default function UsersPage() {
     setName("")
     setEmail("")
     setPhone("")
+    setSecondaryPhone("")
+    setCity("")
+    setDistrict("")
     setRoleId("")
     setStatus("ACTIVE")
     setPassword("")
   }
 
+  const citiesList = React.useMemo(() => {
+    const fromApi = cityNames
+    const fromDb = users.map((u) => u.city).filter(Boolean) as string[]
+    return Array.from(new Set([...fromApi, ...fromDb]))
+  }, [users, cityNames])
+
+  const districtsList = React.useMemo(() => {
+    if (filterCity === "all") {
+      return Array.from(new Set(users.map((u) => u.district).filter(Boolean))) as string[]
+    }
+    const targetCity =
+      filterCity === "Muqdisho" || filterCity === "Mogadishu" ? "Mogadishu" : filterCity
+    const preDefined = getDistrictOptions(targetCity).map((d) => d.value)
+    const savedInDb = users
+      .filter(
+        (u) =>
+          u.city === filterCity ||
+          (targetCity === "Mogadishu" && (u.city === "Mogadishu" || u.city === "Muqdisho"))
+      )
+      .map((u) => u.district)
+      .filter(Boolean) as string[]
+    return Array.from(new Set([...preDefined, ...savedInDb]))
+  }, [users, filterCity, getDistrictOptions])
+
   // Filtered Data
   const filteredUsers = React.useMemo(() => {
-    return users.filter(user => {
+    return users.filter((user) => {
       const matchStatus = filterStatus === "all" || user.status === filterStatus
       const matchRole = filterRole === "all" || user.roleId.toString() === filterRole
-      return matchStatus && matchRole
+      const matchCity =
+        filterCity === "all" ||
+        user.city === filterCity ||
+        (filterCity === "Muqdisho" && user.city === "Mogadishu") ||
+        (filterCity === "Mogadishu" && user.city === "Muqdisho")
+      const matchDistrict = filterDistrict === "all" || user.district === filterDistrict
+      return matchStatus && matchRole && matchCity && matchDistrict
     })
-  }, [users, filterStatus, filterRole])
+  }, [users, filterStatus, filterRole, filterCity, filterDistrict])
 
   // Define columns for DataTable
   const columns: ColumnDef<User>[] = [
@@ -211,6 +299,15 @@ export default function UsersPage() {
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openViewModal(row.original)}
+            className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
+            title="View User Details"
+          >
+            <EyeIcon className="h-4 w-4" />
+          </Button>
           {permissions.canEdit && (
             <Button 
               variant="ghost" 
@@ -261,7 +358,7 @@ export default function UsersPage() {
                     Add User
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto overflow-x-hidden">
                 <DialogHeader>
                   <DialogTitle>{currentUser ? "Edit User" : "Add New User"}</DialogTitle>
                 </DialogHeader>
@@ -284,28 +381,101 @@ export default function UsersPage() {
 
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="role" className="text-right">Role <span className="text-red-500">*</span></Label>
-                    <div className="col-span-3">
-                      <Select value={roleId} onValueChange={setRoleId} required>
-                        <SelectTrigger id="role" className="w-full">
+                    <div className="col-span-3 min-w-0">
+                      <Select
+                        value={roleId}
+                        onValueChange={(value) => {
+                          setRoleId(value)
+                          if (agentRoleId == null || parseInt(value) !== agentRoleId) {
+                            setSecondaryPhone("")
+                            setCity("")
+                            setDistrict("")
+                          }
+                        }}
+                        required
+                      >
+                        <SelectTrigger id="role" className="w-full max-w-full">
                           <SelectValue placeholder="Select a role" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" className="w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
                           {roles.map((r) => (
-                            <SelectItem key={r.id} value={r.id.toString()}>{r.name}</SelectItem>
+                            <SelectItem key={r.id} value={r.id.toString()} className="truncate">
+                              {r.name}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                   </div>
 
+                  {isAgentRole && (
+                    <>
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="secondaryPhone" className="text-right">Secondary Phone</Label>
+                        <Input
+                          id="secondaryPhone"
+                          value={secondaryPhone}
+                          onChange={(e) => setSecondaryPhone(e.target.value)}
+                          className="col-span-3"
+                          placeholder="Secondary Phone Number"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="city" className="text-right">City</Label>
+                        <div className="col-span-3 min-w-0">
+                          <ReactSelect
+                            instanceId="user-city-select"
+                            inputId="city"
+                            options={cityOptions}
+                            value={city ? { value: city, label: city } : null}
+                            onChange={(opt) => {
+                              setCity(opt?.value || "")
+                              setDistrict("")
+                            }}
+                            placeholder="Select a city"
+                            isSearchable
+                            maxMenuHeight={LOCATION_SELECT_MENU_HEIGHT}
+                            menuPlacement="auto"
+                            menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+                            classNamePrefix="react-select"
+                            styles={locationSelectStyles}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-4 items-center gap-4">
+                        <Label htmlFor="district" className="text-right">District</Label>
+                        <div className="col-span-3 min-w-0">
+                          <ReactSelect
+                            instanceId="user-district-select"
+                            inputId="district"
+                            options={getDistrictOptions(city)}
+                            value={district ? { value: district, label: district } : null}
+                            onChange={(opt) => setDistrict(opt?.value || "")}
+                            isDisabled={!cityHasDistricts(city)}
+                            placeholder={cityHasDistricts(city) ? "Select a district" : "No districts for this city"}
+                            isSearchable
+                            isClearable
+                            maxMenuHeight={LOCATION_SELECT_MENU_HEIGHT}
+                            menuPlacement="auto"
+                            menuPortalTarget={typeof document !== "undefined" ? document.body : null}
+                            classNamePrefix="react-select"
+                            styles={locationSelectStyles}
+                          />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
                   <div className="grid grid-cols-4 items-center gap-4">
                     <Label htmlFor="status" className="text-right">Status <span className="text-red-500">*</span></Label>
-                    <div className="col-span-3">
+                    <div className="col-span-3 min-w-0">
                       <Select value={status} onValueChange={setStatus} required>
-                        <SelectTrigger id="status" className="w-full">
+                        <SelectTrigger id="status" className="w-full max-w-full">
                           <SelectValue placeholder="Select a status" />
                         </SelectTrigger>
-                        <SelectContent>
+                        <SelectContent position="popper" className="w-[var(--radix-select-trigger-width)] max-w-[var(--radix-select-trigger-width)]">
                           <SelectItem value="ACTIVE">ACTIVE</SelectItem>
                           <SelectItem value="INACTIVE">INACTIVE</SelectItem>
                         </SelectContent>
@@ -345,6 +515,72 @@ export default function UsersPage() {
           )}
         </div>
 
+          <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+            <DialogContent className="sm:max-w-[500px] max-h-[85vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>User Details</DialogTitle>
+              </DialogHeader>
+              {viewUser && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 py-4 text-sm">
+                  <div>
+                    <span className="font-semibold text-muted-foreground block mb-1">ID</span>
+                    <p className="font-medium bg-muted/40 p-2 rounded-md">#{viewUser.id}</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-muted-foreground block mb-1">Status</span>
+                    <p className="font-medium bg-muted/40 p-2 rounded-md">{viewUser.status}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <span className="font-semibold text-muted-foreground block mb-1">Name</span>
+                    <p className="font-medium bg-muted/40 p-2 rounded-md">{viewUser.name}</p>
+                  </div>
+                  <div className="md:col-span-2">
+                    <span className="font-semibold text-muted-foreground block mb-1">Email</span>
+                    <p className="font-medium bg-muted/40 p-2 rounded-md">{viewUser.email || "No email"}</p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-muted-foreground block mb-1">Phone</span>
+                    <p className="font-medium bg-muted/40 p-2 rounded-md">{viewUser.phone}</p>
+                  </div>
+                  {isAgentUser(viewUser) && (
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Secondary Phone</span>
+                      <p className="font-medium bg-muted/40 p-2 rounded-md">{viewUser.secondaryPhone || "-"}</p>
+                    </div>
+                  )}
+                  <div>
+                    <span className="font-semibold text-muted-foreground block mb-1">Role</span>
+                    <p className="font-medium bg-muted/40 p-2 rounded-md">{viewUser.role?.name || "No Role"}</p>
+                  </div>
+                  {isAgentUser(viewUser) && (
+                    <>
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">City</span>
+                        <p className="font-medium bg-muted/40 p-2 rounded-md">{viewUser.city || "-"}</p>
+                      </div>
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">District</span>
+                        <p className="font-medium bg-muted/40 p-2 rounded-md">{viewUser.district || "-"}</p>
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <span className="font-semibold text-muted-foreground block mb-1">Created</span>
+                    <p className="font-medium bg-muted/40 p-2 rounded-md">
+                      {new Date(viewUser.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="font-semibold text-muted-foreground block mb-1">Updated</span>
+                    <p className="font-medium bg-muted/40 p-2 rounded-md">
+                      {new Date(viewUser.updatedAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
           {/* Filter Bar */}
           <div className="flex flex-wrap gap-4 mb-6 items-end">
             <div className="flex flex-col gap-1.5 min-w-[150px]">
@@ -376,10 +612,55 @@ export default function UsersPage() {
               </Select>
             </div>
 
+            <div className="flex flex-col gap-1.5 min-w-[150px]">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">City Filter</Label>
+              <Select
+                value={filterCity}
+                onValueChange={(val) => {
+                  setFilterCity(val)
+                  setFilterDistrict("all")
+                }}
+              >
+                <SelectTrigger className="h-9 border-border bg-card">
+                  <SelectValue placeholder="All Cities" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Cities</SelectItem>
+                  {citiesList.map((cityName) => (
+                    <SelectItem key={cityName} value={cityName}>
+                      {cityName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex flex-col gap-1.5 min-w-[150px]">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">District Filter</Label>
+              <Select value={filterDistrict} onValueChange={setFilterDistrict}>
+                <SelectTrigger className="h-9 border-border bg-card">
+                  <SelectValue placeholder="All Districts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Districts</SelectItem>
+                  {districtsList.map((districtName) => (
+                    <SelectItem key={districtName} value={districtName}>
+                      {districtName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <Button 
               variant="ghost" 
               size="sm" 
-              onClick={() => { setFilterStatus("all"); setFilterRole("all"); }}
+              onClick={() => {
+                setFilterStatus("all")
+                setFilterRole("all")
+                setFilterCity("all")
+                setFilterDistrict("all")
+              }}
               className="text-xs font-bold text-muted-foreground h-9"
             >
               Reset Filters

@@ -866,12 +866,12 @@ export default function PropertiesPage() {
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="location">Area <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                            <Label htmlFor="location">Area</Label>
                             <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Neighborhood or street" />
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="latitude">Latitude <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                            <Label htmlFor="latitude">Latitude</Label>
                             <Input
                               id="latitude"
                               type="number"
@@ -883,7 +883,7 @@ export default function PropertiesPage() {
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="longitude">Longitude <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                            <Label htmlFor="longitude">Longitude</Label>
                             <Input
                               id="longitude"
                               type="number"

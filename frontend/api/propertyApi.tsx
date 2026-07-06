@@ -20,6 +20,8 @@ export interface Property {
   location: string;
   city: string;
   district?: string;
+  latitude?: number | null;
+  longitude?: number | null;
   country: string;
   price: number;
   listingType: 'RENT' | 'SALE';
@@ -44,8 +46,18 @@ export interface Property {
   bookings?: { userId: number }[];
 }
 
-export const getProperties = async (params?: { agentId?: number; features?: boolean }): Promise<Property[]> => {
-  const response = await api.get("/properties", { params });
+export const getProperties = async (params?: {
+  agentId?: number;
+  features?: boolean;
+  status?: string;
+}): Promise<Property[]> => {
+  const response = await api.get("/properties", {
+    params: {
+      agentId: params?.agentId,
+      features: params?.features ? "true" : undefined,
+      status: params?.status,
+    },
+  });
   return response.data;
 };
 

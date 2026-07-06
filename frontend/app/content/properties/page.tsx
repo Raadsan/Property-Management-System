@@ -198,6 +198,8 @@ export default function PropertiesPage() {
   const [title, setTitle] = React.useState("")
   const [description, setDescription] = React.useState("")
   const [location, setLocation] = React.useState("")
+  const [latitude, setLatitude] = React.useState("")
+  const [longitude, setLongitude] = React.useState("")
   const [selectedCity, setSelectedCity] = React.useState("Mogadishu")
   React.useEffect(() => {
     if (defaultCity) {
@@ -342,7 +344,9 @@ export default function PropertiesPage() {
       const formData = new FormData()
       formData.append("title", title)
       formData.append("description", description)
-      formData.append("location", location)
+      formData.append("location", location.trim())
+      formData.append("latitude", latitude.trim())
+      formData.append("longitude", longitude.trim())
       formData.append("city", selectedCity)
       formData.append("district", cityHasDistricts(selectedCity) ? selectedDistrict : "")
       formData.append("country", "Somalia")
@@ -383,7 +387,12 @@ export default function PropertiesPage() {
       resetForm()
       await loadData(true)
     } catch (error: any) {
-      const errMsg = error.response?.data?.message || "An error occurred while saving"
+      const data = error.response?.data
+      const errMsg =
+        data?.message ||
+        (typeof data === "string" ? data : null) ||
+        error.message ||
+        "An error occurred while saving"
       toast.error(errMsg)
     } finally {
       setIsSaving(false)
@@ -461,7 +470,9 @@ export default function PropertiesPage() {
       setCurrentProperty(prop)
       setTitle(prop.title)
       setDescription(prop.description || "")
-      setLocation(prop.location)
+      setLocation(prop.location || "")
+      setLatitude(prop.latitude != null ? String(prop.latitude) : "")
+      setLongitude(prop.longitude != null ? String(prop.longitude) : "")
       setSelectedCity(prop.city)
       setSelectedDistrict(prop.district || "")
       setPrice(prop.price.toString())
@@ -482,6 +493,8 @@ export default function PropertiesPage() {
       setTitle("")
       setDescription("")
       setLocation("")
+      setLatitude("")
+      setLongitude("")
       setSelectedCity(defaultCity || "Mogadishu")
       setPrice("")
       setListingType("RENT")
@@ -517,6 +530,8 @@ export default function PropertiesPage() {
     setTitle("")
     setDescription("")
     setLocation("")
+    setLatitude("")
+    setLongitude("")
     setSelectedDistrict("")
     setSelectedCity(defaultCity || "Mogadishu")
     setPrice("")
@@ -665,11 +680,14 @@ export default function PropertiesPage() {
     {
       accessorKey: "location",
       header: "Area",
-      cell: ({ row }) => (
-        <span className="text-sm font-semibold opacity-85">
-          {row.getValue("location")}
-        </span>
-      ),
+      cell: ({ row }) => {
+        const area = row.getValue("location") as string
+        return (
+          <span className="text-sm font-semibold opacity-85">
+            {area || ""}
+          </span>
+        )
+      },
     },
     {
       accessorKey: "owner.name",
@@ -848,8 +866,32 @@ export default function PropertiesPage() {
                           </div>
 
                           <div className="space-y-2">
-                            <Label htmlFor="location">Area</Label>
-                            <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Area" />
+                            <Label htmlFor="location">Area <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                            <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Neighborhood or street" />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="latitude">Latitude <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                            <Input
+                              id="latitude"
+                              type="number"
+                              step="any"
+                              value={latitude}
+                              onChange={(e) => setLatitude(e.target.value)}
+                              placeholder="0.00000000"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="longitude">Longitude <span className="text-muted-foreground font-normal">(optional)</span></Label>
+                            <Input
+                              id="longitude"
+                              type="number"
+                              step="any"
+                              value={longitude}
+                              onChange={(e) => setLongitude(e.target.value)}
+                              placeholder="0.00000000"
+                            />
                           </div>
 
                           <div className="space-y-2">
@@ -1206,9 +1248,25 @@ export default function PropertiesPage() {
                       </div>
                     )}
 
+                    {viewProperty.location ? (
+                      <div>
+                        <span className="font-semibold text-muted-foreground block mb-1">Area</span>
+                        <p className="font-medium bg-muted/40 p-2 rounded-md">{viewProperty.location}</p>
+                      </div>
+                    ) : null}
+
                     <div>
-                      <span className="font-semibold text-muted-foreground block mb-1">Area</span>
-                      <p className="font-medium bg-muted/40 p-2 rounded-md">{viewProperty.location}</p>
+                      <span className="font-semibold text-muted-foreground block mb-1">Latitude</span>
+                      <p className="font-medium bg-muted/40 p-2 rounded-md">
+                        {viewProperty.latitude != null ? Number(viewProperty.latitude).toFixed(8) : "—"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Longitude</span>
+                      <p className="font-medium bg-muted/40 p-2 rounded-md">
+                        {viewProperty.longitude != null ? Number(viewProperty.longitude).toFixed(8) : "—"}
+                      </p>
                     </div>
 
                     <div>

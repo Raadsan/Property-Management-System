@@ -86,7 +86,7 @@ export const sendContactMessage = async (req, res) => {
           </div>
 
           <p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center;">
-            This message was sent via the Damal Property Contact Form.
+            This message was sent via the Damal Platform Contact Form.
           </p>
         </div>
       `,

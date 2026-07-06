@@ -19,9 +19,9 @@ import { useLocations } from "@/hooks/useLocations";
 
 function ExploreContent() {
   const searchParams = useSearchParams();
-  const { cityOptions, defaultCity, getDistrictOptions } = useLocations();
+  const { cityOptions, getDistrictOptions } = useLocations();
 
-  const initialCity = searchParams.get("city") || defaultCity || "Mogadishu";
+  const initialCity = searchParams.get("city") || "";
   const initialDistrict = searchParams.get("district") || "";
   const initialType = searchParams.get("type") || "";
   const initialListingType = searchParams.get("listingType") || "";
@@ -35,7 +35,6 @@ function ExploreContent() {
   const [selectedDistrict, setSelectedDistrict] = React.useState(initialDistrict);
   const [selectedType, setSelectedType] = React.useState(initialType);
   const [selectedListingType, setSelectedListingType] = React.useState(initialListingType);
-  const [selectedStatus, setSelectedStatus] = React.useState("");
 
   React.useEffect(() => {
     const fetchProps = async () => {
@@ -91,15 +90,13 @@ function ExploreContent() {
       p.location.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = !selectedType || selectedType === "all" || p.propertyType?.name.toLowerCase() === selectedType.toLowerCase();
     const matchesListingType = !selectedListingType || selectedListingType === "all" || p.listingType.toUpperCase() === selectedListingType.toUpperCase();
-    const matchesStatus = !selectedStatus || selectedStatus === "all" || p.status.toUpperCase() === selectedStatus.toUpperCase();
+    const isAvailable = p.status.toUpperCase() === "AVAILABLE";
     
     let matchesPrice = true;
     if (initialMinPrice !== null && p.price < initialMinPrice) matchesPrice = false;
     if (initialMaxPrice !== null && p.price > initialMaxPrice) matchesPrice = false;
 
-    const isApproved = p.status !== "CREATED";
-
-    return matchesCity && matchesDistrict && matchesSearch && matchesType && matchesListingType && matchesPrice && isApproved && matchesStatus;
+    return matchesCity && matchesDistrict && matchesSearch && matchesType && matchesListingType && matchesPrice && isAvailable;
   });
 
   return (
@@ -147,20 +144,6 @@ function ExploreContent() {
           </div>
 
           <div className="flex flex-wrap items-end gap-4">
-            <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
-              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Status</Label>
-              <Select value={selectedStatus || "all"} onValueChange={setSelectedStatus}>
-                <SelectTrigger className="h-10 rounded-xl border-gray-200 bg-white text-black font-medium text-sm [&_svg]:text-black">
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="AVAILABLE">Available</SelectItem>
-                  <SelectItem value="BOOKED">Booked</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
             <div className="flex flex-col gap-1.5 min-w-[130px] flex-1 md:flex-none">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Prop Type</Label>
               <Select value={selectedType || "all"} onValueChange={setSelectedType}>
@@ -222,7 +205,7 @@ function ExploreContent() {
 
             <div className="ml-auto">
               <button
-                onClick={() => { setSelectedStatus(""); setSelectedType(""); setSelectedListingType(""); setSelectedCity("Mogadishu"); setSelectedDistrict(""); setSearchTerm(""); }}
+                onClick={() => { setSelectedType(""); setSelectedListingType(""); setSelectedCity(""); setSelectedDistrict(""); setSearchTerm(""); }}
                 className="px-4 py-2 rounded-xl text-[13px] font-bold text-gray-500 hover:bg-gray-50 transition-all border border-transparent hover:border-gray-200"
               >
                 Reset Filters

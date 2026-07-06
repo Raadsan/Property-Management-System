@@ -18,11 +18,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Somalia Real Estate | Buy, Sell & Rent Homes and Properties",
+  title: "Damal Platform: Somalia Real Estate | Buy, Sell & Rent Homes and Properties",
   description:
-    "Somalia Real Estate is Somalia's trusted digital platform for discovering, booking, buying, renting, and managing homes, apartments, hotels, and event venues. Verified listings, smart owner tools, and local expertise in one place.",
+    "Damal Platform is Somalia's trusted digital property service for discovering, booking, buying, renting, and managing homes, apartments, hotels, and event venues. Verified listings, smart owner tools, and local expertise in one place.",
   keywords: [
-    "Somalia Real Estate",
+    "Damal Platform",
+    "Damal platform",
     "Somalia real estate",
     "rent property Somalia",
     "buy property Mogadishu",
@@ -31,24 +32,24 @@ export const metadata: Metadata = {
     "verified property listings",
   ],
   openGraph: {
-    title: "Somalia Real Estate | Buy, Sell & Rent Homes and Properties",
+    title: "Damal Platform: Somalia Real Estate | Buy, Sell & Rent Homes and Properties",
     description:
-      "Discover, book, rent, and manage properties across Somalia. Verified listings, smart owner dashboards, and trusted local expertise.",
+      "Discover, book, rent, and manage properties across Somalia with Damal Platform. Verified listings, smart owner dashboards, and trusted local expertise.",
     type: "website",
     locale: "en_US",
-    siteName: "Somalia Real Estate",
+    siteName: "Damal Platform",
     images: [
       {
         url: "/logo-production.jpeg",
         width: 512,
         height: 512,
-        alt: "Somalia Real Estate logo",
+        alt: "Damal Platform logo",
       },
     ],
   },
   twitter: {
     card: "summary",
-    title: "Somalia Real Estate | Buy, Sell & Rent Homes and Properties",
+    title: "Damal Platform: Somalia Real Estate | Buy, Sell & Rent Homes and Properties",
     description:
       "Somalia's trusted platform to discover, book, rent, and manage properties with verified listings and local expertise.",
     images: ["/logo-production.jpeg"],

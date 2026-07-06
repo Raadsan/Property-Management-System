@@ -59,6 +59,7 @@ export function DataTable<TData, TValue>({
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
+  const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 })
 
   const table = useReactTable({
     data,
@@ -71,13 +72,28 @@ export function DataTable<TData, TValue>({
     getFilteredRowModel: getFilteredRowModel(),
     onColumnVisibilityChange: setColumnVisibility,
     onRowSelectionChange: setRowSelection,
+    onPaginationChange: setPagination,
+    autoResetPageIndex: false,
     state: {
       sorting,
       columnFilters,
       columnVisibility,
       rowSelection,
+      pagination,
     },
   })
+
+  const pageCount = table.getPageCount()
+  React.useEffect(() => {
+    if (pageCount > 0 && pagination.pageIndex > pageCount - 1) {
+      setPagination((prev) => ({ ...prev, pageIndex: pageCount - 1 }))
+    }
+  }, [pageCount, pagination.pageIndex])
+
+  const totalEntries = table.getFilteredRowModel().rows.length
+  const { pageIndex, pageSize } = table.getState().pagination
+  const rangeStart = totalEntries === 0 ? 0 : pageIndex * pageSize + 1
+  const rangeEnd = Math.min((pageIndex + 1) * pageSize, totalEntries)
 
   return (
     <div className="w-full space-y-4">
@@ -176,7 +192,18 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between px-2">
+      <div className="flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-muted-foreground">
+          Showing{" "}
+          <span className="font-semibold text-foreground">{rangeStart}</span>
+          {" "}to{" "}
+          <span className="font-semibold text-foreground">{rangeEnd}</span>
+          {" "}of{" "}
+          <span className="font-semibold text-foreground">{totalEntries}</span>
+          {" "}entries
+        </p>
+
+        <div className="flex flex-wrap items-center justify-between gap-4 sm:justify-end">
         <div className="flex items-center space-x-2">
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight">Rows per page</p>
           <Select
@@ -240,6 +267,7 @@ export function DataTable<TData, TValue>({
               <ChevronsRight className="h-4 w-4" />
             </Button>
           </div>
+        </div>
         </div>
       </div>
     </div>

@@ -29,11 +29,8 @@ export default function CityExplorer() {
   useEffect(() => {
     const fetchFeatured = async () => {
       try {
-        const data = await getProperties({ features: true });
-        const featured = data.filter(
-          (p) => p.status !== "CREATED" && p.features === true
-        );
-        setProperties(featured);
+        const data = await getProperties({ features: true, status: "AVAILABLE" });
+        setProperties(data.filter((p) => p.status === "AVAILABLE" && p.features === true));
       } catch (error) {
         console.error("Failed to fetch featured properties:", error);
       } finally {
@@ -98,8 +95,20 @@ export default function CityExplorer() {
           </h2>
         </div>
 
-        <div className="relative w-full h-[400px] md:h-[450px] my-6">
-          {properties.map((prop, index) => {
+        <div className="flex items-center gap-2 sm:gap-4 my-6">
+          {total > 1 && (
+            <button
+              type="button"
+              onClick={handlePrev}
+              aria-label="Previous property"
+              className="shrink-0 w-10 h-10 sm:w-[52px] sm:h-[52px] rounded-[14px] border bg-white flex items-center justify-center transition-all shadow-md border-gray-300 text-gray-500 hover:text-gray-800 hover:border-gray-400"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+
+          <div className="relative flex-1 min-w-0 h-[400px] md:h-[450px]">
+            {properties.map((prop, index) => {
             const rawDiff = (index - activeIndex + total) % total;
             let normDiff = rawDiff;
             if (rawDiff > total / 2) normDiff = rawDiff - total;
@@ -158,31 +167,27 @@ export default function CityExplorer() {
               </div>
             );
           })}
-        </div>
+          </div>
 
-        <div className="mt-8 md:mt-12">
-          <div className="flex items-center justify-between">
+          {total > 1 && (
             <button
-              onClick={handlePrev}
-              className="w-[52px] h-[52px] rounded-[14px] border bg-white flex items-center justify-center transition-all shadow-sm border-gray-300 text-gray-500 hover:text-gray-800 hover:border-gray-400"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-
-            <button
-              onClick={() => router.push("/explore")}
-              className="px-8 md:px-12 py-3.5 bg-[#214347] hover:bg-[#163033] text-white rounded-[14px] font-medium text-[15px] transition-all shadow-md"
-            >
-              Show all Property
-            </button>
-
-            <button
+              type="button"
               onClick={handleNext}
-              className="w-[52px] h-[52px] rounded-[14px] border bg-white flex items-center justify-center transition-all shadow-sm border-gray-300 text-gray-500 hover:text-gray-800 hover:border-gray-400"
+              aria-label="Next property"
+              className="shrink-0 w-10 h-10 sm:w-[52px] sm:h-[52px] rounded-[14px] border bg-white flex items-center justify-center transition-all shadow-md border-gray-300 text-gray-500 hover:text-gray-800 hover:border-gray-400"
             >
               <ChevronRight className="h-6 w-6" />
             </button>
-          </div>
+          )}
+        </div>
+
+        <div className="mt-8 md:mt-12 flex justify-center">
+          <button
+            onClick={() => router.push("/explore")}
+            className="px-8 md:px-12 py-3.5 bg-[#214347] hover:bg-[#163033] text-white rounded-[14px] font-medium text-[15px] transition-all shadow-md"
+          >
+            Show all Property
+          </button>
         </div>
       </div>
     </section>

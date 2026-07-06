@@ -136,6 +136,8 @@ model Property {
   area           Float?
   city           String
   district       String?
+  latitude       Float?
+  longitude      Float?
   sizeLabel      String?
   Bathrooms      Int             @default(0)
   Rooms          Int             @default(0)

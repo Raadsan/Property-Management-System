@@ -57,7 +57,7 @@ export default function WhyChooseUs() {
       <div className="container mx-auto px-6 max-w-6xl">
         <div className="text-center mb-16">
            <h2 className="text-3xl md:text-5xl font-extrabold text-gray-900 tracking-tight mb-4">
-             Why Choose <span className="text-[#214347]">Damal Property?</span>
+             Why Choose <span className="text-[#214347]">Damal Platform?</span>
            </h2>
            <p className="text-gray-500 text-[1.1rem] max-w-2xl mx-auto">
            Damal is transforming how people discover, book, rent, and manage properties across Somalia. Inspired by the Damal Tree—a symbol of trust, shelter, and community—we provide a modern digital platform that connects property owners, tenants, travelers, and businesses through a seamless and reliable experience.

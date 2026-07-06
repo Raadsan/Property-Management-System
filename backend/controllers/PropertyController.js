@@ -21,20 +21,22 @@ export const createProperty = async (req, res) => {
       title, description, location, city, district, country, price,
       ownerId, propertyTypeId, images: bodyImages, amenities: bodyAmenities,
       features: bodyFeatures, sizeLabel, area, listingType: bodyListingType,
-      status: bodyStatus, Rooms, Bathrooms, agentId, internalMessage
+      status: bodyStatus, Rooms, Bathrooms, agentId, internalMessage,
+      latitude, longitude
     } = req.body || {};
 
     console.log("Parsed fields:", { title, city, country, price, propertyTypeId, status: bodyStatus, agentId });
 
     const listingType = (bodyListingType || "RENT").trim().toUpperCase();
     const status = (bodyStatus || "CREATED").trim().toUpperCase();
+    const areaLocation = (location ?? "").trim();
 
-    // Validation
-    if (!title || !location || !city || !country || !price || !propertyTypeId) {
+    // Validation — area (location) is optional; city/district carry address details
+    if (!title || !city || !country || !price || !propertyTypeId) {
       console.warn("⚠️ Validation failed: Missing required fields");
       return res.status(400).json({
         message: "Missing required fields.",
-        received: { title: !!title, location: !!location, city: !!city, country: !!country, price: !!price, propertyTypeId: !!propertyTypeId }
+        received: { title: !!title, city: !!city, country: !!country, price: !!price, propertyTypeId: !!propertyTypeId }
       });
     }
 
@@ -76,6 +78,10 @@ export const createProperty = async (req, res) => {
     const parsedRooms = Rooms !== undefined ? parseInt(Rooms) : 0;
     const parsedBathrooms = Bathrooms !== undefined ? parseInt(Bathrooms) : 0;
     const parsedAgentId = agentId ? parseInt(agentId) : null;
+    const parsedLatitude =
+      latitude !== undefined && latitude !== "" ? parseFloat(latitude) : null;
+    const parsedLongitude =
+      longitude !== undefined && longitude !== "" ? parseFloat(longitude) : null;
 
     if (isNaN(parsedPrice) || isNaN(parsedPropertyTypeId) || (ownerId && isNaN(parsedOwnerId))) {
       console.warn("⚠️ Validation failed: Invalid numeric values");
@@ -85,15 +91,24 @@ export const createProperty = async (req, res) => {
       });
     }
 
+    if (
+      (parsedLatitude !== null && (isNaN(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90)) ||
+      (parsedLongitude !== null && (isNaN(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180))
+    ) {
+      return res.status(400).json({ message: "Invalid latitude or longitude values." });
+    }
+
     console.log("🚀 Attempting to create property in Prisma with status:", status);
 
     const property = await prisma.property.create({
       data: {
         title,
         description,
-        location,
+        location: areaLocation,
         city,
         district,
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
         country,
         price: parsedPrice,
         listingType,
@@ -136,10 +151,11 @@ export const createProperty = async (req, res) => {
 // @route   GET /api/properties
 export const getProperties = async (req, res) => {
   try {
-    const { city, country, rooms, minPrice, maxPrice, propertyTypeId, listingType, keyword, agentId, features: featuresFilter } = req.query;
+    const { city, country, rooms, minPrice, maxPrice, propertyTypeId, listingType, keyword, agentId, features: featuresFilter, status } = req.query;
 
     const where = {};
     if (featuresFilter === "true") where.features = true;
+    if (status) where.status = status.toString().trim().toUpperCase();
     if (city) {
       if (city === "Muqdisho" || city === "Mogadishu") {
         where.city = { in: ["Muqdisho", "Mogadishu"] };
@@ -255,7 +271,7 @@ export const updateProperty = async (req, res) => {
     if (updateFields.title) updateData.title = updateFields.title;
     if (updateFields.description !== undefined) updateData.description = updateFields.description;
     if (updateFields.internalMessage !== undefined) updateData.internalMessage = updateFields.internalMessage || null;
-    if (updateFields.location) updateData.location = updateFields.location;
+    if (updateFields.location !== undefined) updateData.location = updateFields.location.trim();
     if (updateFields.city) updateData.city = updateFields.city;
     if (updateFields.district !== undefined) updateData.district = updateFields.district;
     if (updateFields.country) updateData.country = updateFields.country;
@@ -285,6 +301,32 @@ export const updateProperty = async (req, res) => {
     if (updateFields.area !== undefined) {
       const parsedArea = parseFloat(updateFields.area);
       updateData.area = isNaN(parsedArea) ? null : parsedArea;
+    }
+
+    if (updateFields.latitude !== undefined) {
+      const raw = updateFields.latitude;
+      if (raw === "" || raw === null) {
+        updateData.latitude = null;
+      } else {
+        const parsedLatitude = parseFloat(raw);
+        if (isNaN(parsedLatitude) || parsedLatitude < -90 || parsedLatitude > 90) {
+          return res.status(400).json({ message: "Invalid latitude value." });
+        }
+        updateData.latitude = parsedLatitude;
+      }
+    }
+
+    if (updateFields.longitude !== undefined) {
+      const raw = updateFields.longitude;
+      if (raw === "" || raw === null) {
+        updateData.longitude = null;
+      } else {
+        const parsedLongitude = parseFloat(raw);
+        if (isNaN(parsedLongitude) || parsedLongitude < -180 || parsedLongitude > 180) {
+          return res.status(400).json({ message: "Invalid longitude value." });
+        }
+        updateData.longitude = parsedLongitude;
+      }
     }
 
     // Handle IMAGE REPLACEMENT

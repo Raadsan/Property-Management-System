@@ -375,7 +375,7 @@ export const forgotPassword = async (req, res) => {
           <p style="text-align: center; color: #888; font-size: 13px;">This code expires in <strong>10 minutes</strong>.</p>
           <p style="text-align: center; color: #888; font-size: 13px;">If you did not request this, please ignore this email.</p>
           <p style="margin-top: 30px; font-size: 12px; color: #888; text-align: center;">
-            Sent from Damal Property Management System.
+            Sent from Damal Platform.
           </p>
         </div>
       `

@@ -12,9 +12,9 @@ export default function FeaturedProperties() {
   useEffect(() => {
     const fetchProperties = async () => {
       try {
-        const data = await getProperties();
-        const approved = data.filter((p: Property) => p.status !== "CREATED");
-        setProperties(approved.slice(0, 6));
+        const data = await getProperties({ status: "AVAILABLE" });
+        const available = data.filter((p: Property) => p.status === "AVAILABLE");
+        setProperties(available.slice(0, 6));
       } catch (error) {
         console.error("Failed to fetch featured properties:", error);
       } finally {

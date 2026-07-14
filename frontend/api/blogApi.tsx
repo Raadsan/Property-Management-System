@@ -16,12 +16,20 @@ export interface Blog {
   content: string;
   image?: string;
   author: string;
+  socials: BlogSocial[];
   categoryId: number;
   category: {
     name: string;
   };
   createdAt: string;
   updatedAt: string;
+}
+
+export interface BlogSocial {
+  id: number;
+  blogId: number;
+  platform: string;
+  url: string;
 }
 
 export const getBlogs = async (categoryId?: number): Promise<Blog[]> => {

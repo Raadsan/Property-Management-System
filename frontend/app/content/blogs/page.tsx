@@ -48,6 +48,7 @@ export default function BlogsRegistrationPage() {
   const [content, setContent] = React.useState("")
   const [author, setAuthor] = React.useState("")
   const [categoryId, setCategoryId] = React.useState("")
+  const [socialLinks, setSocialLinks] = React.useState([{ platform: "", url: "" }])
   
   // File State
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -84,6 +85,9 @@ export default function BlogsRegistrationPage() {
     if (!title || !content || !author || !categoryId) {
       return toast.error("Please fill in all required fields.")
     }
+    if (socialLinks.some((social) => Boolean(social.platform.trim()) !== Boolean(social.url.trim()))) {
+      return toast.error("Each social media row needs both a platform and URL.")
+    }
 
     try {
       setIsSaving(true)
@@ -92,6 +96,7 @@ export default function BlogsRegistrationPage() {
       formData.append("content", content)
       formData.append("author", author)
       formData.append("categoryId", categoryId)
+      formData.append("socials", JSON.stringify(socialLinks.filter((social) => social.platform.trim() && social.url.trim())))
       
       if (selectedFile) {
         formData.append("image", selectedFile)
@@ -137,6 +142,9 @@ export default function BlogsRegistrationPage() {
     setContent(blog.content)
     setAuthor(blog.author)
     setCategoryId(blog.categoryId.toString())
+    setSocialLinks(blog.socials?.length
+      ? blog.socials.map(({ platform, url }) => ({ platform, url }))
+      : [{ platform: "", url: "" }])
     setSelectedFile(null)
     setIsModalOpen(true)
   }
@@ -152,6 +160,7 @@ export default function BlogsRegistrationPage() {
     setContent("")
     setAuthor("")
     setCategoryId("")
+    setSocialLinks([{ platform: "", url: "" }])
     setSelectedFile(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
@@ -324,6 +333,56 @@ Add hashtags on the last line:
                       Tip: Start sections with <code className="bg-muted px-1 rounded">## Title</code>, add links with{" "}
                       <code className="bg-muted px-1 rounded">[text](url)</code>, and put hashtags on the final line.
                     </p>
+                  </div>
+
+                  {/* Social Media */}
+                  <div className="space-y-3 md:col-span-2 p-4 border rounded-md bg-muted/20">
+                    <div>
+                      <Label className="text-sm font-semibold">Social Media Links</Label>
+                      <p className="text-[11px] text-muted-foreground mt-1">Optional links shown as icons on the blog details page.</p>
+                    </div>
+                    <div className="space-y-3">
+                      {socialLinks.map((social, index) => (
+                        <div className="grid grid-cols-[1fr_2fr_auto] gap-2 items-end" key={index}>
+                          <div className="space-y-1.5">
+                            <Label htmlFor={`social-platform-${index}`} className="text-xs">Platform</Label>
+                            <Input
+                              id={`social-platform-${index}`}
+                              value={social.platform}
+                              onChange={(e) => setSocialLinks((links) => links.map((item, i) => i === index ? { ...item, platform: e.target.value } : item))}
+                              placeholder="e.g. LinkedIn"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label htmlFor={`social-url-${index}`} className="text-xs">URL</Label>
+                            <Input
+                              id={`social-url-${index}`}
+                              type="url"
+                              value={social.url}
+                              onChange={(e) => setSocialLinks((links) => links.map((item, i) => i === index ? { ...item, url: e.target.value } : item))}
+                              placeholder="https://..."
+                            />
+                          </div>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            aria-label="Remove social link"
+                            onClick={() => setSocialLinks((links) => links.length === 1 ? [{ platform: "", url: "" }] : links.filter((_, i) => i !== index))}
+                          >
+                            <TrashIcon className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSocialLinks((links) => [...links, { platform: "", url: "" }])}
+                      >
+                        <PlusIcon className="mr-2 h-4 w-4" /> Add Social Link
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Image Upload */}

@@ -136,11 +136,6 @@ function ExploreContent() {
               placeholder="Search by title, location or neighborhood..."
               className="flex-1 py-3 px-3 bg-transparent outline-none text-gray-900 font-medium placeholder:text-gray-400"
             />
-            <div className="pr-1.5 hidden sm:block">
-              <div className="bg-[#214347]/5 text-[#214347] px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                {filteredProperties.length} Results
-              </div>
-            </div>
           </div>
 
           <div className="flex flex-wrap items-end gap-4">

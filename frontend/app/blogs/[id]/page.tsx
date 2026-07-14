@@ -7,13 +7,33 @@ import Footer from "@/components/landing/Footer";
 import { getBlogBySlug, Blog } from "@/api/blogApi";
 import { getMediaUrl } from "@/lib/mediaUrl";
 import { BlogContent } from "@/lib/renderBlogContent";
-import { Calendar, ArrowLeft, Loader2 } from "lucide-react";
+import { Calendar, ArrowLeft, Loader2, MessageCircle, Send, Play, AtSign, UserRound, Music2, BriefcaseBusiness, Code2, Camera, Link as LinkIcon, Share2, Mail, Copy, Check } from "lucide-react";
+
+const socialIcons = {
+  whatsapp: MessageCircle,
+  telegram: Send,
+  youtube: Play,
+  twitter: AtSign,
+  x: AtSign,
+  facebook: UserRound,
+  tiktok: Music2,
+  linkedin: BriefcaseBusiness,
+  github: Code2,
+  instagram: Camera,
+};
 
 export default function SingleBlogPage() {
   const { id: slug } = useParams();
   const router = useRouter();
   const [blog, setBlog] = useState<Blog | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+  const [pageUrl, setPageUrl] = useState("");
+
+  useEffect(() => {
+    setPageUrl(window.location.href);
+  }, []);
 
   useEffect(() => {
     const fetchBlog = async () => {
@@ -50,6 +70,33 @@ export default function SingleBlogPage() {
   }
 
   const authorInitial = blog.author?.charAt(0)?.toUpperCase() || "D";
+
+  const shareBlog = async () => {
+    const shareData = { title: blog.title, url: pageUrl || window.location.href };
+    if (navigator.share) {
+      await navigator.share(shareData).catch(() => undefined);
+    } else {
+      await navigator.clipboard.writeText(shareData.url);
+      setIsCopied(true);
+      window.setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(pageUrl || window.location.href);
+    setIsCopied(true);
+    window.setTimeout(() => setIsCopied(false), 2000);
+  };
+
+  const encodedUrl = encodeURIComponent(pageUrl);
+  const encodedTitle = encodeURIComponent(blog.title);
+  const shareOptions = [
+    { label: "Facebook", shortLabel: "f", color: "bg-[#1877F2]", href: `https://www.facebook.com/sharer/sharer.php?u=${encodedUrl}` },
+    { label: "X / Twitter", shortLabel: "𝕏", color: "bg-[#1DA1F2]", href: `https://twitter.com/intent/tweet?url=${encodedUrl}&text=${encodedTitle}` },
+    { label: "LinkedIn", shortLabel: "in", color: "bg-[#0A66C2]", href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodedUrl}` },
+    { label: "WhatsApp", icon: MessageCircle, color: "bg-[#25D366]", href: `https://wa.me/?text=${encodedTitle}%20${encodedUrl}` },
+    { label: "Email", icon: Mail, color: "bg-gray-600", href: `mailto:?subject=${encodedTitle}&body=${encodedUrl}` },
+  ];
 
   return (
     <main className="min-h-screen bg-white font-sans">
@@ -105,6 +152,76 @@ export default function SingleBlogPage() {
         </div>
 
         <BlogContent content={blog.content} />
+
+        <div className="flex flex-wrap items-center gap-2 mt-10 pt-7 border-t border-gray-200" aria-label="Blog social media links">
+            {blog.socials?.map((social) => {
+              const platformKey = social.platform.toLowerCase().trim() as keyof typeof socialIcons;
+              const Icon = socialIcons[platformKey] || LinkIcon;
+              return (
+                <a
+                  key={social.id}
+                  href={social.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={social.platform}
+                  title={social.platform}
+                  className="w-10 h-10 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-[#214347] hover:text-white transition-colors"
+                >
+                  <Icon className="w-[18px] h-[18px]" />
+                </a>
+              );
+            })}
+            {blog.socials?.length > 0 && <span className="w-px h-8 bg-gray-200 mx-1" />}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsShareOpen((open) => !open)}
+                aria-label="Share blog"
+                aria-expanded={isShareOpen}
+                title="Share blog"
+                className="w-10 h-10 rounded-full bg-gray-100 text-gray-900 flex items-center justify-center hover:bg-[#214347] hover:text-white transition-colors"
+              >
+                <Share2 className="w-[18px] h-[18px]" />
+              </button>
+
+              {isShareOpen && (
+                <div className="absolute bottom-12 left-0 sm:left-auto sm:right-0 z-30 w-[270px] rounded-xl border border-gray-200 bg-white p-3 shadow-xl">
+                  <p className="mb-3 text-sm font-bold text-gray-900">Share this article</p>
+                  <button
+                    type="button"
+                    onClick={shareBlog}
+                    className="mb-3 flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-[#214347] text-sm font-bold text-white hover:bg-[#173236]"
+                  >
+                    <Share2 className="h-4 w-4" /> Share
+                  </button>
+                  <div className="flex flex-wrap gap-2">
+                    {shareOptions.map(({ label, shortLabel, icon: Icon, color, href }) => (
+                      <a
+                        key={label}
+                        href={href}
+                        target={label === "Email" ? undefined : "_blank"}
+                        rel="noopener noreferrer"
+                        aria-label={`Share on ${label}`}
+                        title={label}
+                        className={`flex h-9 w-9 items-center justify-center rounded-full text-sm font-black text-white transition-transform hover:scale-105 ${color}`}
+                      >
+                        {Icon ? <Icon className="h-[18px] w-[18px]" /> : shortLabel}
+                      </a>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={copyLink}
+                      aria-label="Copy article link"
+                      title={isCopied ? "Copied" : "Copy link"}
+                      className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 text-gray-900 transition-transform hover:scale-105"
+                    >
+                      {isCopied ? <Check className="h-[18px] w-[18px] text-green-600" /> : <Copy className="h-[18px] w-[18px]" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
       </section>
 
       <Footer />

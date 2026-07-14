@@ -343,12 +343,23 @@ model Blog {
   content    String       @db.LongText
   image      String?
   author     String
+  socials    BlogSocial[]
   categoryId Int
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
   category   BlogCategory @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])
+}
+
+model BlogSocial {
+  id       Int    @id @default(autoincrement())
+  blogId   Int
+  blog     Blog   @relation(fields: [blogId], references: [id], onDelete: Cascade)
+  platform String
+  url      String
+
+  @@index([blogId])
 }
 
 enum BookingStatus {

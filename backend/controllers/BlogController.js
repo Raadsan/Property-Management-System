@@ -20,15 +20,42 @@ const parseSocials = (value) => {
     });
 };
 
+const isAdmin = (req) => req.user?.role?.name?.toUpperCase() === 'ADMIN';
+const canReadAllContent = (req) => ['ADMIN', 'OPERATIONS'].includes(req.user?.role?.name?.toUpperCase());
+
+const canManageBlog = async (req, res, blogId) => {
+  if (isAdmin(req)) return true;
+  const blog = await prisma.blog.findUnique({ where: { id: blogId }, select: { createdById: true, author: true } });
+  if (!blog) {
+    res.status(404).json({ message: 'Blog not found' });
+    return false;
+  }
+  const isLegacyAuthor = blog.createdById === null && blog.author.trim().toLowerCase() === req.user?.name?.trim().toLowerCase();
+  if (blog.createdById !== req.user?.id && !isLegacyAuthor) {
+    res.status(403).json({ message: 'Access denied — you can only manage blogs you registered' });
+    return false;
+  }
+  return true;
+};
+
 // @desc    Get all blogs
 // @route   GET /api/blogs
 export const getBlogs = async (req, res) => {
-  const { categoryId } = req.query;
+  const { categoryId, mine } = req.query;
   
   try {
     const where = {};
     if (categoryId) {
       where.categoryId = parseInt(categoryId);
+    }
+    if (mine === 'true') {
+      if (!req.user) return res.status(401).json({ message: 'Authentication required' });
+      if (!canReadAllContent(req)) {
+        where.OR = [
+          { createdById: req.user.id },
+          { createdById: null, author: req.user.name }
+        ];
+      }
     }
 
     const blogs = await prisma.blog.findMany({
@@ -92,6 +119,7 @@ export const createBlog = async (req, res) => {
         title,
         content,
         author,
+        createdById: req.user.id,
         socials: { create: socialLinks },
         categoryId: parseInt(categoryId),
         image: imagePath
@@ -116,6 +144,7 @@ export const updateBlog = async (req, res) => {
   const { title, content, author, categoryId, image, socials } = req.body;
 
   try {
+    if (!(await canManageBlog(req, res, parseInt(id)))) return;
     const updateData = {};
     if (title) updateData.title = title;
     if (content) updateData.content = content;
@@ -153,6 +182,7 @@ export const updateBlog = async (req, res) => {
 export const deleteBlog = async (req, res) => {
   const { id } = req.params;
   try {
+    if (!(await canManageBlog(req, res, parseInt(id)))) return;
     await prisma.blog.delete({
       where: { id: parseInt(id) }
     });

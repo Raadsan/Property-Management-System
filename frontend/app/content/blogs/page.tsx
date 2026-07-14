@@ -58,7 +58,7 @@ export default function BlogsRegistrationPage() {
     if (!silent) setIsLoading(true)
     try {
       const [blogsData, catsData] = await Promise.all([
-        getBlogs(),
+        getBlogs(undefined, { mine: true }),
         getBlogCategories()
       ])
       setBlogs(blogsData)

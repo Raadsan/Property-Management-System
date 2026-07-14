@@ -117,8 +117,8 @@ export const updateMenu = async (req, res) => {
             include: { subMenus: true }
         });
 
-        // Automatically assign view permissions for newly created submenus
-        // to roles that already have access to the parent menu
+        // Create explicit default-deny records for new submenus. Access must be
+        // granted later from the Role Permissions matrix.
         if (subMenus && Array.isArray(subMenus)) {
             const roleMenuAccesses = await prisma.roleMenuAccess.findMany({
                 where: { menuId: parseInt(id) }
@@ -137,7 +137,11 @@ export const updateMenu = async (req, res) => {
                         create: {
                             roleMenuAccessId: rma.id,
                             subMenuId: sm.id,
-                            canView: rma.canView
+                            canView: false,
+                            canAdd: false,
+                            canEdit: false,
+                            canDelete: false,
+                            canApprove: false
                         }
                     });
                 }

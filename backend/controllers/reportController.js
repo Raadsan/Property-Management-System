@@ -126,3 +126,50 @@ export const getUserActivityReport = async (req, res) => {
     res.status(500).json({ message: "Error fetching user activity report", error: error.message });
   }
 };
+
+export const getBlogReport = async (req, res) => {
+  try {
+    const canReadAllContent = ['ADMIN', 'OPERATIONS'].includes(req.user?.role?.name?.toUpperCase());
+    const where = canReadAllContent
+      ? {}
+      : {
+          OR: [
+            { createdById: req.user.id },
+            { createdById: null, author: req.user.name }
+          ]
+        };
+
+    const blogs = await prisma.blog.findMany({
+      where,
+      include: {
+        category: { select: { id: true, name: true } },
+        createdBy: { select: { id: true, name: true } },
+        _count: { select: { socials: true } }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    const monthStart = new Date();
+    monthStart.setDate(1);
+    monthStart.setHours(0, 0, 0, 0);
+
+    const categoryMap = new Map();
+    for (const blog of blogs) {
+      const category = blog.category?.name || 'Uncategorized';
+      const current = categoryMap.get(blog.categoryId) || { id: blog.categoryId, name: category, count: 0 };
+      current.count += 1;
+      categoryMap.set(blog.categoryId, current);
+    }
+
+    res.status(200).json({
+      blogs,
+      totalBlogs: blogs.length,
+      totalCategories: categoryMap.size,
+      totalAuthors: new Set(blogs.map((blog) => blog.author.trim().toLowerCase())).size,
+      publishedThisMonth: blogs.filter((blog) => blog.createdAt >= monthStart).length,
+      categories: [...categoryMap.values()].sort((a, b) => b.count - a.count)
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching blog report', error: error.message });
+  }
+};

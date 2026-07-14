@@ -26,6 +26,7 @@ export const syncRolePermissions = async (req, res) => {
           canAdd: menuItem.canAdd || false,
           canEdit: menuItem.canEdit || false,
           canDelete: menuItem.canDelete || false,
+          canApprove: menuItem.canApprove || false,
           subMenus: {
             create: menuItem.subMenus?.map(sm => ({
               subMenuId: parseInt(sm.subMenuId),
@@ -33,6 +34,7 @@ export const syncRolePermissions = async (req, res) => {
               canAdd: sm.canAdd || false,
               canEdit: sm.canEdit || false,
               canDelete: sm.canDelete || false,
+              canApprove: sm.canApprove || false,
             })) || []
           }
         })) || []

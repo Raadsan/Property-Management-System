@@ -32,6 +32,7 @@ export interface Property {
   Bathrooms?: number;
   ownerId?: number;
   agentId?: number;
+  createdById?: number;
   propertyTypeId: number;
   features?: boolean;
   internalMessage?: string | null;
@@ -41,8 +42,9 @@ export interface Property {
   images?: PropertyImage[];
   amenities?: PropertyFeature[];
   propertyType?: { name: string };
-  owner?: { name: string; phone: string; email?: string; photo?: string };
-  agent?: { name: string; phone: string; email?: string; photo?: string };
+  owner?: { name: string; phone: string; email?: string; photo?: string; role?: { name: string } };
+  agent?: { name: string; phone: string; email?: string; photo?: string; role?: { name: string } };
+  createdBy?: { id: number; name: string; role?: { name: string } };
   bookings?: { userId: number }[];
 }
 
@@ -50,12 +52,14 @@ export const getProperties = async (params?: {
   agentId?: number;
   features?: boolean;
   status?: string;
+  mine?: boolean;
 }): Promise<Property[]> => {
   const response = await api.get("/properties", {
     params: {
       agentId: params?.agentId,
       features: params?.features ? "true" : undefined,
       status: params?.status,
+      mine: params?.mine ? "true" : undefined,
     },
   });
   return response.data;
@@ -79,6 +83,11 @@ export const cancelBooking = async (id: number, data: { userId: number }): Promi
 export const approveProperty = async (id: number): Promise<any> => {
   const response = await api.patch(`/properties/${id}/approve`);
   return response.data;
+};
+
+export const advancePropertyStatus = async (id: number): Promise<Property> => {
+  const response = await api.patch(`/properties/${id}/status/advance`);
+  return response.data.property;
 };
 
 // Uses FormData to support image uploads alongside standard HTTP fields

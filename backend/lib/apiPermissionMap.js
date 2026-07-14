@@ -39,7 +39,8 @@ export const API_PERMISSION_MAP = {
 
   "POST /api/properties": { menuPath: "/content/properties", action: "add" },
   "PATCH /api/properties/:id": { menuPath: "/content/properties", action: "edit" },
-  "PATCH /api/properties/:id/approve": { menuPath: "/content/properties", action: "edit" },
+  "PATCH /api/properties/:id/approve": { menuPath: "/content/properties", action: "approve" },
+  "PATCH /api/properties/:id/status/advance": { menuPath: "/content/properties", action: "approve" },
   "DELETE /api/properties/:id": { menuPath: "/content/properties", action: "delete" },
 
   "POST /api/blogs": { menuPath: "/content/blogs", action: "add" },
@@ -75,6 +76,7 @@ export const API_PERMISSION_MAP = {
   "GET /api/reports/properties": { menuPath: "/reports", action: "view" },
   "GET /api/reports/categories": { menuPath: "/reports", action: "view" },
   "GET /api/reports/users": { menuPath: "/reports", action: "view" },
+  "GET /api/reports/blogs": { menuPath: "/reports/blogs", action: "view" },
 
   "POST /api/payments": { menuPath: "/settings/payments", action: "add" },
   "GET /api/payments": { menuPath: "/settings/payments", action: "view" },

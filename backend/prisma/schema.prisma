@@ -56,10 +56,11 @@ model RoleMenuAccess {
   id                Int                 @id @default(autoincrement())
   rolePermissionsId Int
   menuId            Int
-  canView           Boolean             @default(true)
+  canView           Boolean             @default(false)
   canAdd            Boolean             @default(false)
   canEdit           Boolean             @default(false)
   canDelete         Boolean             @default(false)
+  canApprove        Boolean             @default(false)
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   menu              Menu                @relation(fields: [menuId], references: [id], onDelete: Cascade)
@@ -74,10 +75,11 @@ model RoleSubMenuAccess {
   id               Int            @id @default(autoincrement())
   roleMenuAccessId Int
   subMenuId        Int
-  canView          Boolean        @default(true)
+  canView          Boolean        @default(false)
   canAdd           Boolean        @default(false)
   canEdit          Boolean        @default(false)
   canDelete        Boolean        @default(false)
+  canApprove       Boolean        @default(false)
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
   roleMenuAccess   RoleMenuAccess @relation(fields: [roleMenuAccessId], references: [id], onDelete: Cascade)
@@ -108,6 +110,8 @@ model User {
   payments         Payment[]
   propertiesOwned    Property[]  @relation("OwnerProperties")
   propertiesAssigned Property[]  @relation("AgentProperties")
+  propertiesCreated  Property[]  @relation("PropertyCreator")
+  blogsCreated       Blog[]      @relation("BlogCreator")
   role               Role        @relation(fields: [roleId], references: [id])
   assignedVideos   Video[]     @relation("AgentVideos")
   videos           Video[]     @relation("OwnerVideos")
@@ -146,6 +150,7 @@ model Property {
   Rooms          Int             @default(0)
   country        String?
   agentId        Int?
+  createdById    Int?
   features       Boolean         @default(false)
   internalMessage String?        @db.Text
   bookings       Booking[]
@@ -154,12 +159,14 @@ model Property {
   inquiries      PropertyInquiry[]
   agent          User?           @relation("AgentProperties", fields: [agentId], references: [id])
   owner          User?           @relation("OwnerProperties", fields: [ownerId], references: [id], onDelete: Cascade)
+  createdBy      User?           @relation("PropertyCreator", fields: [createdById], references: [id], onDelete: SetNull)
   propertyType   PropertyType    @relation(fields: [propertyTypeId], references: [id])
   images         PropertyImage[]
 
   @@index([propertyTypeId])
   @@index([ownerId])
   @@index([agentId])
+  @@index([createdById])
 }
 
 model PropertyInquiry {
@@ -344,12 +351,15 @@ model Blog {
   image      String?
   author     String
   socials    BlogSocial[]
+  createdById Int?
+  createdBy   User?        @relation("BlogCreator", fields: [createdById], references: [id], onDelete: SetNull)
   categoryId Int
   createdAt  DateTime     @default(now())
   updatedAt  DateTime     @updatedAt
   category   BlogCategory @relation(fields: [categoryId], references: [id])
 
   @@index([categoryId])
+  @@index([createdById])
 }
 
 model BlogSocial {

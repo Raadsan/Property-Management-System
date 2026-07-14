@@ -5,6 +5,7 @@ const ACTION_FIELDS = {
   add: "canAdd",
   edit: "canEdit",
   delete: "canDelete",
+  approve: "canApprove",
 };
 
 export function normalizePath(path) {
@@ -13,17 +14,18 @@ export function normalizePath(path) {
 }
 
 function flagsFromRecord(record) {
-  if (!record) return { view: false, add: false, edit: false, delete: false };
+  if (!record) return { view: false, add: false, edit: false, delete: false, approve: false };
   return {
     view: Boolean(record.canView),
     add: Boolean(record.canAdd),
     edit: Boolean(record.canEdit),
     delete: Boolean(record.canDelete),
+    approve: Boolean(record.canApprove),
   };
 }
 
 function fullAccess() {
-  return { view: true, add: true, edit: true, delete: true };
+  return { view: true, add: true, edit: true, delete: true, approve: true };
 }
 
 /** Sidebar menus — same data the frontend uses */

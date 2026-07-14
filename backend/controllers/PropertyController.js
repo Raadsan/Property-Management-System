@@ -10,6 +10,27 @@ const withSortedImages = (property) => ({
 });
 
 const withSortedImagesList = (properties) => properties.map(withSortedImages);
+const isAdmin = (req) => req.user?.role?.name?.toUpperCase() === "ADMIN";
+const canReadAllContent = (req) => ['ADMIN', 'OPERATIONS'].includes(req.user?.role?.name?.toUpperCase());
+
+const canManageProperty = async (req, res, propertyId) => {
+  if (isAdmin(req)) return true;
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { createdById: true, ownerId: true, agentId: true }
+  });
+  if (!property) {
+    res.status(404).json({ message: "Property not found" });
+    return false;
+  }
+  const isLegacyOwnerOrAgent = property.createdById === null &&
+    (property.ownerId === req.user?.id || property.agentId === req.user?.id);
+  if (property.createdById !== req.user?.id && !isLegacyOwnerOrAgent) {
+    res.status(403).json({ message: "Access denied — you can only manage properties you registered" });
+    return false;
+  }
+  return true;
+};
 
 // @desc    Create a new property
 // @route   POST /api/properties
@@ -21,14 +42,14 @@ export const createProperty = async (req, res) => {
       title, description, location, city, district, country, price,
       ownerId, propertyTypeId, images: bodyImages, amenities: bodyAmenities,
       features: bodyFeatures, sizeLabel, area, listingType: bodyListingType,
-      status: bodyStatus, Rooms, Bathrooms, agentId, internalMessage,
+      Rooms, Bathrooms, agentId, internalMessage,
       latitude, longitude
     } = req.body || {};
 
-    console.log("Parsed fields:", { title, city, country, price, propertyTypeId, status: bodyStatus, agentId });
+    console.log("Parsed fields:", { title, city, country, price, propertyTypeId, agentId });
 
     const listingType = (bodyListingType || "RENT").trim().toUpperCase();
-    const status = (bodyStatus || "CREATED").trim().toUpperCase();
+    const status = "CREATED";
     const areaLocation = (location ?? "").trim();
 
     // Validation — area (location) is optional; city/district carry address details
@@ -122,6 +143,7 @@ export const createProperty = async (req, res) => {
         area: isNaN(parsedArea) ? null : parsedArea,
         features,
         internalMessage: internalMessage || null,
+        createdById: req.user.id,
         images: images && images.length > 0 ? {
           create: sortMediaPayloadVideosFirst(images).map(({ url, type }) => ({ url, type }))
         } : undefined,
@@ -151,9 +173,19 @@ export const createProperty = async (req, res) => {
 // @route   GET /api/properties
 export const getProperties = async (req, res) => {
   try {
-    const { city, country, rooms, minPrice, maxPrice, propertyTypeId, listingType, keyword, agentId, features: featuresFilter, status } = req.query;
+    const { city, country, rooms, minPrice, maxPrice, propertyTypeId, listingType, keyword, agentId, features: featuresFilter, status, mine } = req.query;
 
     const where = {};
+    if (mine === "true") {
+      if (!req.user) return res.status(401).json({ message: "Authentication required" });
+      if (!canReadAllContent(req)) {
+        where.OR = [
+          { createdById: req.user.id },
+          { createdById: null, ownerId: req.user.id },
+          { createdById: null, agentId: req.user.id }
+        ];
+      }
+    }
     if (featuresFilter === "true") where.features = true;
     if (status) where.status = status.toString().trim().toUpperCase();
     if (city) {
@@ -189,8 +221,9 @@ export const getProperties = async (req, res) => {
         images: { orderBy: { id: 'desc' } },
         amenities: true,
         propertyType: { select: { name: true } },
-        owner: { select: { name: true, phone: true } },
-        agent: { select: { name: true, phone: true, email: true } }
+        owner: { select: { name: true, phone: true, role: { select: { name: true } } } },
+        agent: { select: { name: true, phone: true, email: true, role: { select: { name: true } } } },
+        createdBy: { select: { id: true, name: true, role: { select: { name: true } } } }
       }
     });
     return res.status(200).json(sanitizePropertiesForAudience(withSortedImagesList(properties), req));
@@ -264,6 +297,8 @@ export const updateProperty = async (req, res) => {
       return res.status(400).json({ message: "Invalid property ID provided." });
     }
 
+    if (!(await canManageProperty(req, res, propertyId))) return;
+
     const updateFields = req.body || {};
 
     // Process numeric and other fields
@@ -279,7 +314,6 @@ export const updateProperty = async (req, res) => {
     if (updateFields.Bathrooms !== undefined) updateData.Bathrooms = parseInt(updateFields.Bathrooms) || 0;
     if (updateFields.price) updateData.price = parseFloat(updateFields.price);
     if (updateFields.listingType) updateData.listingType = updateFields.listingType.trim().toUpperCase();
-    if (updateFields.status) updateData.status = updateFields.status.trim().toUpperCase();
 
     if (updateFields.ownerId) {
       updateData.ownerId = parseInt(updateFields.ownerId);
@@ -400,6 +434,7 @@ export const approveProperty = async (req, res) => {
   }
 
   try {
+    if (!(await canManageProperty(req, res, propertyId))) return;
     const updatedProperty = await prisma.property.update({
       where: { id: propertyId },
       data: { status: 'AVAILABLE' }
@@ -418,12 +453,52 @@ export const approveProperty = async (req, res) => {
   }
 };
 
+// @desc    Advance property status (CREATED -> AVAILABLE -> BOOKED)
+// @route   PATCH /api/properties/:id/status/advance
+export const advancePropertyStatus = async (req, res) => {
+  const propertyId = parseInt(req.params.id);
+  if (isNaN(propertyId)) {
+    return res.status(400).json({ message: "Invalid property ID provided." });
+  }
+
+  try {
+    if (!(await canManageProperty(req, res, propertyId))) return;
+
+    const property = await prisma.property.findUnique({
+      where: { id: propertyId },
+      select: { status: true }
+    });
+    const nextStatus = property?.status === 'CREATED'
+      ? 'AVAILABLE'
+      : property?.status === 'AVAILABLE'
+        ? 'BOOKED'
+        : null;
+
+    if (!nextStatus) {
+      return res.status(400).json({ message: `Status ${property?.status || 'UNKNOWN'} cannot be advanced` });
+    }
+
+    const updatedProperty = await prisma.property.update({
+      where: { id: propertyId },
+      data: { status: nextStatus }
+    });
+
+    return res.status(200).json({
+      message: `Property status changed to ${nextStatus}`,
+      property: withSortedImages(updatedProperty)
+    });
+  } catch (error) {
+    return res.status(500).json({ message: "Error advancing property status", error: error.message });
+  }
+};
+
 // @desc    Delete a property
 // @route   DELETE /api/properties/:id
 export const deleteProperty = async (req, res) => {
   const { id } = req.params;
   const propertyId = parseInt(id);
   try {
+    if (!(await canManageProperty(req, res, propertyId))) return;
     // Prevent foreign key constraint errors by gracefully deleting related records first
     await prisma.propertyImage.deleteMany({ where: { propertyId } });
     await prisma.feature.deleteMany({ where: { propertyId } });

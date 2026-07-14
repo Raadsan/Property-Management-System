@@ -80,7 +80,7 @@ export interface LoginResponse {
   user: User;
   token: string;
   menus?: Menu[];
-  permissions?: Record<string, { view: boolean; add: boolean; edit: boolean; delete: boolean }>;
+  permissions?: Record<string, { view: boolean; add: boolean; edit: boolean; delete: boolean; approve: boolean }>;
 }
 
 export interface UserAccess {
@@ -88,7 +88,7 @@ export interface UserAccess {
   roleName: string | null;
   isAdmin: boolean;
   menus: Menu[];
-  permissions: Record<string, { view: boolean; add: boolean; edit: boolean; delete: boolean }>;
+  permissions: Record<string, { view: boolean; add: boolean; edit: boolean; delete: boolean; approve: boolean }>;
 }
 
 export const getMyAccess = async (): Promise<UserAccess> => {

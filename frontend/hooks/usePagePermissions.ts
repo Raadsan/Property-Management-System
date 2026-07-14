@@ -9,6 +9,7 @@ export type PagePermissions = {
   canAdd: boolean;
   canEdit: boolean;
   canDelete: boolean;
+  canApprove: boolean;
   isLoaded: boolean;
 };
 
@@ -16,6 +17,7 @@ const EMPTY: PagePermissions = {
   canAdd: false,
   canEdit: false,
   canDelete: false,
+  canApprove: false,
   isLoaded: false,
 };
 
@@ -25,16 +27,17 @@ export function usePagePermissions(menuPath: string): PagePermissions {
   useEffect(() => {
     let active = true;
 
-    const applyFlags = (flags: { view: boolean; add: boolean; edit: boolean; delete: boolean } | null) => {
+    const applyFlags = (flags: { view: boolean; add: boolean; edit: boolean; delete: boolean; approve: boolean } | null) => {
       if (!active) return;
       if (!flags?.view) {
-        setPermissions({ canAdd: false, canEdit: false, canDelete: false, isLoaded: true });
+        setPermissions({ canAdd: false, canEdit: false, canDelete: false, canApprove: false, isLoaded: true });
         return;
       }
       setPermissions({
-        canAdd: flags.add,
-        canEdit: flags.edit,
-        canDelete: flags.delete,
+        canAdd: Boolean(flags.add),
+        canEdit: Boolean(flags.edit),
+        canDelete: Boolean(flags.delete),
+        canApprove: Boolean(flags.approve),
         isLoaded: true,
       });
     };
@@ -43,10 +46,10 @@ export function usePagePermissions(menuPath: string): PagePermissions {
       const path = normalizePath(menuPath);
       let map = getPermissionsMap();
       let flags = getFlagsForPath(path, map);
+      const hasCachedFlags = Boolean(flags);
 
       if (flags) {
         applyFlags(flags);
-        return;
       }
 
       try {
@@ -57,7 +60,7 @@ export function usePagePermissions(menuPath: string): PagePermissions {
         flags = getFlagsForPath(path, map, access.isAdmin);
         applyFlags(flags);
       } catch {
-        if (active) setPermissions({ ...EMPTY, isLoaded: true });
+        if (active && !hasCachedFlags) setPermissions({ ...EMPTY, isLoaded: true });
       }
     };
 

@@ -9,7 +9,8 @@ import {
   getBookingsByUser,
   getCityStats,
   cancelBooking,
-  approveProperty
+  approveProperty,
+  advancePropertyStatus
 } from '../controllers/PropertyController.js';
 import { upload } from '../lib/upload.js';
 import { protect, requireStaff, optionalProtect } from '../middlewares/authMiddleware.js';
@@ -30,7 +31,8 @@ router.post('/:id/cancel', protect, cancelBooking);
 // Staff-only property management
 router.post('/', protect, requireStaff, authorize('/content/properties', 'add'), upload.array('images', 30), createProperty);
 router.patch('/:id', protect, requireStaff, authorize('/content/properties', 'edit'), upload.array('images', 30), updateProperty);
-router.patch('/:id/approve', protect, requireStaff, authorize('/content/properties', 'edit'), approveProperty);
+router.patch('/:id/approve', protect, requireStaff, authorize('/content/properties', 'approve'), approveProperty);
+router.patch('/:id/status/advance', protect, requireStaff, authorize('/content/properties', 'approve'), advancePropertyStatus);
 router.delete('/:id', protect, requireStaff, authorize('/content/properties', 'delete'), deleteProperty);
 
 export default router;

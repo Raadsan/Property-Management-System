@@ -9,6 +9,7 @@ export interface RoleSubMenuAccess {
   canAdd: boolean;
   canEdit: boolean;
   canDelete: boolean;
+  canApprove: boolean;
 }
 
 export interface RoleMenuAccess {
@@ -20,6 +21,7 @@ export interface RoleMenuAccess {
   canAdd: boolean;
   canEdit: boolean;
   canDelete: boolean;
+  canApprove: boolean;
   subMenus?: RoleSubMenuAccess[];
 }
 

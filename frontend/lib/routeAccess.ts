@@ -5,6 +5,7 @@ export type PermissionFlags = {
   add: boolean;
   edit: boolean;
   delete: boolean;
+  approve: boolean;
 };
 
 export function normalizePath(path: string): string {
@@ -28,7 +29,7 @@ export function getFlagsForPath(
   isAdmin = false
 ): PermissionFlags | null {
   if (isAdmin) {
-    return { view: true, add: true, edit: true, delete: true };
+    return { view: true, add: true, edit: true, delete: true, approve: true };
   }
 
   return permissions[normalizePath(path)] ?? null;

@@ -16,6 +16,7 @@ export interface Blog {
   content: string;
   image?: string;
   author: string;
+  createdById?: number;
   socials: BlogSocial[];
   categoryId: number;
   category: {
@@ -32,8 +33,8 @@ export interface BlogSocial {
   url: string;
 }
 
-export const getBlogs = async (categoryId?: number): Promise<Blog[]> => {
-  const params = categoryId ? { categoryId } : {};
+export const getBlogs = async (categoryId?: number, options?: { mine?: boolean }): Promise<Blog[]> => {
+  const params = { categoryId, mine: options?.mine ? "true" : undefined };
   const response = await api.get("/blogs", { params });
   return response.data;
 };

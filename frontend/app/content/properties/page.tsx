@@ -17,7 +17,7 @@ import {
   updateProperty,
   deleteProperty,
   bookProperty,
-  approveProperty,
+  advancePropertyStatus,
   Property
 } from "@/api/propertyApi"
 
@@ -179,6 +179,7 @@ export default function PropertiesPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
   const [deletingId, setDeletingId] = React.useState<number | null>(null)
+  const [advancingId, setAdvancingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentProperty, setCurrentProperty] = React.useState<Property | null>(null)
 
@@ -193,6 +194,7 @@ export default function PropertiesPage() {
   const [filterCity, setFilterCity] = React.useState<string>("all")
   const [filterDistrict, setFilterDistrict] = React.useState<string>("all")
   const [filterFeature, setFilterFeature] = React.useState<string>("all")
+  const [filterRole, setFilterRole] = React.useState<string>("all")
 
   // Form State
   const [title, setTitle] = React.useState("")
@@ -208,7 +210,6 @@ export default function PropertiesPage() {
   }, [defaultCity])
 
   const [price, setPrice] = React.useState("")
-  const [status, setStatus] = React.useState<string>("CREATED")
   const [propertyTypeId, setPropertyTypeId] = React.useState<string>("")
   const [ownerId, setOwnerId] = React.useState<string>("")
   const [agentId, setAgentId] = React.useState<string>("")
@@ -242,7 +243,7 @@ export default function PropertiesPage() {
       const isAgent = loggedInUser?.role?.name?.toLowerCase() === "agent"
 
       const [propsData, catsData, ownersData, agentsData] = await Promise.all([
-        getProperties(isAgent && loggedInUser ? { agentId: loggedInUser.id } : {}),
+        getProperties({ mine: true }),
         getPropertyTypes(),
         getUsersByRole("Owner"),
         getUsersByRole("Agent"),
@@ -352,7 +353,6 @@ export default function PropertiesPage() {
       formData.append("country", "Somalia")
       formData.append("price", price)
       formData.append("listingType", listingType)
-      formData.append("status", status)
       if (ownerId) formData.append("ownerId", ownerId)
       if (agentId) formData.append("agentId", agentId)
       formData.append("propertyTypeId", propertyTypeId)
@@ -452,15 +452,18 @@ export default function PropertiesPage() {
     setIsBookingModalOpen(true)
   }
 
-  const handleApprove = async (id: number) => {
-    if (!confirm("Are you sure you want to approve this property? It will become visible to all users.")) return
-
+  const handleAdvanceStatus = async (property: Property) => {
+    const nextStatus = property.status === "CREATED" ? "AVAILABLE" : "BOOKED"
+    if (!confirm(`Change this property status from ${property.status} to ${nextStatus}?`)) return
     try {
-      await approveProperty(id)
-      toast.success("Property approved and is now live!")
+      setAdvancingId(property.id)
+      await advancePropertyStatus(property.id)
+      toast.success(`Property status changed to ${nextStatus}`)
       await loadData(true)
-    } catch (error) {
-      toast.error("Failed to approve property")
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "Failed to change property status")
+    } finally {
+      setAdvancingId(null)
     }
   }
 
@@ -477,7 +480,6 @@ export default function PropertiesPage() {
       setSelectedDistrict(prop.district || "")
       setPrice(prop.price.toString())
       setListingType(prop.listingType)
-      setStatus(prop.status)
       setOwnerId(prop.ownerId?.toString() || "")
       setAgentId(prop.agentId?.toString() || "")
       setPropertyTypeId(prop.propertyTypeId.toString())
@@ -498,7 +500,6 @@ export default function PropertiesPage() {
       setSelectedCity(defaultCity || "Mogadishu")
       setPrice("")
       setListingType("RENT")
-      setStatus("CREATED")
       setOwnerId("")
       setAgentId("")
       setPropertyTypeId("")
@@ -535,7 +536,6 @@ export default function PropertiesPage() {
     setSelectedDistrict("")
     setSelectedCity(defaultCity || "Mogadishu")
     setPrice("")
-    setStatus("CREATED")
     setPropertyTypeId("")
     setOwnerId("")
 
@@ -582,9 +582,17 @@ export default function PropertiesPage() {
         filterFeature === "all" ||
         (filterFeature === "featured" && prop.features === true) ||
         (filterFeature === "not-featured" && !prop.features)
-      return matchStatus && matchType && matchListing && matchCity && matchDistrict && matchFeature
+      const propertyRole = prop.createdBy?.role?.name || prop.owner?.role?.name || prop.agent?.role?.name || "Unknown"
+      const matchRole = filterRole === "all" || propertyRole === filterRole
+      return matchStatus && matchType && matchListing && matchCity && matchDistrict && matchFeature && matchRole
     })
-  }, [properties, filterStatus, filterType, filterListing, filterCity, filterDistrict, filterFeature])
+  }, [properties, filterStatus, filterType, filterListing, filterCity, filterDistrict, filterFeature, filterRole])
+
+  const rolesList = React.useMemo(() => {
+    return Array.from(new Set(properties.map(prop =>
+      prop.createdBy?.role?.name || prop.owner?.role?.name || prop.agent?.role?.name || "Unknown"
+    ))).sort()
+  }, [properties])
 
   const citiesList = React.useMemo(() => {
     const fromApi = cityNames
@@ -618,6 +626,7 @@ export default function PropertiesPage() {
   const getStatusBadge = (status: string) => {
     if (status === "AVAILABLE") return "bg-[#dcfce7] text-[#166534] ring-[#bbf7d0] dark:bg-[#064e3b] dark:text-[#6ee7b7] dark:ring-[#047857]";
     if (status === "CREATED") return "bg-orange-100 text-orange-800 ring-orange-200 dark:bg-orange-900 dark:text-orange-300 dark:ring-orange-800";
+    if (status === "BOOKED") return "bg-amber-100 text-amber-800 ring-amber-200 dark:bg-amber-900 dark:text-amber-300 dark:ring-amber-800";
     if (status === "SOLD") return "bg-blue-100 text-blue-800 ring-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:ring-blue-800";
     if (status === "RENTED") return "bg-purple-100 text-purple-800 ring-purple-200 dark:bg-purple-900 dark:text-purple-300 dark:ring-purple-800";
     return "bg-gray-100 text-gray-800 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700";
@@ -732,15 +741,18 @@ export default function PropertiesPage() {
           >
             <EyeIcon className="h-4 w-4" />
           </Button>
-          {row.original.status === 'CREATED' && permissions.canEdit && (
+          {(row.original.status === 'CREATED' || row.original.status === 'AVAILABLE') && permissions.canApprove && (
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => handleApprove(row.original.id)}
-              className="text-orange-600 hover:text-orange-700 hover:bg-orange-50 h-8 w-8"
-              title="Approve Property"
+              onClick={() => handleAdvanceStatus(row.original)}
+              disabled={advancingId === row.original.id}
+              className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 h-8 w-8"
+              title={row.original.status === 'CREATED' ? 'Change to Available' : 'Change to Booked'}
             >
-              <ShieldCheckIcon className="h-4 w-4" />
+              {advancingId === row.original.id
+                ? <Loader2Icon className="h-4 w-4 animate-spin" />
+                : <ShieldCheckIcon className="h-4 w-4" />}
             </Button>
           )}
           {permissions.canEdit && (
@@ -1009,20 +1021,6 @@ export default function PropertiesPage() {
                                     {n === "6" ? "6+" : n}
                                   </SelectItem>
                                 ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div className="space-y-2">
-                            <Label htmlFor="status">Current Status <span className="text-red-500">*</span></Label>
-                            <Select value={status} onValueChange={setStatus}>
-                              <SelectTrigger id="status">
-                                <SelectValue placeholder="Status" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="CREATED">CREATED</SelectItem>
-                                <SelectItem value="AVAILABLE">AVAILABLE</SelectItem>
-                                <SelectItem value="BOOKED">BOOKED</SelectItem>
                               </SelectContent>
                             </Select>
                           </div>
@@ -1474,6 +1472,21 @@ export default function PropertiesPage() {
               </Select>
             </div>
 
+            <div className="flex flex-col gap-1.5 min-w-[130px]">
+              <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Role</Label>
+              <Select value={filterRole} onValueChange={setFilterRole}>
+                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                  <SelectValue placeholder="All Roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  {rolesList.map(role => (
+                    <SelectItem key={role} value={role}>{role}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <Button
               variant="ghost"
               size="sm"
@@ -1484,6 +1497,7 @@ export default function PropertiesPage() {
                 setFilterCity("all");
                 setFilterDistrict("all");
                 setFilterFeature("all");
+                setFilterRole("all");
               }}
               className="text-xs font-bold text-muted-foreground h-9 hover:bg-muted"
             >

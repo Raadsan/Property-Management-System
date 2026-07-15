@@ -80,13 +80,8 @@ export const cancelBooking = async (id: number, data: { userId: number }): Promi
   return response.data;
 };
 
-export const approveProperty = async (id: number): Promise<any> => {
-  const response = await api.patch(`/properties/${id}/approve`);
-  return response.data;
-};
-
-export const advancePropertyStatus = async (id: number): Promise<Property> => {
-  const response = await api.patch(`/properties/${id}/status/advance`);
+export const updatePropertyStatus = async (id: number, status: 'AVAILABLE' | 'BOOKED'): Promise<Property> => {
+  const response = await api.patch(`/properties/${id}/status`, { status });
   return response.data.property;
 };
 

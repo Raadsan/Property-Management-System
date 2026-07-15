@@ -80,19 +80,15 @@ export async function getPermissionsMapForRole(roleId, roleName) {
   const menus = await prisma.menu.findMany({
     orderBy: { order: "asc" },
     include: {
-      roleMenus: isAdmin
-        ? false
-        : {
-            where: { rolePermissions: { roleId } },
-          },
+      roleMenus: {
+        where: { rolePermissions: { roleId } },
+      },
       subMenus: {
         orderBy: { order: "asc" },
         include: {
-          roleSubMenus: isAdmin
-            ? false
-            : {
-                where: { roleMenuAccess: { rolePermissions: { roleId } } },
-              },
+          roleSubMenus: {
+            where: { roleMenuAccess: { rolePermissions: { roleId } } },
+          },
         },
       },
     },
@@ -101,7 +97,10 @@ export async function getPermissionsMapForRole(roleId, roleName) {
   for (const menu of menus) {
     if (menu.url) {
       if (isAdmin) {
-        permissions[normalizePath(menu.url)] = fullAccess();
+        permissions[normalizePath(menu.url)] = {
+          ...fullAccess(),
+          approve: Boolean(menu.roleMenus?.[0]?.canApprove),
+        };
       } else if (menu.roleMenus?.[0]) {
         permissions[normalizePath(menu.url)] = flagsFromRecord(menu.roleMenus[0]);
       }
@@ -109,7 +108,10 @@ export async function getPermissionsMapForRole(roleId, roleName) {
 
     for (const subMenu of menu.subMenus) {
       if (isAdmin) {
-        permissions[normalizePath(subMenu.url)] = fullAccess();
+        permissions[normalizePath(subMenu.url)] = {
+          ...fullAccess(),
+          approve: Boolean(subMenu.roleSubMenus?.[0]?.canApprove),
+        };
       } else if (subMenu.roleSubMenus?.[0]) {
         permissions[normalizePath(subMenu.url)] = flagsFromRecord(subMenu.roleSubMenus[0]);
       }

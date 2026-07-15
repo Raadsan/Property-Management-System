@@ -17,7 +17,7 @@ import {
   updateProperty,
   deleteProperty,
   bookProperty,
-  advancePropertyStatus,
+  updatePropertyStatus,
   Property
 } from "@/api/propertyApi"
 
@@ -171,6 +171,9 @@ const propertyLocationSelectStyles = {
 export default function PropertiesPage() {
   const { cityOptions, defaultCity, getDistrictOptions, cityHasDistricts, cityNames } = useLocations()
   const permissions = usePagePermissions("/content/properties")
+  const loggedInUser = getUser<{ id?: number; role?: { name?: string } }>()
+  const currentUserId = loggedInUser?.id
+  const currentRole = loggedInUser?.role?.name?.toUpperCase() ?? ""
   const [properties, setProperties] = React.useState<Property[]>([])
   const [categories, setCategories] = React.useState<Category[]>([])
   const [owners, setOwners] = React.useState<User[]>([])
@@ -452,12 +455,12 @@ export default function PropertiesPage() {
     setIsBookingModalOpen(true)
   }
 
-  const handleAdvanceStatus = async (property: Property) => {
-    const nextStatus = property.status === "CREATED" ? "AVAILABLE" : "BOOKED"
+  const handleStatusChange = async (property: Property) => {
+    const nextStatus = property.status === "AVAILABLE" ? "BOOKED" : "AVAILABLE"
     if (!confirm(`Change this property status from ${property.status} to ${nextStatus}?`)) return
     try {
       setAdvancingId(property.id)
-      await advancePropertyStatus(property.id)
+      await updatePropertyStatus(property.id, nextStatus)
       toast.success(`Property status changed to ${nextStatus}`)
       await loadData(true)
     } catch (error: any) {
@@ -632,6 +635,22 @@ export default function PropertiesPage() {
     return "bg-gray-100 text-gray-800 ring-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:ring-gray-700";
   }
 
+  const getStatusAction = (property: Property) => {
+    if (!permissions.canApprove) return null
+    const isAdminRole = currentRole === "ADMIN" || currentRole === "SUPER_ADMIN"
+    const isInScope =
+      isAdminRole ||
+      (currentRole === "OWNER" && property.ownerId === currentUserId) ||
+      (currentRole === "AGENT" && property.agentId === currentUserId)
+    if (property.status === "CREATED") {
+      return isAdminRole ? { label: "Make Available" } : null
+    }
+    if (!isInScope) return null
+    if (property.status === "AVAILABLE") return { label: "Mark Booked" }
+    if (property.status === "BOOKED") return { label: "Mark Available" }
+    return null
+  }
+
   // Define columns for DataTable
   const columns: ColumnDef<Property>[] = [
     {
@@ -730,7 +749,9 @@ export default function PropertiesPage() {
     {
       id: "actions",
       header: () => <div className="text-right">Actions</div>,
-      cell: ({ row }) => (
+      cell: ({ row }) => {
+        const statusAction = getStatusAction(row.original)
+        return (
         <div className="flex flex-wrap justify-end gap-1">
           <Button
             variant="ghost"
@@ -741,14 +762,14 @@ export default function PropertiesPage() {
           >
             <EyeIcon className="h-4 w-4" />
           </Button>
-          {(row.original.status === 'CREATED' || row.original.status === 'AVAILABLE') && permissions.canApprove && (
+          {statusAction && (
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => handleAdvanceStatus(row.original)}
+              onClick={() => handleStatusChange(row.original)}
               disabled={advancingId === row.original.id}
               className="text-violet-600 hover:text-violet-700 hover:bg-violet-50 h-8 w-8"
-              title={row.original.status === 'CREATED' ? 'Change to Available' : 'Change to Booked'}
+              title={statusAction.label}
             >
               {advancingId === row.original.id
                 ? <Loader2Icon className="h-4 w-4 animate-spin" />
@@ -782,7 +803,7 @@ export default function PropertiesPage() {
             </Button>
           )}
         </div>
-      ),
+      )},
     },
   ]
 

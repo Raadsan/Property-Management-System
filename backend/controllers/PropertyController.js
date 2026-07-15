@@ -3,6 +3,7 @@ import axios from "axios";
 import { getFileUrl, rejectLegacyUploadUrl } from "../lib/upload.js";
 import { mediaFromFile, mediaFromUrl, sortMediaVideosFirst, sortMediaPayloadVideosFirst } from "../lib/mediaUtils.js";
 import { assertSelfOrAdmin, sanitizePropertyForAudience, sanitizePropertiesForAudience } from "../middlewares/authMiddleware.js";
+import { authorizePropertyStatusTransition } from "../lib/propertyStatus.js";
 
 const withSortedImages = (property) => ({
   ...property,
@@ -11,7 +12,7 @@ const withSortedImages = (property) => ({
 
 const withSortedImagesList = (properties) => properties.map(withSortedImages);
 const isAdmin = (req) => req.user?.role?.name?.toUpperCase() === "ADMIN";
-const canReadAllContent = (req) => ['ADMIN', 'OPERATIONS'].includes(req.user?.role?.name?.toUpperCase());
+const canReadAllContent = (req) => ['ADMIN', 'SUPER_ADMIN', 'OPERATIONS'].includes(req.user?.role?.name?.toUpperCase());
 
 const canManageProperty = async (req, res, propertyId) => {
   if (isAdmin(req)) return true;
@@ -99,6 +100,9 @@ export const createProperty = async (req, res) => {
     const parsedRooms = Rooms !== undefined ? parseInt(Rooms) : 0;
     const parsedBathrooms = Bathrooms !== undefined ? parseInt(Bathrooms) : 0;
     const parsedAgentId = agentId ? parseInt(agentId) : null;
+    const creatorRole = req.user?.role?.name?.toUpperCase() ?? "";
+    const effectiveOwnerId = creatorRole === "OWNER" ? req.user.id : parsedOwnerId;
+    const effectiveAgentId = creatorRole === "AGENT" ? req.user.id : parsedAgentId;
     const parsedLatitude =
       latitude !== undefined && latitude !== "" ? parseFloat(latitude) : null;
     const parsedLongitude =
@@ -136,8 +140,8 @@ export const createProperty = async (req, res) => {
         status,
         Rooms: isNaN(parsedRooms) ? 0 : parsedRooms,
         Bathrooms: isNaN(parsedBathrooms) ? 0 : parsedBathrooms,
-        ownerId: isNaN(parsedOwnerId) ? null : parsedOwnerId,
-        agentId: isNaN(parsedAgentId) ? null : parsedAgentId,
+        ownerId: isNaN(effectiveOwnerId) ? null : effectiveOwnerId,
+        agentId: isNaN(effectiveAgentId) ? null : effectiveAgentId,
         propertyTypeId: parsedPropertyTypeId,
         sizeLabel,
         area: isNaN(parsedArea) ? null : parsedArea,
@@ -175,19 +179,17 @@ export const getProperties = async (req, res) => {
   try {
     const { city, country, rooms, minPrice, maxPrice, propertyTypeId, listingType, keyword, agentId, features: featuresFilter, status, mine } = req.query;
 
-    const where = {};
+    const roleName = req.user?.role?.name?.toUpperCase() ?? "";
+    const isInternalRequest = mine === "true" && !["", "USER", "CLIENT"].includes(roleName);
+    const where = isInternalRequest ? {} : { status: "AVAILABLE" };
     if (mine === "true") {
       if (!req.user) return res.status(401).json({ message: "Authentication required" });
-      if (!canReadAllContent(req)) {
-        where.OR = [
-          { createdById: req.user.id },
-          { createdById: null, ownerId: req.user.id },
-          { createdById: null, agentId: req.user.id }
-        ];
-      }
+      if (roleName === "OWNER") where.ownerId = req.user.id;
+      else if (roleName === "AGENT") where.agentId = req.user.id;
+      else if (!canReadAllContent(req)) where.createdById = req.user.id;
     }
     if (featuresFilter === "true") where.features = true;
-    if (status) where.status = status.toString().trim().toUpperCase();
+    if (status && isInternalRequest) where.status = status.toString().trim().toUpperCase();
     if (city) {
       if (city === "Muqdisho" || city === "Mogadishu") {
         where.city = { in: ["Muqdisho", "Mogadishu"] };
@@ -202,11 +204,13 @@ export const getProperties = async (req, res) => {
     if (agentId) where.agentId = parseInt(agentId);
 
     if (keyword) {
-      where.OR = [
-        { title: { contains: keyword, mode: 'insensitive' } },
-        { description: { contains: keyword, mode: 'insensitive' } },
-        { location: { contains: keyword, mode: 'insensitive' } },
-      ];
+      where.AND = [{
+        OR: [
+          { title: { contains: keyword, mode: 'insensitive' } },
+          { description: { contains: keyword, mode: 'insensitive' } },
+          { location: { contains: keyword, mode: 'insensitive' } },
+        ],
+      }];
     }
 
     if (minPrice || maxPrice) {
@@ -247,8 +251,10 @@ export const getPropertyById = async (req, res) => {
       return res.status(400).json({ message: "Invalid property ID provided." });
     }
 
-    const property = await prisma.property.findUnique({
-      where: { id: propertyId },
+    const roleName = req.user?.role?.name?.toUpperCase() ?? "";
+    const isInternalUser = !["", "USER", "CLIENT"].includes(roleName);
+    const property = await prisma.property.findFirst({
+      where: { id: propertyId, ...(isInternalUser ? {} : { status: "AVAILABLE" }) },
       include: {
         images: { orderBy: { id: 'desc' } },
         amenities: true,
@@ -453,42 +459,48 @@ export const approveProperty = async (req, res) => {
   }
 };
 
-// @desc    Advance property status (CREATED -> AVAILABLE -> BOOKED)
-// @route   PATCH /api/properties/:id/status/advance
-export const advancePropertyStatus = async (req, res) => {
+// @desc    Change property status using role-specific transition rules
+// @route   PATCH /api/properties/:id/status
+export const updatePropertyStatus = async (req, res) => {
   const propertyId = parseInt(req.params.id);
   if (isNaN(propertyId)) {
     return res.status(400).json({ message: "Invalid property ID provided." });
   }
 
   try {
-    if (!(await canManageProperty(req, res, propertyId))) return;
-
     const property = await prisma.property.findUnique({
       where: { id: propertyId },
-      select: { status: true }
+      select: { status: true, ownerId: true, agentId: true }
     });
-    const nextStatus = property?.status === 'CREATED'
-      ? 'AVAILABLE'
-      : property?.status === 'AVAILABLE'
-        ? 'BOOKED'
-        : null;
+    if (!property) return res.status(404).json({ message: "Property not found" });
+    const decision = authorizePropertyStatusTransition({
+      roleName: req.user?.role?.name,
+      userId: req.user?.id,
+      property,
+      newStatus: req.body?.status,
+    });
+    if (!decision.allowed) return res.status(decision.statusCode).json({ message: decision.message });
 
-    if (!nextStatus) {
-      return res.status(400).json({ message: `Status ${property?.status || 'UNKNOWN'} cannot be advanced` });
-    }
-
-    const updatedProperty = await prisma.property.update({
-      where: { id: propertyId },
-      data: { status: nextStatus }
+    const updatedProperty = await prisma.$transaction(async (tx) => {
+      const result = await tx.property.updateMany({
+        where: { id: propertyId, status: property.status },
+        data: { status: decision.targetStatus },
+      });
+      if (result.count !== 1) {
+        const error = new Error("Property status changed; refresh and try again");
+        error.statusCode = 400;
+        throw error;
+      }
+      return tx.property.findUnique({ where: { id: propertyId } });
     });
 
     return res.status(200).json({
-      message: `Property status changed to ${nextStatus}`,
+      message: `Property status changed from ${property.status} to ${decision.targetStatus}`,
       property: withSortedImages(updatedProperty)
     });
   } catch (error) {
-    return res.status(500).json({ message: "Error advancing property status", error: error.message });
+    if (error.statusCode) return res.status(error.statusCode).json({ message: error.message });
+    return res.status(500).json({ message: "Error changing property status", error: error.message });
   }
 };
 
@@ -693,6 +705,7 @@ export const getCityStats = async (req, res) => {
   try {
     const stats = await prisma.property.groupBy({
       by: ['city'],
+      where: { status: 'AVAILABLE' },
       _count: {
         id: true,
       },

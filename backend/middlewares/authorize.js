@@ -2,6 +2,7 @@ import {
   checkPermissionFromMap,
   getPermissionsMapForRole,
 } from "../lib/permissions.js";
+import { prisma } from "../lib/prisma.js";
 
 /** Load permissions once per request (after protect) */
 export async function loadPermissions(req, res, next) {
@@ -67,6 +68,45 @@ export function authorize(menuPath, action = "view") {
         });
       }
 
+      next();
+    } catch (error) {
+      res.status(500).json({ message: "Authorization check failed", error: error.message });
+    }
+  };
+}
+
+/** Require the permission row stored for the role, without ADMIN's implicit bypass. */
+export function authorizeExplicit(menuPath, action = "view") {
+  const field = { view: "canView", add: "canAdd", edit: "canEdit", delete: "canDelete", approve: "canApprove" }[action];
+  return async (req, res, next) => {
+    try {
+      if (!req.user) return res.status(401).json({ message: "Not authorized" });
+      if (!field) return res.status(500).json({ message: "Unknown authorization action" });
+
+      const path = menuPath.replace(/\/+$/, "").toLowerCase();
+      const subMenuAccess = await prisma.roleSubMenuAccess.findFirst({
+        where: {
+          roleMenuAccess: { rolePermissions: { roleId: req.user.roleId } },
+          subMenu: { url: path },
+          [field]: true,
+        },
+        select: { id: true },
+      });
+      const menuAccess = subMenuAccess ? null : await prisma.roleMenuAccess.findFirst({
+        where: {
+          rolePermissions: { roleId: req.user.roleId },
+          menu: { url: path },
+          [field]: true,
+        },
+        select: { id: true },
+      });
+
+      if (!subMenuAccess && !menuAccess) {
+        return res.status(403).json({
+          message: "Access denied — you do not have permission for this action",
+          required: { menuPath, action },
+        });
+      }
       next();
     } catch (error) {
       res.status(500).json({ message: "Authorization check failed", error: error.message });

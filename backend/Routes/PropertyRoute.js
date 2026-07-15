@@ -9,12 +9,11 @@ import {
   getBookingsByUser,
   getCityStats,
   cancelBooking,
-  approveProperty,
-  advancePropertyStatus
+  updatePropertyStatus
 } from '../controllers/PropertyController.js';
 import { upload } from '../lib/upload.js';
 import { protect, requireStaff, optionalProtect } from '../middlewares/authMiddleware.js';
-import { authorize } from '../middlewares/authorize.js';
+import { authorize, authorizeExplicit } from '../middlewares/authorize.js';
 
 const router = express.Router();
 
@@ -31,8 +30,7 @@ router.post('/:id/cancel', protect, cancelBooking);
 // Staff-only property management
 router.post('/', protect, requireStaff, authorize('/content/properties', 'add'), upload.array('images', 30), createProperty);
 router.patch('/:id', protect, requireStaff, authorize('/content/properties', 'edit'), upload.array('images', 30), updateProperty);
-router.patch('/:id/approve', protect, requireStaff, authorize('/content/properties', 'approve'), approveProperty);
-router.patch('/:id/status/advance', protect, requireStaff, authorize('/content/properties', 'approve'), advancePropertyStatus);
+router.patch('/:id/status', protect, requireStaff, authorizeExplicit('/content/properties', 'approve'), updatePropertyStatus);
 router.delete('/:id', protect, requireStaff, authorize('/content/properties', 'delete'), deleteProperty);
 
 export default router;

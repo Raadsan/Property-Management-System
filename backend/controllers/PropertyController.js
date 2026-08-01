@@ -509,14 +509,27 @@ export const updatePropertyStatus = async (req, res) => {
 export const deleteProperty = async (req, res) => {
   const { id } = req.params;
   const propertyId = parseInt(id);
+
+  if (Number.isNaN(propertyId)) {
+    return res.status(400).json({ message: "Invalid property ID" });
+  }
+
   try {
     if (!(await canManageProperty(req, res, propertyId))) return;
-    // Prevent foreign key constraint errors by gracefully deleting related records first
-    await prisma.propertyImage.deleteMany({ where: { propertyId } });
-    await prisma.feature.deleteMany({ where: { propertyId } });
-    await prisma.favorite.deleteMany({ where: { propertyId } });
 
-    await prisma.property.delete({ where: { id: propertyId } });
+    // Remove dependent data in one transaction before deleting the property. Bookings
+    // were previously omitted, so a booked property could not be deleted because of
+    // Booking.propertyId's foreign-key constraint.
+    await prisma.$transaction(async (tx) => {
+      await tx.payment.deleteMany({ where: { booking: { propertyId } } });
+      await tx.booking.deleteMany({ where: { propertyId } });
+      await tx.propertyInquiry.deleteMany({ where: { propertyId } });
+      await tx.propertyImage.deleteMany({ where: { propertyId } });
+      await tx.feature.deleteMany({ where: { propertyId } });
+      await tx.favorite.deleteMany({ where: { propertyId } });
+      await tx.property.delete({ where: { id: propertyId } });
+    });
+
     res.status(200).json({ message: "Property deleted successfully" });
   } catch (error) {
     if (error.code === 'P2025') {

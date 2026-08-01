@@ -15,42 +15,26 @@ export type StoredNavItem = {
 
 function getStore(): Storage | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage;
+  // Authentication is deliberately tab-session only. sessionStorage is cleared
+  // when the browser session ends, so reopening Chrome requires signing in again.
+  return window.sessionStorage;
 }
 
-/** One-time migration from tab-only sessionStorage to shared localStorage. */
-function migrateFromSessionStorage() {
+/** Remove credentials saved by the old persistent-storage implementation. */
+function clearLegacyLocalAuth() {
   if (typeof window === "undefined") return;
-  const legacyToken = sessionStorage.getItem(TOKEN_KEY);
-  const legacyUser = sessionStorage.getItem(USER_KEY);
-  const store = getStore();
-  if (!store) return;
-
-  if (legacyToken && !store.getItem(TOKEN_KEY)) {
-    store.setItem(TOKEN_KEY, legacyToken);
-    sessionStorage.removeItem(TOKEN_KEY);
-  }
-  if (legacyUser && !store.getItem(USER_KEY)) {
-    store.setItem(USER_KEY, legacyUser);
-    sessionStorage.removeItem(USER_KEY);
-  }
-
-  for (const key of [NAV_CACHE_KEY, PERMISSIONS_CACHE_KEY]) {
-    const legacy = sessionStorage.getItem(key);
-    if (legacy && !store.getItem(key)) {
-      store.setItem(key, legacy);
-      sessionStorage.removeItem(key);
-    }
+  for (const key of [TOKEN_KEY, USER_KEY, NAV_CACHE_KEY, PERMISSIONS_CACHE_KEY]) {
+    localStorage.removeItem(key);
   }
 }
 
 export function getToken(): string | null {
-  migrateFromSessionStorage();
+  clearLegacyLocalAuth();
   return getStore()?.getItem(TOKEN_KEY) ?? null;
 }
 
 export function getUser<T = Record<string, unknown>>(): T | null {
-  migrateFromSessionStorage();
+  clearLegacyLocalAuth();
   try {
     const raw = getStore()?.getItem(USER_KEY);
     return raw ? JSON.parse(raw) : null;
@@ -64,7 +48,7 @@ export function isLoggedIn(): boolean {
 }
 
 export function readNavCache(): StoredNavItem[] {
-  migrateFromSessionStorage();
+  clearLegacyLocalAuth();
   try {
     const raw = getStore()?.getItem(NAV_CACHE_KEY);
     return raw ? JSON.parse(raw) : [];
@@ -94,6 +78,7 @@ export function menusToNavItems(menus: Menu[]): StoredNavItem[] {
 }
 
 export function saveAuthSession(response: LoginResponse) {
+  clearLegacyLocalAuth();
   const store = getStore();
   if (!store) return;
 

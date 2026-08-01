@@ -16,7 +16,7 @@ export function normalizePath(path: string): string {
 export function getPermissionsMap(): Record<string, PermissionFlags> {
   if (typeof window === "undefined") return {};
   try {
-    const raw = localStorage.getItem(PERMISSIONS_CACHE_KEY);
+    const raw = sessionStorage.getItem(PERMISSIONS_CACHE_KEY);
     return raw ? JSON.parse(raw) : {};
   } catch {
     return {};

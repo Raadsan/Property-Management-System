@@ -118,10 +118,12 @@ export default function PropertyDetailPage() {
 
     const fetchProperty = async () => {
       try {
-        let numericId = parseInt(id);
+        const isNumericId = /^\d+$/.test(id);
+        let numericId = isNumericId ? Number(id) : Number.NaN;
         
-        // If ID is not a pure integer, it's a slugified title
-        if (isNaN(numericId)) {
+        // Only an all-digit route segment is an ID. Slugs can legitimately
+        // start with a number (for example, "2-bedroom-apartment").
+        if (!isNumericId) {
           const slugify = (text: string) => {
             return text
               .toString()
@@ -143,9 +145,8 @@ export default function PropertyDetailPage() {
             // Fallback: Check if the last segment is the ID
             const parts = id.split("-");
             const lastPart = parts[parts.length - 1];
-            const parsedLastPart = parseInt(lastPart);
-            if (!isNaN(parsedLastPart)) {
-              numericId = parsedLastPart;
+            if (/^\d+$/.test(lastPart)) {
+              numericId = Number(lastPart);
             }
           }
         }

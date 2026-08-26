@@ -12,7 +12,7 @@ const withSortedImages = (property) => ({
 
 const withSortedImagesList = (properties) => properties.map(withSortedImages);
 const isAdmin = (req) => req.user?.role?.name?.toUpperCase() === "ADMIN";
-const canReadAllContent = (req) => ['ADMIN', 'SUPER_ADMIN', 'OPERATIONS'].includes(req.user?.role?.name?.toUpperCase());
+const canReadAllContent = (req) => ['ADMIN', 'SUPER_ADMIN', 'OPERATIONS', 'OPERATION MANAGER'].includes(req.user?.role?.name?.toUpperCase());
 
 const canManageProperty = async (req, res, propertyId) => {
   if (isAdmin(req)) return true;

@@ -21,7 +21,7 @@ const parseSocials = (value) => {
 };
 
 const isAdmin = (req) => req.user?.role?.name?.toUpperCase() === 'ADMIN';
-const canReadAllContent = (req) => ['ADMIN', 'OPERATIONS'].includes(req.user?.role?.name?.toUpperCase());
+const canReadAllContent = (req) => ['ADMIN', 'OPERATIONS', 'OPERATION MANAGER'].includes(req.user?.role?.name?.toUpperCase());
 
 const canManageBlog = async (req, res, blogId) => {
   if (isAdmin(req)) return true;

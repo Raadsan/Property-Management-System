@@ -6,6 +6,9 @@ const apiProxyTarget =
   "http://localhost:8002";
 
 const nextConfig: NextConfig = {
+  experimental: {
+    proxyClientMaxBodySize: "100mb",
+  },
   images: {
     remotePatterns: [
       {

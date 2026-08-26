@@ -369,16 +369,26 @@ export const updateProperty = async (req, res) => {
       }
     }
 
-    // Handle IMAGE REPLACEMENT
-    if (req.files && req.files.length > 0) {
+    // Keep selected existing media, remove deselected media, and append new uploads.
+    if (updateFields.retainedImageIds !== undefined || (req.files && req.files.length > 0)) {
       const newImages = sortMediaPayloadVideosFirst(
-        req.files.map((file) => {
+        (req.files || []).map((file) => {
           const media = mediaFromFile(file);
           return { url: media.url, type: media.type };
         })
       );
+      let retainedImageIds;
+      try {
+        const parsedIds = JSON.parse(updateFields.retainedImageIds || "[]");
+        if (!Array.isArray(parsedIds)) throw new Error("Expected an array");
+        retainedImageIds = parsedIds
+          .map((imageId) => Number(imageId))
+          .filter((imageId) => Number.isInteger(imageId) && imageId > 0);
+      } catch {
+        return res.status(400).json({ message: "Invalid retained image list." });
+      }
       updateData.images = {
-        deleteMany: {},
+        deleteMany: retainedImageIds.length > 0 ? { id: { notIn: retainedImageIds } } : {},
         create: newImages
       };
     }

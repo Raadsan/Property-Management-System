@@ -4,7 +4,7 @@ import * as React from "react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon } from "lucide-react"
+import { PlusIcon, PencilIcon, TrashIcon, Loader2Icon, EyeIcon } from "lucide-react"
 import { 
   getBlogCategories, 
   BlogCategory, 
@@ -31,6 +31,7 @@ export default function BlogCategoriesPage() {
   const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentCategory, setCurrentCategory] = React.useState<BlogCategory | null>(null)
+  const [viewCategory, setViewCategory] = React.useState<BlogCategory | null>(null)
   const [newName, setNewName] = React.useState("")
   const [newDescription, setNewDescription] = React.useState("")
 
@@ -119,7 +120,7 @@ export default function BlogCategoriesPage() {
       accessorKey: "description",
       header: "Description",
       cell: ({ row }) => (
-        <div className="text-sm text-muted-foreground line-clamp-2 max-w-[250px]">
+        <div className="max-w-[420px] truncate text-sm text-muted-foreground" title={row.original.description || undefined}>
           {row.getValue("description") || <span className="italic opacity-50">No description</span>}
         </div>
       ),
@@ -137,6 +138,16 @@ export default function BlogCategoriesPage() {
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setViewCategory(row.original)}
+            className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+            title="View category"
+            aria-label={`View ${row.original.name}`}
+          >
+            <EyeIcon className="h-4 w-4" />
+          </Button>
           <Button 
             variant="ghost" 
             size="icon" 
@@ -222,6 +233,32 @@ export default function BlogCategoriesPage() {
               </DialogContent>
             </Dialog>
           </div>
+
+          <Dialog open={viewCategory !== null} onOpenChange={(open) => !open && setViewCategory(null)}>
+            <DialogContent className="sm:max-w-[560px]">
+              <DialogHeader>
+                <DialogTitle>Category Details</DialogTitle>
+              </DialogHeader>
+              {viewCategory && (
+                <div className="space-y-5 py-3">
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Category Name</p>
+                    <h2 className="mt-1 text-xl font-bold">{viewCategory.name}</h2>
+                  </div>
+                  <div className="rounded-xl border bg-muted/20 p-4">
+                    <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">Description</p>
+                    <p className="whitespace-pre-wrap break-words leading-7 text-foreground">
+                      {viewCategory.description || <span className="italic text-muted-foreground">No description provided.</span>}
+                    </p>
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border px-4 py-3">
+                    <span className="text-sm font-medium text-muted-foreground">Blog Articles</span>
+                    <span className="font-bold">{viewCategory._count?.blogs || 0}</span>
+                  </div>
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
 
           <DataTable 
             columns={columns} 

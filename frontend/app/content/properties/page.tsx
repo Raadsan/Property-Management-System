@@ -18,7 +18,8 @@ import {
   deleteProperty,
   bookProperty,
   updatePropertyStatus,
-  Property
+  Property,
+  PropertyImage
 } from "@/api/propertyApi"
 
 
@@ -231,6 +232,7 @@ export default function PropertiesPage() {
   // File State
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [selectedFiles, setSelectedFiles] = React.useState<File[]>([])
+  const [existingMedia, setExistingMedia] = React.useState<PropertyImage[]>([])
 
   // Booking Modal State
   const [isBookingModalOpen, setIsBookingModalOpen] = React.useState(false)
@@ -284,7 +286,7 @@ export default function PropertiesPage() {
         const bVideo = isVideoMedia(b) ? 0 : 1;
         return aVideo - bVideo;
       });
-      if (files.length > MAX_PROPERTY_MEDIA) {
+      if (files.length + existingMedia.length > MAX_PROPERTY_MEDIA) {
         toast.error(`You can upload up to ${MAX_PROPERTY_MEDIA} files (images and videos).`)
         if (fileInputRef.current) fileInputRef.current.value = ""
         return
@@ -376,6 +378,10 @@ export default function PropertiesPage() {
         selectedFiles.forEach((file) => {
           formData.append("images", file)
         })
+      }
+
+      if (currentProperty) {
+        formData.append("retainedImageIds", JSON.stringify(existingMedia.map((media) => media.id)))
       }
 
       if (currentProperty) {
@@ -493,6 +499,7 @@ export default function PropertiesPage() {
       setSelectedAmenities(prop.amenities?.map(f => f.name) || [])
       setFeatures(prop.features ?? false)
       setInternalMessage(prop.internalMessage || "")
+      setExistingMedia(sortMediaVideosFirst(prop.images || []))
     } else {
       setCurrentProperty(null)
       setTitle("")
@@ -513,6 +520,7 @@ export default function PropertiesPage() {
       setSelectedAmenities([])
       setFeatures(false)
       setInternalMessage("")
+      setExistingMedia([])
     }
 
     setSelectedFiles([])
@@ -559,6 +567,7 @@ export default function PropertiesPage() {
     setFeatures(false)
     setInternalMessage("")
     setSelectedFiles([])
+    setExistingMedia([])
     setActivePropertyTab("basic")
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
@@ -827,7 +836,7 @@ export default function PropertiesPage() {
                   </Button>
                 </DialogTrigger>
                 <DialogContent
-                  className="sm:max-w-[820px] max-h-[85vh] overflow-y-auto"
+                  className="sm:max-w-[1050px] w-[95vw] max-h-[92vh] overflow-y-auto"
                   onPointerDownOutside={(e) => {
                     const target = e.target as Element;
                     if (target.closest('.react-select__menu')) {
@@ -1117,36 +1126,57 @@ export default function PropertiesPage() {
                             className="cursor-pointer file:cursor-pointer"
                           />
                           <p className="text-[10px] text-muted-foreground mt-1">
-                            {currentProperty?.images && currentProperty.images.length > 0
-                              ? `This property has ${currentProperty.images.length} file(s). Uploading new ones will replace them.`
+                            {currentProperty
+                              ? `Keep the media you want, remove individual items, or add new files (${existingMedia.length + selectedFiles.length}/${MAX_PROPERTY_MEDIA}).`
                               : "Select images and/or videos (MP4, MOV, WebM). Max 100MB per file."}
                           </p>
-                          {selectedFiles.length > 0 && (
-                            <div className="flex flex-wrap gap-2 pt-2">
-                              {selectedFiles.map((file, idx) => (
-                                <div key={`${file.name}-${idx}`} className="relative w-20 h-20 rounded-md border overflow-hidden bg-muted flex items-center justify-center">
-                              <button
-                                type="button"
-                                onClick={() => removeSelectedFile(idx)}
-                                className="absolute right-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-black"
-                                aria-label={`Remove ${file.name}`}
-                              >
-                                <XIcon className="h-3 w-3" />
-                              </button>
-                                  {isVideoMedia(file) ? (
-                                    <>
-                                      <VideoIcon className="h-8 w-8 text-muted-foreground" />
-                                      <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] px-1 truncate">{file.name}</span>
-                                    </>
-                                  ) : (
-                                    <img
-                                      src={URL.createObjectURL(file)}
-                                      alt={file.name}
-                                      className="w-full h-full object-cover"
-                                    />
-                                  )}
-                                </div>
-                              ))}
+                          {(existingMedia.length > 0 || selectedFiles.length > 0) && (
+                            <div className="space-y-2 pt-2">
+                              {currentProperty && <p className="text-xs font-medium">Current media and new uploads</p>}
+                              <div className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-7">
+                                {existingMedia.map((media) => (
+                                  <div key={media.id} className="relative aspect-square rounded-md border overflow-hidden bg-muted flex items-center justify-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => setExistingMedia((prev) => prev.filter((item) => item.id !== media.id))}
+                                      className="absolute right-1 top-1 z-10 flex h-6 w-6 items-center justify-center rounded-full bg-red-600 text-white shadow transition hover:bg-red-700"
+                                      aria-label="Remove existing media"
+                                      title="Remove this media"
+                                    >
+                                      <XIcon className="h-3.5 w-3.5" />
+                                    </button>
+                                    {isVideoMedia(media.url) || media.type === "VIDEO" ? (
+                                      <video src={resolveMediaUrl(media.url)} className="h-full w-full object-cover" muted />
+                                    ) : (
+                                      <img src={resolveMediaUrl(media.url)} alt="Property media" className="h-full w-full object-cover" />
+                                    )}
+                                  </div>
+                                ))}
+                                {selectedFiles.map((file, idx) => (
+                                  <div key={`${file.name}-${idx}`} className="relative aspect-square rounded-md border overflow-hidden bg-muted flex items-center justify-center">
+                                    <button
+                                      type="button"
+                                      onClick={() => removeSelectedFile(idx)}
+                                      className="absolute right-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-black/70 text-white transition hover:bg-black"
+                                      aria-label={`Remove ${file.name}`}
+                                    >
+                                      <XIcon className="h-3 w-3" />
+                                    </button>
+                                    {isVideoMedia(file) ? (
+                                      <>
+                                        <VideoIcon className="h-8 w-8 text-muted-foreground" />
+                                        <span className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-[8px] px-1 truncate">{file.name}</span>
+                                      </>
+                                    ) : (
+                                      <img
+                                        src={URL.createObjectURL(file)}
+                                        alt={file.name}
+                                        className="w-full h-full object-cover"
+                                      />
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           )}
                         </div>
@@ -1207,15 +1237,40 @@ export default function PropertiesPage() {
           </div>
 
           <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
-            <DialogContent className="sm:max-w-[700px] max-h-[85vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>Property Highlights</DialogTitle>
+            <DialogContent showCloseButton={false} className="w-[95vw] sm:max-w-[1050px] max-h-[92vh] overflow-x-hidden overflow-y-auto p-0 gap-0">
+              <DialogHeader className="sticky top-0 z-20 flex-row items-center justify-between border-b bg-background/95 px-6 py-4 backdrop-blur">
+                <DialogTitle className="flex items-center gap-2 text-xl">
+                  <HomeIcon className="h-5 w-5 text-primary" /> Property Highlights
+                </DialogTitle>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setIsViewModalOpen(false)}
+                  className="h-9 w-9 shrink-0 rounded-full"
+                  aria-label="Close property details"
+                  title="Close"
+                >
+                  <XIcon className="h-5 w-5" />
+                </Button>
               </DialogHeader>
               {viewProperty && (
-                <div className="space-y-6 py-4">
-                  {/* Horizontal Image Gallery */}
+                <div className="space-y-6 p-4 sm:p-6">
+                  <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-muted-foreground">{viewProperty.propertyType?.name || "Property"} for {viewProperty.listingType === "RENT" ? "rent" : "sale"}</p>
+                      <h2 className="mt-1 text-2xl font-bold tracking-tight sm:text-3xl">{viewProperty.title}</h2>
+                      <p className="mt-2 text-sm text-muted-foreground">{[viewProperty.location, viewProperty.district, viewProperty.city].filter(Boolean).join(", ")}</p>
+                    </div>
+                    <div className="shrink-0 sm:text-right">
+                      <p className="text-2xl font-extrabold text-emerald-700 dark:text-emerald-400">${Number(viewProperty.price).toLocaleString()}</p>
+                      <span className={`mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ring-1 ring-inset ${getStatusBadge(viewProperty.status)}`}>{viewProperty.status}</span>
+                    </div>
+                  </div>
+
+                  {/* Responsive media gallery */}
                   {viewProperty.images && viewProperty.images.length > 0 ? (
-                    <div className="flex gap-4 overflow-x-auto pb-2 snap-x">
+                    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
                       {sortMediaVideosFirst(viewProperty.images).map((img) => {
                         const finalUrl = resolveMediaUrl(img.url);
                         const isVideo = img.type === "VIDEO" || isVideoMedia(img.url);
@@ -1225,14 +1280,14 @@ export default function PropertiesPage() {
                             key={img.id}
                             src={finalUrl}
                             controls
-                            className="h-48 w-auto min-w-[280px] object-cover rounded-md border shadow-sm snap-center bg-black"
+                            className="aspect-[4/3] w-full rounded-xl border bg-black object-cover shadow-sm"
                           />
                         ) : (
                           <img
                             key={img.id}
                             src={finalUrl}
                             alt={viewProperty.title}
-                            className="h-48 w-auto min-w-[200px] object-cover rounded-md border shadow-sm snap-center"
+                            className="aspect-[4/3] w-full rounded-xl border object-cover shadow-sm"
                           />
                         );
                       })}
@@ -1244,13 +1299,13 @@ export default function PropertiesPage() {
                   )}
 
                   {/* Information Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-6 text-sm">
-                    <div className="col-span-1 md:col-span-2">
+                  <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-3 [&>div]:min-w-0 [&>div]:rounded-xl [&>div]:border [&>div]:bg-muted/20 [&>div]:p-4">
+                    <div className="col-span-1 md:col-span-3 md:hidden">
                       <span className="font-semibold text-muted-foreground block mb-1">Name</span>
                       <p className="font-medium text-lg leading-tight">{viewProperty.title}</p>
                     </div>
 
-                    <div>
+                    <div className="md:hidden">
                       <span className="font-semibold text-muted-foreground block mb-1">Price</span>
                       <p className="font-bold text-[#166534] dark:text-[#6ee7b7] text-lg">${viewProperty.price.toLocaleString()}</p>
                     </div>
@@ -1289,16 +1344,27 @@ export default function PropertiesPage() {
                     </div>
 
                     <div>
-                      <span className="font-semibold text-muted-foreground block mb-1">Category & Type</span>
-                      <div className="flex items-center gap-2">
-                        <span className="border px-2 py-0.5 rounded text-xs font-semibold uppercase">{viewProperty.propertyType?.name || 'Uncategorized'}</span>
-                        <span className="font-bold text-xs uppercase opacity-80">{viewProperty.listingType}</span>
-                      </div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Property Type</span>
+                      <span className="inline-flex rounded-md border bg-background px-2.5 py-1 text-xs font-semibold uppercase">
+                        {viewProperty.propertyType?.name || 'Uncategorized'}
+                      </span>
+                    </div>
+
+                    <div>
+                      <span className="font-semibold text-muted-foreground block mb-1">Listing Type</span>
+                      <span className="inline-flex rounded-md border bg-background px-2.5 py-1 text-xs font-bold uppercase">
+                        {viewProperty.listingType}
+                      </span>
                     </div>
 
                     <div>
                       <span className="font-semibold text-muted-foreground block mb-1">Listing Status</span>
-                      <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${getStatusBadge(viewProperty.status)}`}>{viewProperty.status}</span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-bold ring-1 ring-inset ${getStatusBadge(viewProperty.status)}`}>{viewProperty.status}</span>
+                        <span className="inline-flex items-center rounded-md border bg-background px-2 py-1 text-xs font-medium">
+                          Featured: {viewProperty.features ? "Yes" : "No"}
+                        </span>
+                      </div>
                     </div>
 
                     <div>
@@ -1335,14 +1401,7 @@ export default function PropertiesPage() {
                       </p>
                     </div>
 
-                    <div>
-                      <span className="font-semibold text-muted-foreground block mb-1">Features</span>
-                      <p className="font-medium bg-muted/40 p-2 rounded-md">
-                        {viewProperty.features ? "Yes" : "No"}
-                      </p>
-                    </div>
-
-                    <div className="col-span-1 md:col-span-2 mt-2">
+                    <div className="col-span-1 md:col-span-3">
                       <span className="font-semibold text-muted-foreground block mb-2">Amenities</span>
                       <div className="flex flex-wrap gap-2">
                         {viewProperty.amenities && viewProperty.amenities.length > 0 ? (
@@ -1353,7 +1412,7 @@ export default function PropertiesPage() {
                       </div>
                     </div>
 
-                    <div className="col-span-1 md:col-span-2 mt-2">
+                    <div className="col-span-1 md:col-span-3">
                       <span className="font-semibold text-muted-foreground block mb-2">Description</span>
                       <div className="bg-muted/20 border p-3 rounded-md text-muted-foreground leading-relaxed">
                         {viewProperty.description || <span className="italic">No description provided for this listing.</span>}
@@ -1361,7 +1420,7 @@ export default function PropertiesPage() {
                     </div>
 
                     {viewProperty.internalMessage && (
-                      <div className="col-span-1 md:col-span-2 mt-2">
+                      <div className="col-span-1 md:col-span-3">
                         <span className="font-semibold text-muted-foreground flex items-center gap-2 mb-2">
                           <MessageSquare className="h-4 w-4" /> Comments / Internal Message
                         </span>

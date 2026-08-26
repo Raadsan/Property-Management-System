@@ -4,7 +4,7 @@ import * as React from "react"
 import { DataTable } from "@/components/data-table"
 import { ColumnDef } from "@tanstack/react-table"
 import { Button } from "@/components/ui/button"
-import { PlusIcon, PencilIcon, TrashIcon, ImageIcon, Loader2Icon } from "lucide-react"
+import { PlusIcon, PencilIcon, TrashIcon, ImageIcon, Loader2Icon, EyeIcon, XIcon } from "lucide-react"
 import { 
   getBlogs, 
   getBlogCategories,
@@ -39,6 +39,7 @@ export default function BlogsRegistrationPage() {
   const [deletingId, setDeletingId] = React.useState<number | null>(null)
   const [isModalOpen, setIsModalOpen] = React.useState(false)
   const [currentBlog, setCurrentBlog] = React.useState<Blog | null>(null)
+  const [viewBlog, setViewBlog] = React.useState<Blog | null>(null)
   
   // Filtering State
   const [filterCategory, setFilterCategory] = React.useState<string>("all")
@@ -197,7 +198,7 @@ export default function BlogsRegistrationPage() {
       accessorKey: "title",
       header: "Title",
       cell: ({ row }) => (
-        <div className="font-semibold text-sm line-clamp-1 max-w-[250px]">{row.getValue("title")}</div>
+        <div className="min-w-[280px] max-w-[520px] whitespace-normal break-words text-sm font-semibold leading-5">{row.getValue("title")}</div>
       ),
     },
     {
@@ -228,6 +229,16 @@ export default function BlogsRegistrationPage() {
       header: () => <div className="text-right">Actions</div>,
       cell: ({ row }) => (
         <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setViewBlog(row.original)}
+            className="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+            title="View article"
+            aria-label={`View ${row.original.title}`}
+          >
+            <EyeIcon className="h-4 w-4" />
+          </Button>
           {permissions.canEdit && (
             <Button 
               variant="ghost" 
@@ -422,6 +433,72 @@ Add hashtags on the last line:
             </Dialog>
           )}
         </div>
+
+        <Dialog open={viewBlog !== null} onOpenChange={(open) => !open && setViewBlog(null)}>
+          <DialogContent showCloseButton={false} className="w-[95vw] sm:max-w-[900px] max-h-[92vh] overflow-x-hidden overflow-y-auto p-0 gap-0">
+            <DialogHeader className="sticky top-0 z-20 flex-row items-center justify-between border-b bg-background/95 px-6 py-4 backdrop-blur">
+              <DialogTitle>Article Details</DialogTitle>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={() => setViewBlog(null)}
+                className="h-9 w-9 shrink-0 rounded-full"
+                aria-label="Close article details"
+              >
+                <XIcon className="h-5 w-5" />
+              </Button>
+            </DialogHeader>
+            {viewBlog && (
+              <article className="space-y-6 p-4 sm:p-6">
+                {viewBlog.image ? (
+                  <img
+                    src={getImageUrl(viewBlog.image)}
+                    alt={viewBlog.title}
+                    className="max-h-[420px] w-full rounded-xl border object-cover"
+                  />
+                ) : (
+                  <div className="flex h-48 items-center justify-center rounded-xl border border-dashed bg-muted/30 text-muted-foreground">
+                    <ImageIcon className="mr-2 h-6 w-6" /> No cover image
+                  </div>
+                )}
+
+                <div>
+                  <div className="mb-3 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                    <span className="rounded-md border bg-muted/30 px-2.5 py-1 font-medium text-foreground">{viewBlog.category?.name || "Uncategorized"}</span>
+                    <span>{viewBlog.author}</span>
+                    <span aria-hidden="true">&bull;</span>
+                    <span>{new Date(viewBlog.createdAt).toLocaleDateString()}</span>
+                  </div>
+                  <h2 className="break-words text-2xl font-bold leading-tight sm:text-3xl">{viewBlog.title}</h2>
+                </div>
+
+                <div className="rounded-xl border bg-muted/20 p-4 sm:p-6">
+                  <p className="whitespace-pre-wrap break-words leading-7">{viewBlog.content}</p>
+                </div>
+
+                {viewBlog.socials?.length > 0 && (
+                  <div className="rounded-xl border p-4">
+                    <p className="mb-3 text-sm font-semibold">Social Media Links</p>
+                    <div className="flex flex-wrap gap-2">
+                      {viewBlog.socials.map((social) => (
+                        <a
+                          key={social.id}
+                          href={social.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="rounded-md border bg-muted/20 px-3 py-1.5 text-sm font-medium text-primary hover:bg-muted"
+                        >
+                          {social.platform}
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </article>
+            )}
+          </DialogContent>
+        </Dialog>
 
           {/* Filter Bar */}
           <div className="flex flex-wrap gap-4 mb-6 items-end bg-card p-4 rounded-2xl border border-border/50">

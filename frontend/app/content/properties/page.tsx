@@ -646,7 +646,7 @@ export default function PropertiesPage() {
 
   const getStatusAction = (property: Property) => {
     if (!permissions.canApprove) return null
-    const isAdminRole = currentRole === "ADMIN" || currentRole === "SUPER_ADMIN"
+    const isAdminRole = currentRole === "ADMIN" || currentRole === "SUPER_ADMIN" || currentRole === "OPERATION MANAGER"
     const isInScope =
       isAdminRole ||
       (currentRole === "OWNER" && property.ownerId === currentUserId) ||

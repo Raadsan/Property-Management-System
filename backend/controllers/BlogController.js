@@ -20,7 +20,7 @@ const parseSocials = (value) => {
     });
 };
 
-const isAdmin = (req) => req.user?.role?.name?.toUpperCase() === 'ADMIN';
+const isAdmin = (req) => ['ADMIN', 'SUPER_ADMIN', 'OPERATION MANAGER'].includes(req.user?.role?.name?.toUpperCase());
 const canReadAllContent = (req) => ['ADMIN', 'OPERATIONS', 'OPERATION MANAGER'].includes(req.user?.role?.name?.toUpperCase());
 
 const canManageBlog = async (req, res, blogId) => {

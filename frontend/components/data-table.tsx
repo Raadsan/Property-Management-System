@@ -46,6 +46,8 @@ interface DataTableProps<TData, TValue> {
   filterColumn?: string
   filterPlaceholder?: string
   isLoading?: boolean
+  /** Column ids hidden by default below the `md` breakpoint */
+  mobileHiddenColumns?: string[]
 }
 
 export function DataTable<TData, TValue>({
@@ -53,13 +55,42 @@ export function DataTable<TData, TValue>({
   data,
   filterColumn,
   filterPlaceholder = "Filter...",
-  isLoading = false
+  isLoading = false,
+  mobileHiddenColumns = [],
 }: DataTableProps<TData, TValue>) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
   const [columnVisibility, setColumnVisibility] = React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
   const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 })
+
+  const mobileHiddenKey = mobileHiddenColumns.join("|")
+
+  React.useEffect(() => {
+    if (typeof window === "undefined" || !mobileHiddenKey) return
+
+    const ids = mobileHiddenKey.split("|").filter(Boolean)
+
+    const applyVisibility = () => {
+      const isCompact = window.innerWidth < 768
+      setColumnVisibility((prev) => {
+        const next = { ...prev }
+        let changed = false
+        ids.forEach((id) => {
+          const desired = isCompact ? false : true
+          if (next[id] !== desired) {
+            next[id] = desired
+            changed = true
+          }
+        })
+        return changed ? next : prev
+      })
+    }
+
+    applyVisibility()
+    window.addEventListener("resize", applyVisibility)
+    return () => window.removeEventListener("resize", applyVisibility)
+  }, [mobileHiddenKey])
 
   const table = useReactTable({
     data,
@@ -96,9 +127,9 @@ export function DataTable<TData, TValue>({
   const rangeEnd = Math.min((pageIndex + 1) * pageSize, totalEntries)
 
   return (
-    <div className="w-full space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center flex-1 max-w-sm relative">
+    <div className="w-full min-w-0 space-y-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative w-full min-w-0 flex-1 sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
           {filterColumn && (
             <Input
@@ -107,13 +138,13 @@ export function DataTable<TData, TValue>({
               onChange={(event) =>
                 table.getColumn(filterColumn)?.setFilterValue(event.target.value)
               }
-              className="pl-10 h-10 rounded-xl border-border bg-transparent focus:ring-primary/10"
+              className="pl-10 h-10 w-full rounded-xl border-border bg-transparent focus:ring-primary/10"
             />
           )}
         </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="ml-auto rounded-xl border-border font-bold text-xs uppercase tracking-wider">
+            <Button variant="outline" className="w-full sm:w-auto sm:ml-auto rounded-xl border-border font-bold text-xs uppercase tracking-wider">
               Columns <ChevronDown className="ml-2 h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
@@ -136,14 +167,14 @@ export function DataTable<TData, TValue>({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
-      <div className="rounded-2xl border bg-card overflow-hidden shadow-sm">
-        <Table>
+      <div className="rounded-2xl border bg-card shadow-sm overflow-hidden">
+        <Table className="min-w-[720px]">
           <TableHeader className="bg-muted/50">
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent border-border">
                 {headerGroup.headers.map((header) => {
                   return (
-                    <TableHead key={header.id} className="font-bold text-muted-foreground text-[12px] uppercase tracking-wider p-4">
+                    <TableHead key={header.id} className="font-bold text-muted-foreground text-[12px] uppercase tracking-wider p-3 md:p-4">
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -174,7 +205,7 @@ export function DataTable<TData, TValue>({
                   className="hover:bg-muted/30 transition-colors border-border group"
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id} className="p-4">
+                    <TableCell key={cell.id} className="p-3 md:p-4">
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -192,8 +223,8 @@ export function DataTable<TData, TValue>({
       </div>
 
       {/* Pagination */}
-      <div className="flex flex-col gap-3 px-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-muted-foreground">
+      <div className="flex flex-col gap-3 px-1 sm:px-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           Showing{" "}
           <span className="font-semibold text-foreground">{rangeStart}</span>
           {" "}to{" "}
@@ -203,9 +234,9 @@ export function DataTable<TData, TValue>({
           {" "}entries
         </p>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 sm:justify-end">
+        <div className="flex flex-wrap items-center justify-between gap-3 sm:justify-end sm:gap-4">
         <div className="flex items-center space-x-2">
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-tight">Rows per page</p>
+          <p className="text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-tight">Rows</p>
           <Select
             value={`${table.getState().pagination.pageSize}`}
             onValueChange={(value) => {
@@ -228,10 +259,10 @@ export function DataTable<TData, TValue>({
             </SelectContent>
           </Select>
         </div>
-        <div className="flex items-center space-x-6 lg:space-x-8">
-          <div className="flex w-[100px] items-center justify-center text-xs font-bold text-muted-foreground uppercase tracking-tight">
+        <div className="flex items-center gap-2 sm:gap-6 lg:space-x-8">
+          <div className="flex items-center justify-center text-[10px] sm:text-xs font-bold text-muted-foreground uppercase tracking-tight whitespace-nowrap">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount()}
+            {table.getPageCount() || 1}
           </div>
           <div className="flex items-center space-x-2">
             <Button

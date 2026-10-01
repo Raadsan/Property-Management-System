@@ -271,11 +271,11 @@ export default function BlogsRegistrationPage() {
   ]
 
   return (
-<div className="flex flex-1 flex-col p-4 md:p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Blogs</h1>
-              <p className="text-muted-foreground">Manage your blog articles and content.</p>
+<div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6 min-w-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Blogs</h1>
+              <p className="text-sm text-muted-foreground">Manage your blog articles and content.</p>
             </div>
             {permissions.canAdd && (
               <Dialog open={isModalOpen} onOpenChange={(open) => {
@@ -284,7 +284,7 @@ export default function BlogsRegistrationPage() {
                 setIsModalOpen(open);
               }}>
                 <DialogTrigger asChild>
-                  <Button onClick={openCreateModal} className="btn-category">
+                  <Button onClick={openCreateModal} className="btn-category w-full sm:w-auto shrink-0">
                     <PlusIcon className="mr-2 h-4 w-4" />
                     New Article
                   </Button>
@@ -501,11 +501,11 @@ Add hashtags on the last line:
         </Dialog>
 
           {/* Filter Bar */}
-          <div className="flex flex-wrap gap-4 mb-6 items-end bg-card p-4 rounded-2xl border border-border/50">
-            <div className="flex flex-col gap-1.5 min-w-[150px]">
+          <div className="mb-4 sm:mb-6 grid grid-cols-2 sm:grid-cols-3 gap-3 items-end bg-card p-3 sm:p-4 rounded-2xl border border-border/50">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Category Filter</Label>
               <Select value={filterCategory} onValueChange={setFilterCategory}>
-                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                <SelectTrigger className="h-9 w-full border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
@@ -533,6 +533,7 @@ Add hashtags on the last line:
             isLoading={isLoading} 
             filterColumn="title"
             filterPlaceholder="Search blogs by title..."
+            mobileHiddenColumns={["author", "createdAt"]}
           />
         </div>
 )

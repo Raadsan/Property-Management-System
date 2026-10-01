@@ -231,35 +231,77 @@ export default function PropertyDetailPage() {
       <img src={item.url} className={className} alt={alt || property.title} />
     );
 
+  const SIDE_SLOTS = 2;
+  const PREVIEW_COUNT = 1 + SIDE_SLOTS;
+  const sideMedia = displayMedia.slice(1, PREVIEW_COUNT);
+  const remainingCount = Math.max(0, displayMedia.length - PREVIEW_COUNT);
+
   return (
     <main className="min-h-screen bg-white font-sans selection:bg-gray-100">
       <Navbar />
 
       <div className="max-w-[1300px] mx-auto px-6 pt-32 pb-20">
 
-        {/* Gallery Section */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-[500px] md:h-[600px] mb-10 overflow-hidden cursor-pointer" onClick={() => openGallery(0)}>
+        {/* Gallery — 1 large + 2 small; bottom small shows remaining count (e.g. 7+) */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 h-[500px] md:h-[600px] mb-10 cursor-pointer" onClick={() => openGallery(0)}>
           <div className="md:col-span-3 h-full bg-gray-100 rounded-2xl overflow-hidden group">
             {renderMedia(displayMedia[0], "w-full h-full object-cover rounded-2xl shadow-sm transition-transform duration-500 group-hover:scale-105")}
           </div>
-          <div className="md:col-span-1 grid grid-rows-3 gap-4 h-full">
-            {displayMedia.slice(1, 4).map((item, idx) => (
-              <div
-                key={idx}
-                className="h-full overflow-hidden rounded-2xl bg-gray-100 border border-gray-50 relative group"
-                onClick={(e) => { e.stopPropagation(); openGallery(idx + 1); }}
-              >
-                {renderMedia(item, "w-full h-full object-cover transition-transform duration-500 group-hover:scale-110", `${property.title} view ${idx + 2}`)}
-                {idx === 2 && displayMedia.length > 4 && (
-                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-colors group-hover:bg-black/50">
-                    <span className="text-white text-3xl font-bold">{displayMedia.length - 4}+</span>
-                  </div>
-                )}
-              </div>
-            ))}
-            {displayMedia.length < 4 && Array(4 - displayMedia.length).fill(0).map((_, idx) => (
-              <div key={`placeholder-${idx}`} className="h-full overflow-hidden rounded-2xl bg-gray-50 border border-gray-100" />
-            ))}
+          <div className="md:col-span-1 flex flex-col gap-4 h-full">
+            {/* Top small — taller (~2/3) */}
+            <div
+              className="relative min-h-0 flex-[2] overflow-hidden rounded-2xl bg-gray-100 border border-gray-50 group"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (sideMedia[0]) openGallery(1);
+              }}
+            >
+              {sideMedia[0] ? (
+                renderMedia(
+                  sideMedia[0],
+                  "absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110",
+                  `${property.title} view 2`
+                )
+              ) : (
+                <div className="h-full w-full bg-gray-50" />
+              )}
+            </div>
+
+            {/* Bottom small — shorter (~1/3) + remaining count */}
+            <div
+              className="relative min-h-0 flex-1 overflow-hidden rounded-2xl bg-gray-100 border border-gray-50 group"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (sideMedia[1]) openGallery(2);
+                else if (sideMedia[0]) openGallery(1);
+              }}
+            >
+              {sideMedia[1] ? (
+                renderMedia(
+                  sideMedia[1],
+                  "absolute inset-0 z-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110",
+                  `${property.title} view 3`
+                )
+              ) : sideMedia[0] ? (
+                renderMedia(
+                  sideMedia[0],
+                  "absolute inset-0 z-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110",
+                  `${property.title} view 2`
+                )
+              ) : (
+                <div className="h-full w-full bg-gray-50" />
+              )}
+              {remainingCount > 0 && (sideMedia[1] || sideMedia[0]) && (
+                <div
+                  className="absolute inset-0 z-20 flex items-center justify-center bg-black/50"
+                  style={{ pointerEvents: "none" }}
+                >
+                  <span className="text-white text-3xl font-bold tracking-tight drop-shadow">
+                    {remainingCount}+
+                  </span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

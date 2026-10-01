@@ -340,11 +340,11 @@ export default function UsersPage() {
   ]
 
   return (
-<div className="flex flex-1 flex-col p-4 md:p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Users</h1>
-              <p className="text-muted-foreground">Manage administrative accounts and their roles.</p>
+<div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6 min-w-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Users</h1>
+              <p className="text-sm text-muted-foreground">Manage administrative accounts and their roles.</p>
             </div>
             {permissions.canAdd && (
               <Dialog open={isModalOpen} onOpenChange={(open) => {
@@ -353,7 +353,7 @@ export default function UsersPage() {
                 setIsModalOpen(open);
               }}>
                 <DialogTrigger asChild>
-                  <Button onClick={openCreateModal} className="btn-category">
+                  <Button onClick={openCreateModal} className="btn-category w-full sm:w-auto shrink-0">
                     <PlusIcon className="mr-2 h-4 w-4" />
                     Add User
                   </Button>
@@ -582,11 +582,11 @@ export default function UsersPage() {
           </Dialog>
 
           {/* Filter Bar */}
-          <div className="flex flex-wrap gap-4 mb-6 items-end">
-            <div className="flex flex-col gap-1.5 min-w-[150px]">
+          <div className="mb-4 sm:mb-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 items-end">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Status Filter</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="h-9 border-border bg-card">
+                <SelectTrigger className="h-9 w-full border-border bg-card">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -597,10 +597,10 @@ export default function UsersPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[150px]">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">Role Filter</Label>
               <Select value={filterRole} onValueChange={setFilterRole}>
-                <SelectTrigger className="h-9 border-border bg-card">
+                <SelectTrigger className="h-9 w-full border-border bg-card">
                   <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
                 <SelectContent>
@@ -612,7 +612,7 @@ export default function UsersPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[150px]">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">City Filter</Label>
               <Select
                 value={filterCity}
@@ -621,7 +621,7 @@ export default function UsersPage() {
                   setFilterDistrict("all")
                 }}
               >
-                <SelectTrigger className="h-9 border-border bg-card">
+                <SelectTrigger className="h-9 w-full border-border bg-card">
                   <SelectValue placeholder="All Cities" />
                 </SelectTrigger>
                 <SelectContent>
@@ -635,10 +635,10 @@ export default function UsersPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[150px]">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider">District Filter</Label>
               <Select value={filterDistrict} onValueChange={setFilterDistrict}>
-                <SelectTrigger className="h-9 border-border bg-card">
+                <SelectTrigger className="h-9 w-full border-border bg-card">
                   <SelectValue placeholder="All Districts" />
                 </SelectTrigger>
                 <SelectContent>
@@ -661,7 +661,7 @@ export default function UsersPage() {
                 setFilterCity("all")
                 setFilterDistrict("all")
               }}
-              className="text-xs font-bold text-muted-foreground h-9"
+              className="text-xs font-bold text-muted-foreground h-9 col-span-2 sm:col-span-1"
             >
               Reset Filters
             </Button>
@@ -673,6 +673,7 @@ export default function UsersPage() {
             isLoading={isLoading} 
             filterColumn="name"
             filterPlaceholder="Search users by name..."
+            mobileHiddenColumns={["email", "id"]}
           />
         </div>
 )

@@ -13,9 +13,9 @@ export default function PropertyReportPage() {
   }, [])
 
   return (
-<div className="flex flex-1 flex-col p-4 md:p-6">
-          <h1 className="text-2xl font-bold tracking-tight">Property Report</h1>
-          <p className="text-muted-foreground mb-6">Analytics and performance metrics for listed properties.</p>
+<div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Property Report</h1>
+          <p className="text-sm text-muted-foreground mb-4 sm:mb-6">Analytics and performance metrics for listed properties.</p>
           
           {data && (
             <div className="grid gap-4 md:grid-cols-3 mb-6">
@@ -40,7 +40,7 @@ export default function PropertyReportPage() {
               <CardDescription>Track occupancy rates, popular properties, and listings.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
+              <div className="w-full overflow-x-auto"><Table className="min-w-[640px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Title</TableHead>
@@ -70,6 +70,7 @@ export default function PropertyReportPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </div>

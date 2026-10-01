@@ -51,7 +51,10 @@ export default function CTA() {
                     <p className="text-[13px] font-black">App Store</p>
                   </div>
                 </motion.button>
-                <motion.button
+                <motion.a
+                  href="https://play.google.com/store/apps/details?id=com.raadsan.damalproperty&hl=en"
+                  target="_blank"
+                  rel="noopener noreferrer"
                   whileHover={{ scale: 1.05, translateY: -2 }}
                   whileTap={{ scale: 0.98 }}
                   className="h-12 px-6 bg-white/10 backdrop-blur-md border border-white/20 text-white rounded-xl flex items-center gap-3 hover:bg-white hover:text-black transition-all shadow-xl group"
@@ -61,7 +64,7 @@ export default function CTA() {
                     <p className="text-[9px] uppercase font-bold opacity-40 mb-0.5 tracking-wider">Get it on</p>
                     <p className="text-[13px] font-black">Google Play</p>
                   </div>
-                </motion.button>
+                </motion.a>
               </div>
             </div>
 

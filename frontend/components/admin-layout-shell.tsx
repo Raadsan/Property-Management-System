@@ -36,10 +36,12 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
         } as React.CSSProperties
       }
     >
-      <AppSidebar variant="inset" />
-      <SidebarInset className="mt-0! mr-0!">
+      <AppSidebar variant="sidebar" />
+      <SidebarInset className="mt-0! mr-0! min-w-0 rounded-none shadow-none">
         <SiteHeader />
-        <AdminRouteGuard>{children}</AdminRouteGuard>
+        <div className="min-w-0 flex-1 overflow-x-hidden">
+          <AdminRouteGuard>{children}</AdminRouteGuard>
+        </div>
       </SidebarInset>
     </SidebarProvider>
   )

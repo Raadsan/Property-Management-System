@@ -165,11 +165,11 @@ export default function MenuConfigurationPage() {
   }
 
   return (
-<div className="flex flex-1 flex-col p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Main Menu Builder</h1>
-              <p className="text-muted-foreground">Construct dynamic navigation menus and nested submenus.</p>
+<div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6 min-w-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Main Menu Builder</h1>
+              <p className="text-sm text-muted-foreground">Construct dynamic navigation menus and nested submenus.</p>
             </div>
             
             <Dialog open={isModalOpen} onOpenChange={(open) => {
@@ -178,7 +178,7 @@ export default function MenuConfigurationPage() {
               setIsModalOpen(open);
             }}>
               <DialogTrigger asChild>
-                <Button onClick={openCreateModal} className="btn-category shrink-0">
+                <Button onClick={openCreateModal} className="btn-category w-full sm:w-auto shrink-0">
                   <PlusIcon className="mr-2 h-4 w-4" />
                   Create Menu
                 </Button>
@@ -267,7 +267,7 @@ export default function MenuConfigurationPage() {
           </div>
 
           <div className="rounded-xl border bg-card shadow-sm overflow-hidden">
-            <Table>
+            <Table className="min-w-[720px]">
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-[60px]">id</TableHead>

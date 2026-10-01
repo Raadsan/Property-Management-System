@@ -13,9 +13,9 @@ export default function UserActivityReportPage() {
   }, [])
 
   return (
-<div className="flex flex-1 flex-col p-4 md:p-6">
-          <h1 className="text-2xl font-bold tracking-tight">User Activity Report</h1>
-          <p className="text-muted-foreground mb-6">Monitor user engagement, registrations, and platform usage.</p>
+<div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">User Activity Report</h1>
+          <p className="text-sm text-muted-foreground mb-4 sm:mb-6">Monitor user engagement, registrations, and platform usage.</p>
           
           {data && (
             <div className="grid gap-4 md:grid-cols-2 mb-6">
@@ -36,7 +36,7 @@ export default function UserActivityReportPage() {
               <CardDescription>Detailed usage statistics per user account.</CardDescription>
             </CardHeader>
             <CardContent>
-              <Table>
+              <div className="w-full overflow-x-auto"><Table className="min-w-[640px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Name</TableHead>
@@ -73,6 +73,7 @@ export default function UserActivityReportPage() {
                   )}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </div>

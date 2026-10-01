@@ -349,16 +349,16 @@ export default function MessagesDashboardPage() {
 
   return (
     <>
-      <div className="flex flex-1 flex-col p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">User Inquiries</h1>
-              <p className="text-muted-foreground text-sm">Manage and respond to messages from the contact form.</p>
+      <div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6 min-w-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">User Inquiries</h1>
+              <p className="text-sm text-muted-foreground">Manage and respond to messages from the contact form.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-col xs:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
               <Button
                 onClick={() => setIsAddOpen(true)}
-                className="bg-[#214347] dark:bg-emerald-600 text-white hover:bg-[#163033] dark:hover:bg-emerald-500 rounded-xl font-bold text-xs uppercase tracking-wider h-10 px-4 flex items-center gap-2"
+                className="bg-[#214347] dark:bg-emerald-600 text-white hover:bg-[#163033] dark:hover:bg-emerald-500 rounded-xl font-bold text-xs uppercase tracking-wider h-10 px-4 flex items-center justify-center gap-2 w-full sm:w-auto"
               >
                 <PlusIcon className="h-4 w-4" />
                 Add Lead
@@ -367,7 +367,7 @@ export default function MessagesDashboardPage() {
                 variant="outline"
                 onClick={() => fetchMessages()}
                 disabled={isLoading}
-                className="rounded-xl border-border hover:bg-muted font-bold text-xs uppercase tracking-wider h-10"
+                className="rounded-xl border-border hover:bg-muted font-bold text-xs uppercase tracking-wider h-10 w-full sm:w-auto"
               >
                 <RefreshCcwIcon className={`mr-2 h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
@@ -376,11 +376,11 @@ export default function MessagesDashboardPage() {
           </div>
 
           {/* Filter Bar */}
-          <div className="flex flex-wrap gap-4 mb-6 items-end bg-card p-4 rounded-2xl border border-border/50">
-            <div className="flex flex-col gap-1.5 min-w-[140px]">
+          <div className="mb-4 sm:mb-6 grid grid-cols-2 sm:grid-cols-4 gap-3 items-end bg-card p-3 sm:p-4 rounded-2xl border border-border/50">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Status</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                <SelectTrigger className="h-9 w-full border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -394,10 +394,10 @@ export default function MessagesDashboardPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[140px]">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Priority</Label>
               <Select value={filterPriority} onValueChange={setFilterPriority}>
-                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                <SelectTrigger className="h-9 w-full border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Priority" />
                 </SelectTrigger>
                 <SelectContent>
@@ -410,10 +410,10 @@ export default function MessagesDashboardPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[140px]">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Inquiry Type</Label>
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                <SelectTrigger className="h-9 w-full border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
@@ -429,7 +429,7 @@ export default function MessagesDashboardPage() {
               variant="ghost" 
               size="sm" 
               onClick={() => { setFilterStatus("all"); setFilterPriority("all"); setFilterType("all"); }}
-              className="text-xs font-bold text-muted-foreground h-9 hover:bg-muted"
+              className="text-xs font-bold text-muted-foreground h-9 hover:bg-muted col-span-2 sm:col-span-1"
             >
               <RefreshCcwIcon className="w-3 h-3 mr-2" />
               Reset
@@ -442,6 +442,7 @@ export default function MessagesDashboardPage() {
             isLoading={isLoading}
             filterColumn="sender"
             filterPlaceholder="Search by name or email..."
+            mobileHiddenColumns={["priority", "type"]}
           />
         </div>
 

@@ -48,9 +48,9 @@ export default function BlogReportPage() {
   ]
 
   return (
-    <div className="flex flex-1 flex-col p-4 md:p-6">
-      <h1 className="text-2xl font-bold tracking-tight">Blog Report</h1>
-      <p className="mb-6 text-muted-foreground">Track article publishing, authors, categories, and connected social links.</p>
+    <div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6 min-w-0">
+      <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Blog Report</h1>
+      <p className="mb-4 sm:mb-6 text-sm text-muted-foreground">Track article publishing, authors, categories, and connected social links.</p>
 
       <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {metrics.map(({ label, value, icon: Icon, color }) => (
@@ -102,8 +102,8 @@ export default function BlogReportPage() {
               </Select>
             </div>
 
-            <div className="overflow-hidden rounded-lg border">
-              <Table>
+            <div className="overflow-x-auto rounded-lg border">
+              <Table className="min-w-[720px]">
                 <TableHeader><TableRow><TableHead>Article</TableHead><TableHead>Category</TableHead><TableHead>Registered By</TableHead><TableHead>Socials</TableHead><TableHead>Date</TableHead></TableRow></TableHeader>
                 <TableBody>
                   {filteredBlogs.length ? filteredBlogs.map((blog) => (

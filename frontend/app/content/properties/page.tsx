@@ -817,11 +817,11 @@ export default function PropertiesPage() {
   ]
 
   return (
-<div className="flex flex-1 flex-col p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Properties Inventory</h1>
-              <p className="text-muted-foreground">Manage your real estate listings, pricing, and media.</p>
+<div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6 min-w-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Properties Inventory</h1>
+              <p className="text-sm text-muted-foreground">Manage your real estate listings, pricing, and media.</p>
             </div>
             {permissions.canAdd && (
               <Dialog open={isModalOpen} onOpenChange={(open) => {
@@ -830,7 +830,7 @@ export default function PropertiesPage() {
                 setIsModalOpen(open);
               }}>
                 <DialogTrigger asChild>
-                  <Button onClick={openCreateModal} className="btn-category shrink-0">
+                  <Button onClick={openCreateModal} className="btn-category shrink-0 w-full sm:w-auto">
                     <PlusIcon className="mr-2 h-4 w-4" />
                     Add Property
                   </Button>
@@ -1463,11 +1463,11 @@ export default function PropertiesPage() {
 
 
           {/* Filter Bar */}
-          <div className="flex flex-wrap gap-4 mb-6 items-end bg-card p-4 rounded-2xl border border-border/50">
-            <div className="flex flex-col gap-1.5 min-w-[130px]">
+          <div className="mb-4 sm:mb-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-8 gap-3 items-end bg-card p-3 sm:p-4 rounded-2xl border border-border/50">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Status</Label>
               <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                <SelectTrigger className="h-9 w-full border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1479,10 +1479,10 @@ export default function PropertiesPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[130px]">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Prop Type</Label>
               <Select value={filterType} onValueChange={setFilterType}>
-                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                <SelectTrigger className="h-9 w-full border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1494,10 +1494,10 @@ export default function PropertiesPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[130px]">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Listing</Label>
               <Select value={filterListing} onValueChange={setFilterListing}>
-                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                <SelectTrigger className="h-9 w-full border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Listings" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1508,10 +1508,10 @@ export default function PropertiesPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[130px]">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">City</Label>
               <Select value={filterCity} onValueChange={(val) => { setFilterCity(val); setFilterDistrict("all"); }}>
-                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                <SelectTrigger className="h-9 w-full border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Cities" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1523,10 +1523,10 @@ export default function PropertiesPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[130px]">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">District</Label>
               <Select value={filterDistrict} onValueChange={setFilterDistrict}>
-                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                <SelectTrigger className="h-9 w-full border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Districts" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1538,10 +1538,10 @@ export default function PropertiesPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[130px]">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Feature</Label>
               <Select value={filterFeature} onValueChange={setFilterFeature}>
-                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                <SelectTrigger className="h-9 w-full border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Features" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1552,10 +1552,10 @@ export default function PropertiesPage() {
               </Select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-[130px]">
+            <div className="flex flex-col gap-1.5 min-w-0">
               <Label className="text-[10px] font-bold uppercase text-muted-foreground tracking-wider ml-1">Role</Label>
               <Select value={filterRole} onValueChange={setFilterRole}>
-                <SelectTrigger className="h-9 border-border bg-transparent font-medium text-xs">
+                <SelectTrigger className="h-9 w-full border-border bg-transparent font-medium text-xs">
                   <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1579,7 +1579,7 @@ export default function PropertiesPage() {
                 setFilterFeature("all");
                 setFilterRole("all");
               }}
-              className="text-xs font-bold text-muted-foreground h-9 hover:bg-muted"
+              className="text-xs font-bold text-muted-foreground h-9 hover:bg-muted col-span-2 sm:col-span-1"
             >
               Reset
             </Button>
@@ -1591,6 +1591,7 @@ export default function PropertiesPage() {
             isLoading={isLoading}
             filterColumn="title"
             filterPlaceholder="Search properties by title..."
+            mobileHiddenColumns={["district", "location", "owner.name", "listingType"]}
           />
         </div>
 )

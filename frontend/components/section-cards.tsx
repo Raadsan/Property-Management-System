@@ -424,7 +424,7 @@ export function DashboardContent() {
   const maxValue = Math.max(...stats.map((s) => Number(s.value)), 1)
 
   return (
-    <div className="flex flex-1 flex-col bg-background min-h-screen p-8 gap-8 font-sans">
+    <div className="flex flex-1 flex-col bg-background min-h-0 p-3 sm:p-4 md:p-6 lg:p-8 gap-4 sm:gap-6 md:gap-8 font-sans min-w-0">
       {/* Row 1: Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {stats.map((s, i) => {

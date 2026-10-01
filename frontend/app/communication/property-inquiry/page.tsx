@@ -193,18 +193,18 @@ export default function PropertyInquiryDashboardPage() {
 
   return (
     <>
-      <div className="flex flex-1 flex-col p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Property Inquiries</h1>
-              <p className="text-muted-foreground text-sm">Manage and respond to direct client inquiries regarding specific properties.</p>
+      <div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6 min-w-0">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Property Inquiries</h1>
+              <p className="text-sm text-muted-foreground">Manage and respond to direct client inquiries regarding specific properties.</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
               <Button
                 variant="outline"
                 onClick={() => fetchInquiries()}
                 disabled={isLoading}
-                className="rounded-xl border-border hover:bg-muted font-bold text-xs uppercase tracking-wider h-10 px-5"
+                className="rounded-xl border-border hover:bg-muted font-bold text-xs uppercase tracking-wider h-10 px-5 w-full sm:w-auto"
               >
                 <RefreshCcwIcon className={`mr-2 h-3.5 w-3.5 ${isLoading ? 'animate-spin' : ''}`} />
                 Refresh
@@ -218,6 +218,7 @@ export default function PropertyInquiryDashboardPage() {
             isLoading={isLoading}
             filterColumn="sender"
             filterPlaceholder="Search by sender name or email..."
+            mobileHiddenColumns={["phone", "createdAt"]}
           />
         </div>
 

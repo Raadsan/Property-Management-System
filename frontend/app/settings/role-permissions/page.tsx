@@ -204,22 +204,24 @@ export default function RolePermissionsPage() {
   }
 
   return (
-<div className="flex flex-1 flex-col p-4 md:p-6">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Role Permissions Matrix</h1>
-              <p className="text-muted-foreground">Map high-level ACL restrictions for explicit UI actions across the site.</p>
+<div className="flex flex-1 flex-col p-3 sm:p-4 md:p-6 min-w-0">
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+            <div className="min-w-0">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Role Permissions Matrix</h1>
+              <p className="text-sm text-muted-foreground">Map high-level ACL restrictions for explicit UI actions across the site.</p>
             </div>
             
-            <div className="flex gap-2 items-center w-full md:w-auto flex-wrap">
-              <Button disabled={!selectedRoleId || isLoadingDB} onClick={handleCheckAll} variant="outline" size="sm">
-                <CheckSquareIcon className="h-4 w-4 mr-2" /> Select All
-              </Button>
-              <Button disabled={!selectedRoleId || isLoadingDB} onClick={handleClearAll} variant="outline" size="sm">
-                <SquareIcon className="h-4 w-4 mr-2" /> Clear All
-              </Button>
+            <div className="flex gap-2 items-stretch sm:items-center w-full md:w-auto flex-col sm:flex-row flex-wrap">
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button disabled={!selectedRoleId || isLoadingDB} onClick={handleCheckAll} variant="outline" size="sm" className="flex-1 sm:flex-none">
+                  <CheckSquareIcon className="h-4 w-4 mr-2" /> Select All
+                </Button>
+                <Button disabled={!selectedRoleId || isLoadingDB} onClick={handleClearAll} variant="outline" size="sm" className="flex-1 sm:flex-none">
+                  <SquareIcon className="h-4 w-4 mr-2" /> Clear All
+                </Button>
+              </div>
 
-              <div className="w-[200px] ml-2">
+              <div className="w-full sm:w-[200px] sm:ml-0 md:ml-2">
                 <Select value={selectedRoleId} onValueChange={setSelectedRoleId}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Select Target Role..." />
@@ -232,7 +234,7 @@ export default function RolePermissionsPage() {
                 </Select>
               </div>
 
-              <Button disabled={!selectedRoleId || isLoadingDB || isSyncing} onClick={handleSave} className="btn-category min-w-[140px]">
+              <Button disabled={!selectedRoleId || isLoadingDB || isSyncing} onClick={handleSave} className="btn-category w-full sm:w-auto sm:min-w-[140px]">
                 {isSyncing ? <Loader2Icon className="h-4 w-4 mr-2 animate-spin" /> : <SaveIcon className="h-4 w-4 mr-2" />}
                 Sync Security
               </Button>

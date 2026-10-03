@@ -29,6 +29,7 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
 
   return (
     <SidebarProvider
+      className="h-svh overflow-hidden"
       style={
         {
           "--sidebar-width": "calc(var(--spacing) * 72)",
@@ -37,9 +38,9 @@ export function AdminLayoutShell({ children }: { children: React.ReactNode }) {
       }
     >
       <AppSidebar variant="sidebar" />
-      <SidebarInset className="mt-0! mr-0! min-w-0 rounded-none shadow-none">
+      <SidebarInset className="mt-0! mr-0! h-svh min-h-0 min-w-0 overflow-hidden rounded-none shadow-none">
         <SiteHeader />
-        <div className="min-w-0 flex-1 overflow-x-hidden">
+        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
           <AdminRouteGuard>{children}</AdminRouteGuard>
         </div>
       </SidebarInset>
